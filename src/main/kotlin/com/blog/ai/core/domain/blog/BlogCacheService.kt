@@ -1,0 +1,23 @@
+package com.blog.ai.core.domain.blog
+
+import com.blog.ai.storage.blog.Blog
+import com.blog.ai.storage.blog.BlogRepository
+import com.blog.ai.storage.blog.toBlog
+import org.springframework.cache.annotation.CacheEvict
+import org.springframework.cache.annotation.Cacheable
+import org.springframework.stereotype.Service
+
+@Service
+class BlogCacheService(
+    private val blogRepository: BlogRepository,
+) {
+
+    @Cacheable("blogs")
+    fun getActiveBlogs(): List<Blog> {
+        return blogRepository.findAllByActiveTrue().map { it.toBlog() }
+    }
+
+    @CacheEvict("blogs", allEntries = true)
+    fun evictAll() {
+    }
+}

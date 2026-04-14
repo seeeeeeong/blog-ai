@@ -1,0 +1,19 @@
+build/
+.gradle/
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+bin/
+
+# Environment
+.env
+*.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude
+.claude/

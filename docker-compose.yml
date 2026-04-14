@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: blog-ai-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: blog_ai
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - blog-ai-pgdata:/var/lib/postgresql/data
+
+volumes:
+  blog-ai-pgdata:
