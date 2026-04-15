@@ -46,7 +46,11 @@ class ArticleEmbedService(
         return embedded
     }
 
-    fun clearAllErrors(): Int {
-        return articleRepository.clearAllEmbedErrors()
+    fun clearRetriableErrors(maxRetries: Int = MAX_EMBED_RETRIES): Int {
+        return articleRepository.clearRetriableEmbedErrors(maxRetries)
+    }
+
+    companion object {
+        const val MAX_EMBED_RETRIES = 5
     }
 }

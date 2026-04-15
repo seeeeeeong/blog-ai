@@ -40,6 +40,9 @@ class ArticleEntity(
     @Column(name = "embed_error", columnDefinition = "TEXT")
     var embedError: String? = null,
 
+    @Column(name = "embed_retry_count", nullable = false)
+    var embedRetryCount: Int = 0,
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,

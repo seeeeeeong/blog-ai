@@ -28,12 +28,18 @@ interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
     fun updateEmbedding(id: Long, embedding: String, searchText: String)
 
     @Modifying
-    @Query("UPDATE articles SET embed_error = :error WHERE id = :id", nativeQuery = true)
+    @Query(
+        value = "UPDATE articles SET embed_error = :error, embed_retry_count = embed_retry_count + 1 WHERE id = :id",
+        nativeQuery = true,
+    )
     fun updateEmbedError(id: Long, error: String)
 
     @Modifying
-    @Query("UPDATE articles SET embed_error = NULL WHERE embed_error IS NOT NULL", nativeQuery = true)
-    fun clearAllEmbedErrors(): Int
+    @Query(
+        value = "UPDATE articles SET embed_error = NULL WHERE embed_error IS NOT NULL AND embed_retry_count <= :maxRetries",
+        nativeQuery = true,
+    )
+    fun clearRetriableEmbedErrors(maxRetries: Int): Int
 
     @Query(
         value = """
