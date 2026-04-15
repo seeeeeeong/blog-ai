@@ -37,7 +37,7 @@ class ArticleSaveService(
         }
 
         if (saved > 0) {
-            log.info("크롤링: blog={}, saved={}", blog.name, saved)
+            log.info("Crawl: blog={}, saved={}", blog.name, saved)
         }
         return saved
     }

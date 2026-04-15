@@ -23,7 +23,7 @@ class SlackNotifier(
                 .retrieve()
                 .toBodilessEntity()
         } catch (e: Exception) {
-            log.warn("Slack 전송 실패: {}", e.message)
+            log.warn("Slack notification failed: {}", e.message)
         }
     }
 }

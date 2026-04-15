@@ -33,15 +33,15 @@ class ArticleEmbedService(
                 }
 
                 embedded++
-                log.debug("임베딩 완료: id={}, title={}", article.id, article.title)
+                log.debug("Embedding completed: id={}, title={}", article.id, article.title)
             } catch (e: Exception) {
-                log.error("임베딩 실패: id={}, error={}", article.id, e.message)
+                log.error("Embedding failed: id={}, error={}", article.id, e.message)
                 articleRepository.updateEmbedError(article.id, e.message ?: "unknown")
             }
         }
 
         if (embedded > 0) {
-            log.info("임베딩 처리: {}건 완료", embedded)
+            log.info("Embedding processed: {} articles completed", embedded)
         }
         return embedded
     }

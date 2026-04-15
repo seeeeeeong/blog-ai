@@ -31,7 +31,7 @@ class AdminController(
     fun triggerCrawl(@RequestHeader("X-Admin-Key") adminKey: String): ApiResponse<String> {
         validateAdminKey(adminKey)
         crawlAsync()
-        return ApiResponse.success("크롤링 시작됨")
+        return ApiResponse.success("Crawl started")
     }
 
     @Async
@@ -50,7 +50,7 @@ class AdminController(
     @PostMapping("/embed/retry")
     fun retryEmbed(@RequestHeader("X-Admin-Key") adminKey: String): ApiResponse<Int> {
         validateAdminKey(adminKey)
-        articleEmbedService.clearAllErrors()
+        articleEmbedService.clearRetriableErrors()
         val count = articleEmbedService.embedPending()
         return ApiResponse.success(count)
     }

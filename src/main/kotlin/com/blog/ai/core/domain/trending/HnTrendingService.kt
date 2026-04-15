@@ -29,7 +29,7 @@ class HnTrendingService(
                 objectMapper.typeFactory.constructCollectionType(List::class.java, HnItem::class.java),
             )
         } catch (e: Exception) {
-            log.warn("HN trending 파싱 실패: {}", e.message)
+            log.warn("HN trending parse failed: {}", e.message)
             emptyList()
         }
     }

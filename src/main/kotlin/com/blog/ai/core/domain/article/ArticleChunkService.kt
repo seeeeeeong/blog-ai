@@ -18,7 +18,7 @@ class ArticleChunkService(
 
         val chunks = splitContent(content)
         chunks.forEachIndexed { index, chunk ->
-            val docContent = "제목: $title\n\n$chunk"
+            val docContent = "Title: $title\n\n$chunk"
             val doc = Document(docContent, mapOf("articleId" to articleId, "chunkIndex" to index))
             vectorStore.add(listOf(doc))
 
