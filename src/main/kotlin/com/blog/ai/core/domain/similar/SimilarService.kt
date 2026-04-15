@@ -7,14 +7,6 @@ import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
-data class SimilarArticle(
-    val id: Long,
-    val title: String,
-    val url: String,
-    val company: String,
-    val score: Double,
-)
-
 @Service
 @Transactional(readOnly = true)
 class SimilarService(

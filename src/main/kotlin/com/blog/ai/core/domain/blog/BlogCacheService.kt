@@ -1,6 +1,5 @@
 package com.blog.ai.core.domain.blog
 
-import com.blog.ai.storage.blog.Blog
 import com.blog.ai.storage.blog.BlogRepository
 import com.blog.ai.storage.blog.toBlog
 import org.springframework.cache.annotation.CacheEvict

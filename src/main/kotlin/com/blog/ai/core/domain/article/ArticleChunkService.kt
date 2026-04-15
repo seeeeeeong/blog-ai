@@ -1,7 +1,6 @@
 package com.blog.ai.core.domain.article
 
 import com.blog.ai.storage.article.ArticleChunkRepository
-import com.blog.ai.storage.article.SaveChunkCommand
 import org.springframework.ai.document.Document
 import org.springframework.ai.vectorstore.VectorStore
 import org.springframework.stereotype.Service

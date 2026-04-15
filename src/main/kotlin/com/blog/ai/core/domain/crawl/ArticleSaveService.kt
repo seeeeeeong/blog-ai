@@ -23,7 +23,8 @@ class ArticleSaveService(
         var saved = 0
 
         for (article in parsed) {
-            if (articleRepository.existsByUrlHash(article.urlHash)) continue
+            val alreadyExists = articleRepository.existsByUrlHash(article.urlHash)
+            if (alreadyExists) continue
 
             articleRepository.save(
                 ArticleEntity.create(

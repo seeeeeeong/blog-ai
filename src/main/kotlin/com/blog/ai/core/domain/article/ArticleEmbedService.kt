@@ -33,8 +33,8 @@ class ArticleEmbedService(
 
                 articleRepository.updateEmbedding(article.id, vector, text)
 
-                val content = article.content
-                if (!content.isNullOrBlank()) {
+                val content = article.content?.takeIf { it.isNotBlank() }
+                if (content != null) {
                     articleChunkService.saveChunks(article.id, article.title, content)
                 }
 

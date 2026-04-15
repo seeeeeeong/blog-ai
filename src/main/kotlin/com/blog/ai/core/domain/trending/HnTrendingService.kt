@@ -6,12 +6,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
-data class HnItem(
-    val title: String,
-    val url: String?,
-    val score: Int,
-)
-
 @Service
 @Transactional(readOnly = true)
 class HnTrendingService(

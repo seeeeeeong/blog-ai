@@ -25,10 +25,12 @@ class ChatService(
     }
 
     fun chat(sessionId: UUID, question: String): Flux<ServerSentEvent<String>> {
-        if (!chatSessionRepository.existsById(sessionId)) {
-            throw CoreException(ErrorType.SESSION_NOT_FOUND)
-        }
+        val sessionExists = chatSessionRepository.existsById(sessionId)
+        if (sessionExists) return streamChat(sessionId, question)
+        throw CoreException(ErrorType.SESSION_NOT_FOUND)
+    }
 
+    private fun streamChat(sessionId: UUID, question: String): Flux<ServerSentEvent<String>> {
         return chatClient.prompt()
             .user(question)
             .advisors { advisor ->

@@ -1,14 +1,8 @@
 package com.blog.ai.storage.article
 
+import com.blog.ai.core.domain.article.SaveChunkCommand
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Repository
-
-data class SaveChunkCommand(
-    val articleId: Long,
-    val chunkIndex: Int,
-    val content: String,
-    val embedding: String,
-)
 
 @Repository
 class ArticleChunkRepository(
