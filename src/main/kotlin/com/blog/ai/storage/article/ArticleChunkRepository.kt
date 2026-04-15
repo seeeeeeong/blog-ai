@@ -8,10 +8,10 @@ class ArticleChunkRepository(
     private val jdbcTemplate: JdbcTemplate,
 ) {
 
-    fun saveChunk(articleId: Long, chunkIndex: Int, content: String, embedding: String) {
+    fun saveChunk(articleId: Long, chunkIndex: Int, content: String) {
         jdbcTemplate.update(
-            "INSERT INTO article_chunks (article_id, chunk_index, content, embedding) VALUES (?, ?, ?, CAST(? AS vector))",
-            articleId, chunkIndex, content, embedding,
+            "INSERT INTO article_chunks (article_id, chunk_index, content) VALUES (?, ?, ?)",
+            articleId, chunkIndex, content,
         )
     }
 

@@ -37,6 +37,12 @@ class ArticleEntity(
     @Column(name = "crawled_at", nullable = false, updatable = false)
     val crawledAt: OffsetDateTime = OffsetDateTime.now(),
 
+    @Column(columnDefinition = "VECTOR(1536)", insertable = false, updatable = false)
+    val embedding: String? = null,
+
+    @Column(name = "search_vector", columnDefinition = "TSVECTOR", insertable = false, updatable = false)
+    val searchVector: String? = null,
+
     @Column(name = "embed_error", columnDefinition = "TEXT")
     var embedError: String? = null,
 

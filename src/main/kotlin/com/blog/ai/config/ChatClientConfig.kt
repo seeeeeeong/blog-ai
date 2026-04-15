@@ -3,6 +3,7 @@ package com.blog.ai.config
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor
 import org.springframework.ai.chat.memory.ChatMemory
+import org.springframework.ai.chat.memory.InMemoryChatMemory
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever
 import org.springframework.ai.vectorstore.VectorStore
@@ -11,6 +12,11 @@ import org.springframework.context.annotation.Configuration
 
 @Configuration
 class ChatClientConfig {
+
+    @Bean
+    fun chatMemory(): ChatMemory {
+        return InMemoryChatMemory()
+    }
 
     @Bean
     fun chatClient(
