@@ -1,4 +1,4 @@
-package com.blog.ai.web.similar.dto
+package com.blog.ai.core.api.controller.v1.response
 
 data class SimilarResponse(
     val id: Long,

@@ -1,4 +1,4 @@
-package com.blog.ai.web
+package com.blog.ai.core.api.controller
 
 import com.blog.ai.core.support.error.CoreException
 import com.blog.ai.core.support.error.ErrorType

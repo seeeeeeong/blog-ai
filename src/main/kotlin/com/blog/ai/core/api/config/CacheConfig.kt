@@ -1,4 +1,4 @@
-package com.blog.ai.config
+package com.blog.ai.core.api.config
 
 import com.github.benmanes.caffeine.cache.Caffeine
 import org.springframework.cache.CacheManager

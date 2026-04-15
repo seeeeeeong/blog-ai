@@ -1,6 +1,6 @@
 package com.blog.ai.core.domain.crawl
 
-import com.blog.ai.config.properties.SlackProperties
+import com.blog.ai.core.support.properties.SlackProperties
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient

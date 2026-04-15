@@ -1,6 +1,6 @@
 package com.blog.ai.core.domain.similar
 
-import com.blog.ai.config.properties.SimilarProperties
+import com.blog.ai.core.support.properties.SimilarProperties
 import com.blog.ai.storage.article.ArticleRepository
 import org.springframework.ai.embedding.EmbeddingModel
 import org.springframework.cache.annotation.Cacheable

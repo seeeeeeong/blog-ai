@@ -1,4 +1,4 @@
-package com.blog.ai.web.admin.dto
+package com.blog.ai.core.api.controller.v1.response
 
 import java.time.OffsetDateTime
 
