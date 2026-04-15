@@ -1,0 +1,33 @@
+## 변경사항
+
+### PR #3 병합
+- `refactor: 크롤링 트랜잭션 범위 축소 및 임베딩 재시도 상한 도입` PR을 main에 병합
+
+### 한국어 로깅 → 영어 전환 (11개 파일, 16개 메시지)
+- `ArticleEmbedService.kt`: 임베딩 완료/실패/처리 → Embedding completed/failed/processed
+- `CrawlService.kt`: 크롤링 실패/완료 → Crawl failed/completed
+- `ArticleSaveService.kt`: 크롤링: blog=... → Crawl: blog=...
+- `RssFeedParser.kt`: RSS 파싱 실패 → RSS parse failed
+- `SlackNotifier.kt`: Slack 전송 실패 → Slack notification failed
+- `HnTrendingScheduler.kt`: HN trending 갱신/실패 → HN trending updated/update failed
+- `HnTrendingService.kt`: HN trending 파싱 실패 → HN trending parse failed
+- `CrawlScheduler.kt`: 스케줄 크롤링 시작 → Scheduled crawl started
+- `EmbeddingRetryScheduler.kt`: 임베딩 에러 초기화 → Embedding errors cleared
+- `ArticleChunkService.kt`: 제목: → Title:
+- `AdminController.kt`: 크롤링 시작됨 → Crawl started
+
+### blog-api 스타일에 맞춘 코드 정리
+- **`CoreException`**: `data: Map<String, Any?>?`와 `cause: Throwable?` 파라미터 추가, 보조 생성자 추가
+- **`ErrorType`**: Spring Boot `LogLevel` 사용, 카테고리별 구분 주석 추가, `LogLevel.WARN` 적절히 설정
+- **`ErrorMessage`**: `ErrorType` 받는 생성자 + `data` 필드 추가
+- **`ApiResponse`**: `error()` 메서드를 `error(errorType, data)` 시그니처로 변경
+- **`ApiControllerAdvice`**: `ConstraintViolationException`, `MethodArgumentNotValidException` 등 validation 예외 핸들러 추가, 로깅에 throwable 포함
+
+### 버그 수정
+- **`AdminController.kt`**: PR #3에서 이름 변경된 `clearAllErrors()` → `clearRetriableErrors()`로 호출 수정
+
+## 리뷰 결과
+- 별도 리뷰 코멘트 없음
+
+---
+자동 생성 by Claude Code Bot
