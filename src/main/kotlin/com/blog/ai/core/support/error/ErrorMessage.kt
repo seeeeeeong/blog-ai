@@ -5,9 +5,9 @@ data class ErrorMessage(
     val message: String,
     val data: Any? = null,
 ) {
-    constructor(errorType: ErrorType, data: Any? = null) : this(
+    constructor(errorType: ErrorType, data: Any? = null, message: String? = null) : this(
         code = errorType.code,
-        message = errorType.message,
+        message = message ?: errorType.message,
         data = data,
     )
 }

@@ -26,41 +26,32 @@
 
 ```
 com.blog.ai
-├── config/              # Properties, Cache, CORS, ChatClient, JpaConfig
-├── common/
-│   ├── dto/             # ApiResponse<T>
-│   ├── entity/          # BaseTimeEntity
-│   ├── exception/       # BusinessException, ErrorType, GlobalExceptionHandler
-│   └── StopWords.kt
-└── domain/
-    ├── blog/
-    │   ├── entity/      # BlogEntity
-    │   ├── repository/  # BlogRepository
-    │   └── service/     # BlogCacheService
-    ├── article/
-    │   ├── controller/  # AdminController
-    │   ├── entity/      # ArticleEntity
-    │   ├── repository/  # ArticleRepository, ArticleChunkRepository
-    │   └── service/     # ArticleEmbedService, ArticleChunkService
-    ├── crawl/
-    │   ├── dto/         # CrawlResult
-    │   ├── scheduler/   # CrawlScheduler, EmbeddingRetryScheduler
-    │   └── service/     # CrawlService, RssFeedParser, ContentCleaner
-    ├── embedding/
-    │   └── client/      # EmbeddingClient
-    ├── similar/
-    │   ├── controller/  # SimilarController
-    │   ├── dto/         # SimilarResponse
-    │   └── service/     # SimilarService
-    ├── chat/
-    │   ├── controller/  # ChatController
-    │   └── service/     # ChatService
-    └── trending/
-        ├── controller/  # TrendingController
-        ├── dto/         # TrendingResponse
-        ├── entity/      # HnTrendingEntity
-        ├── repository/  # HnTrendingRepository
-        └── service/     # HnTrendingService, HnTrendingScheduler
+├── core/
+│   ├── api/
+│   │   ├── config/          # AppConfig, CacheConfig, ChatClientConfig, WebConfig
+│   │   └── controller/
+│   │       ├── ApiControllerAdvice.kt
+│   │       └── v1/
+│   │           ├── AdminController, ChatController, SimilarController, TrendingController
+│   │           ├── request/   # ChatRequest, SimilarRequest
+│   │           └── response/  # ArticleAdminResponse, SimilarResponse, TrendingResponse, ...
+│   ├── domain/
+│   │   ├── article/         # ArticleEmbedService, ArticleChunkService
+│   │   ├── blog/            # BlogCacheService
+│   │   ├── chat/            # ChatService
+│   │   ├── crawl/           # CrawlService, ArticleSaveService, RssFeedParser, ContentCleaner, SlackNotifier
+│   │   ├── similar/         # SimilarService
+│   │   └── trending/        # HnTrendingService, HnTrendingScheduler
+│   └── support/
+│       ├── error/           # CoreException, ErrorType, ErrorMessage
+│       ├── properties/      # AdminProperties, SimilarProperties, SlackProperties
+│       └── response/        # ApiResponse, ResultType, PageResponse
+├── scheduler/               # CrawlScheduler, EmbeddingRetryScheduler
+└── storage/
+    ├── article/             # ArticleEntity, ArticleChunkEntity, Repositories
+    ├── blog/                # BlogEntity, BlogRepository
+    ├── chat/                # ChatSessionEntity, ChatSessionRepository
+    └── trending/            # HnTrendingEntity, HnTrendingRepository
 ```
 
 ## 핵심 흐름
@@ -75,9 +66,11 @@ com.blog.ai
 
 ### 패키지 & 파일 위치
 
-- **domain 중심 구조**: controller, dto, entity, repository, service 모두 `domain/{도메인}/` 아래 배치
-- web/ 레이어 분리 **하지 않음** — controller도 domain 안에 위치
-- config/는 최상위, common/에 공통 유틸리티
+- **core/api**: config, controller (v1/ 하위에 버전별 배치), request/response DTO
+- **core/domain**: 도메인별 서비스 로직 (`domain/{도메인}/` 아래 배치)
+- **core/support**: error, properties, response 등 공통 지원 모듈
+- **scheduler/**: 스케줄러 (CrawlScheduler, EmbeddingRetryScheduler)
+- **storage/**: entity, repository (`storage/{도메인}/` 아래 배치)
 
 ### 로깅
 
@@ -92,9 +85,9 @@ logger.error(e) { "에러 메시지" }
 
 ### 예외 처리
 
-- `ErrorType` enum에 status + message 정의
-- `BusinessException(ErrorType)` throw — service 레이어에서만
-- `GlobalExceptionHandler`에서 `ApiResponse.error()` 반환
+- `ErrorType` enum에 status + message + logLevel 정의
+- `CoreException(ErrorType)` throw — service 레이어에서만
+- `ApiControllerAdvice`에서 `ApiResponse.error()` 반환
 - controller에서 예외 catch 하지 않음
 
 ### 응답 래퍼
@@ -108,8 +101,8 @@ ApiResponse.error(ErrorType.NOT_FOUND)  // 실패
 
 ### DTO 규칙
 
-- **Request DTO**: Controller 내부 nested `data class`로 선언
-- **Response DTO**: `domain/{도메인}/dto/` 아래 별도 파일
+- **Request DTO**: `core/api/controller/v1/request/` 아래 별도 파일
+- **Response DTO**: `core/api/controller/v1/response/` 아래 별도 파일
 - Response에 nested data class 허용 (e.g., `SimilarResponse.SimilarArticle`)
 
 ### Entity 규칙

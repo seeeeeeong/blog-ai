@@ -15,5 +15,8 @@ bin/
 .DS_Store
 Thumbs.db
 
+# Temp
+*.tmp
+
 # Claude
 .claude/
