@@ -7,10 +7,15 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
+@Transactional(readOnly = true)
 class ArticleChunkService(
     private val articleChunkRepository: ArticleChunkRepository,
     private val vectorStore: VectorStore,
 ) {
+
+    companion object {
+        private const val DEFAULT_CHUNK_MAX_SIZE = 1000
+    }
 
     @Transactional
     fun saveChunks(articleId: Long, title: String, content: String) {
@@ -26,16 +31,16 @@ class ArticleChunkService(
         }
     }
 
-    private fun splitContent(content: String, maxSize: Int = 1000): List<String> {
+    private fun splitContent(content: String, maxSize: Int = DEFAULT_CHUNK_MAX_SIZE): List<String> {
         if (content.length <= maxSize) return listOf(content)
 
-        val chunks = mutableListOf<String>()
-        var start = 0
-        while (start < content.length) {
-            val end = (start + maxSize).coerceAtMost(content.length)
-            chunks.add(content.substring(start, end))
-            start = end
+        return buildList {
+            var start = 0
+            while (start < content.length) {
+                val end = (start + maxSize).coerceAtMost(content.length)
+                add(content.substring(start, end))
+                start = end
+            }
         }
-        return chunks
     }
 }

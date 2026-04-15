@@ -1,13 +1,13 @@
 package com.blog.ai.core.api.controller.v1
 
 import com.blog.ai.core.support.properties.AdminProperties
+import com.blog.ai.core.domain.article.ArticleAdminService
 import com.blog.ai.core.domain.article.ArticleEmbedService
 import com.blog.ai.core.domain.crawl.CrawlService
 import com.blog.ai.core.support.error.CoreException
 import com.blog.ai.core.support.error.ErrorType
 import com.blog.ai.core.support.response.ApiResponse
 import com.blog.ai.core.support.response.PageResponse
-import com.blog.ai.storage.article.ArticleRepository
 import com.blog.ai.core.api.controller.v1.response.ArticleAdminResponse
 import org.springframework.scheduling.annotation.Async
 import org.springframework.web.bind.annotation.GetMapping
@@ -24,7 +24,7 @@ class AdminController(
     private val adminProperties: AdminProperties,
     private val crawlService: CrawlService,
     private val articleEmbedService: ArticleEmbedService,
-    private val articleRepository: ArticleRepository,
+    private val articleAdminService: ArticleAdminService,
 ) {
 
     @PostMapping("/crawl")
@@ -62,7 +62,7 @@ class AdminController(
         @RequestParam(defaultValue = "0") offset: Int,
     ): ApiResponse<PageResponse<ArticleAdminResponse>> {
         validateAdminKey(adminKey)
-        val rows = articleRepository.findArticlesForAdmin(limit + 1, offset)
+        val rows = articleAdminService.findArticlesForAdmin(limit + 1, offset)
         val hasNext = rows.size > limit
         val articles = rows.take(limit).map { row ->
             ArticleAdminResponse(
@@ -84,8 +84,8 @@ class AdminController(
         validateAdminKey(adminKey)
         return ApiResponse.success(
             mapOf(
-                "totalArticles" to articleRepository.count(),
-                "unembedded" to articleRepository.countUnembedded(),
+                "totalArticles" to articleAdminService.countTotal(),
+                "unembedded" to articleAdminService.countUnembedded(),
             ),
         )
     }

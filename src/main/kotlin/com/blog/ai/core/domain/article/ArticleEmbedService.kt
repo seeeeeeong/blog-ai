@@ -7,16 +7,22 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
+@Transactional(readOnly = true)
 class ArticleEmbedService(
     private val articleRepository: ArticleRepository,
     private val embeddingModel: EmbeddingModel,
     private val articleChunkService: ArticleChunkService,
 ) {
 
+    companion object {
+        private const val DEFAULT_EMBED_LIMIT = 10
+        const val MAX_EMBED_RETRIES = 5
+    }
+
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
-    fun embedPending(limit: Int = 10): Int {
+    fun embedPending(limit: Int = DEFAULT_EMBED_LIMIT): Int {
         val articles = articleRepository.findUnembedded(limit)
         var embedded = 0
 
@@ -28,8 +34,9 @@ class ArticleEmbedService(
 
                 articleRepository.updateEmbedding(article.id, vector, text)
 
-                if (!article.content.isNullOrBlank()) {
-                    articleChunkService.saveChunks(article.id, article.title, article.content!!)
+                val content = article.content
+                if (!content.isNullOrBlank()) {
+                    articleChunkService.saveChunks(article.id, article.title, content)
                 }
 
                 embedded++
@@ -46,11 +53,8 @@ class ArticleEmbedService(
         return embedded
     }
 
+    @Transactional
     fun clearRetriableErrors(maxRetries: Int = MAX_EMBED_RETRIES): Int {
         return articleRepository.clearRetriableEmbedErrors(maxRetries)
-    }
-
-    companion object {
-        const val MAX_EMBED_RETRIES = 5
     }
 }

@@ -4,8 +4,10 @@ import com.blog.ai.core.domain.blog.BlogCacheService
 import com.blog.ai.storage.blog.BlogRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
+@Transactional(readOnly = true)
 class CrawlService(
     private val blogRepository: BlogRepository,
     private val rssFeedParser: RssFeedParser,

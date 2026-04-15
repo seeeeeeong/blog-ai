@@ -5,6 +5,7 @@ import com.blog.ai.storage.article.ArticleRepository
 import org.springframework.ai.embedding.EmbeddingModel
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 data class SimilarArticle(
     val id: Long,
@@ -15,6 +16,7 @@ data class SimilarArticle(
 )
 
 @Service
+@Transactional(readOnly = true)
 class SimilarService(
     private val articleRepository: ArticleRepository,
     private val embeddingModel: EmbeddingModel,

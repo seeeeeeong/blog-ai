@@ -1,18 +1,18 @@
 package com.blog.ai.core.api.config
 
-import org.springframework.beans.factory.annotation.Value
+import com.blog.ai.core.support.properties.CorsProperties
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.servlet.config.annotation.CorsRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 @Configuration
 class WebConfig(
-    @Value("\${cors.allowed-origins}") private val allowedOrigins: String,
+    private val corsProperties: CorsProperties,
 ) : WebMvcConfigurer {
 
     override fun addCorsMappings(registry: CorsRegistry) {
         registry.addMapping("/**")
-            .allowedOrigins(*allowedOrigins.split(",").toTypedArray())
+            .allowedOrigins(*corsProperties.allowedOrigins.split(",").toTypedArray())
             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
             .allowedHeaders("*")
             .allowCredentials(true)

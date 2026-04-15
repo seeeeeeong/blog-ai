@@ -15,6 +15,11 @@ class HnTrendingScheduler(
     private val objectMapper: ObjectMapper,
 ) {
 
+    companion object {
+        private const val TOP_STORIES_LIMIT = 10
+        private const val SINGLETON_ENTITY_ID = 1
+    }
+
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Scheduled(cron = "0 0 */6 * * *")
@@ -25,7 +30,7 @@ class HnTrendingScheduler(
                 .uri("https://hacker-news.firebaseio.com/v0/topstories.json")
                 .retrieve()
                 .body(List::class.java)
-                ?.take(10) ?: return
+                ?.take(TOP_STORIES_LIMIT) ?: return
 
             val items = topIds.mapNotNull { id ->
                 try {
@@ -44,7 +49,7 @@ class HnTrendingScheduler(
                 }
             }
 
-            val entity = hnTrendingRepository.findById(1).orElse(HnTrendingEntity())
+            val entity = hnTrendingRepository.findById(SINGLETON_ENTITY_ID).orElse(HnTrendingEntity())
             entity.items = objectMapper.writeValueAsString(items)
             entity.fetchedAt = OffsetDateTime.now()
             hnTrendingRepository.save(entity)
