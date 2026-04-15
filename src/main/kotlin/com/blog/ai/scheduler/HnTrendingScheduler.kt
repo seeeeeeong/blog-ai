@@ -1,5 +1,6 @@
-package com.blog.ai.core.domain.trending
+package com.blog.ai.scheduler
 
+import com.blog.ai.core.domain.trending.HnItem
 import com.blog.ai.storage.trending.HnTrendingEntity
 import com.blog.ai.storage.trending.HnTrendingRepository
 import com.fasterxml.jackson.databind.ObjectMapper
