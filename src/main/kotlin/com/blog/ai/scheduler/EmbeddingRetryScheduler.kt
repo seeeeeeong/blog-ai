@@ -14,9 +14,9 @@ class EmbeddingRetryScheduler(
 
     @Scheduled(fixedDelay = 3600000)
     fun retryFailed() {
-        val cleared = articleEmbedService.clearAllErrors()
+        val cleared = articleEmbedService.clearRetriableErrors()
         if (cleared > 0) {
-            log.info("임베딩 에러 초기화: {}건, 재시도 시작", cleared)
+            log.info("임베딩 에러 초기화: {}건, 재시도 시작 (최대 {}회 초과 제외)", cleared, ArticleEmbedService.MAX_EMBED_RETRIES)
             articleEmbedService.embedPending()
         }
     }

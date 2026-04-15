@@ -1,0 +1,1 @@
+ALTER TABLE articles ADD COLUMN embed_retry_count INTEGER NOT NULL DEFAULT 0;
