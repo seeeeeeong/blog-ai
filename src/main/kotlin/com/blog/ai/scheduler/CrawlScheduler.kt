@@ -16,7 +16,7 @@ class CrawlScheduler(
         private val log = KotlinLogging.logger {}
     }
 
-    @Scheduled(cron = "0 0 */3 * * *")
+    @Scheduled(cron = "0 0 9 * * MON")
     fun crawlAndEmbed() {
         log.info { "Scheduled crawl started" }
         val saved = crawlService.crawlAll()
