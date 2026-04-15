@@ -31,7 +31,7 @@ class RssFeedParser(
                 )
             }
         } catch (e: Exception) {
-            log.warn("RSS 파싱 실패: url={}, error={}", rssUrl, e.message)
+            log.warn("RSS parse failed: url={}, error={}", rssUrl, e.message)
             emptyList()
         }
     }

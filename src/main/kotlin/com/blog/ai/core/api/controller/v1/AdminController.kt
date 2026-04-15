@@ -1,6 +1,6 @@
-package com.blog.ai.web.admin
+package com.blog.ai.core.api.controller.v1
 
-import com.blog.ai.config.properties.AdminProperties
+import com.blog.ai.core.support.properties.AdminProperties
 import com.blog.ai.core.domain.article.ArticleEmbedService
 import com.blog.ai.core.domain.crawl.CrawlService
 import com.blog.ai.core.support.error.CoreException
@@ -8,7 +8,7 @@ import com.blog.ai.core.support.error.ErrorType
 import com.blog.ai.core.support.response.ApiResponse
 import com.blog.ai.core.support.response.PageResponse
 import com.blog.ai.storage.article.ArticleRepository
-import com.blog.ai.web.admin.dto.ArticleAdminResponse
+import com.blog.ai.core.api.controller.v1.response.ArticleAdminResponse
 import org.springframework.scheduling.annotation.Async
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -31,7 +31,7 @@ class AdminController(
     fun triggerCrawl(@RequestHeader("X-Admin-Key") adminKey: String): ApiResponse<String> {
         validateAdminKey(adminKey)
         crawlAsync()
-        return ApiResponse.success("크롤링 시작됨")
+        return ApiResponse.success("Crawl started")
     }
 
     @Async
@@ -50,7 +50,7 @@ class AdminController(
     @PostMapping("/embed/retry")
     fun retryEmbed(@RequestHeader("X-Admin-Key") adminKey: String): ApiResponse<Int> {
         validateAdminKey(adminKey)
-        articleEmbedService.clearAllErrors()
+        articleEmbedService.clearRetriableErrors()
         val count = articleEmbedService.embedPending()
         return ApiResponse.success(count)
     }

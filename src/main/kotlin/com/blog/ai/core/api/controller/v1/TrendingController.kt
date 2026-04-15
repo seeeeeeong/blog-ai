@@ -1,8 +1,8 @@
-package com.blog.ai.web.trending
+package com.blog.ai.core.api.controller.v1
 
 import com.blog.ai.core.domain.trending.HnTrendingService
 import com.blog.ai.core.support.response.ApiResponse
-import com.blog.ai.web.trending.dto.TrendingResponse
+import com.blog.ai.core.api.controller.v1.response.TrendingResponse
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController

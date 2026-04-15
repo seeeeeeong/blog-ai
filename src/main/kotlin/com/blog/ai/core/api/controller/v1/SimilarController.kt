@@ -1,9 +1,9 @@
-package com.blog.ai.web.similar
+package com.blog.ai.core.api.controller.v1
 
 import com.blog.ai.core.domain.similar.SimilarService
 import com.blog.ai.core.support.response.ApiResponse
-import com.blog.ai.web.similar.dto.SimilarRequest
-import com.blog.ai.web.similar.dto.SimilarResponse
+import com.blog.ai.core.api.controller.v1.request.SimilarRequest
+import com.blog.ai.core.api.controller.v1.response.SimilarResponse
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping

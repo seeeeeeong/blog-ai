@@ -1,4 +1,4 @@
-package com.blog.ai.config
+package com.blog.ai.core.api.config
 
 import org.springframework.context.annotation.Configuration
 

@@ -26,16 +26,16 @@ class CrawlService(
                 val saved = articleSaveService.saveNewArticles(blog, parsed)
                 totalSaved += saved
             } catch (e: Exception) {
-                log.error("크롤링 실패: blog={}, error={}", blog.name, e.message)
+                log.error("Crawl failed: blog={}, error={}", blog.name, e.message)
             }
         }
 
         if (totalSaved > 0) {
-            slackNotifier.send("크롤링 완료: ${totalSaved}건 저장")
+            slackNotifier.send("Crawl completed: $totalSaved articles saved")
             blogCacheService.evictAll()
         }
 
-        log.info("크롤링 완료: 총 {}건 저장", totalSaved)
+        log.info("Crawl completed: {} articles saved", totalSaved)
         return totalSaved
     }
 }

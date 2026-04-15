@@ -1,4 +1,4 @@
-package com.blog.ai.config.properties
+package com.blog.ai.core.support.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 

@@ -16,7 +16,7 @@ class EmbeddingRetryScheduler(
     fun retryFailed() {
         val cleared = articleEmbedService.clearRetriableErrors()
         if (cleared > 0) {
-            log.info("임베딩 에러 초기화: {}건, 재시도 시작 (최대 {}회 초과 제외)", cleared, ArticleEmbedService.MAX_EMBED_RETRIES)
+            log.info("Embedding errors cleared: {} articles, retry started (excluding over {} retries)", cleared, ArticleEmbedService.MAX_EMBED_RETRIES)
             articleEmbedService.embedPending()
         }
     }

@@ -1,5 +1,6 @@
 package com.blog.ai.core.support.error
 
+import org.springframework.boot.logging.LogLevel
 import org.springframework.http.HttpStatus
 
 enum class ErrorType(
@@ -8,18 +9,27 @@ enum class ErrorType(
     val message: String,
     val logLevel: LogLevel = LogLevel.INFO,
 ) {
+    // ==================== Auth ====================
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "AUTH_001", "Unauthorized"),
-    FORBIDDEN(HttpStatus.FORBIDDEN, "AUTH_002", "Forbidden"),
+    FORBIDDEN(HttpStatus.FORBIDDEN, "AUTH_002", "Forbidden", LogLevel.WARN),
+
+    // ==================== Common ====================
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "COMMON_001", "Invalid input"),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_002", "Internal server error", LogLevel.ERROR),
-    DEFAULT_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_999", "Unexpected error", LogLevel.ERROR),
-    ARTICLE_NOT_FOUND(HttpStatus.NOT_FOUND, "ARTICLE_001", "Article not found"),
-    BLOG_NOT_FOUND(HttpStatus.NOT_FOUND, "BLOG_001", "Blog not found"),
-    SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "CHAT_001", "Chat session not found"),
-    EMBED_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "EMBED_001", "Embedding failed", LogLevel.ERROR),
-    CRAWL_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CRAWL_001", "Crawl failed", LogLevel.ERROR),
-}
+    DEFAULT_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_999", "An unexpected error occurred", LogLevel.ERROR),
 
-enum class LogLevel {
-    INFO, WARN, ERROR
+    // ==================== Article ====================
+    ARTICLE_NOT_FOUND(HttpStatus.NOT_FOUND, "ARTICLE_001", "Article not found", LogLevel.WARN),
+
+    // ==================== Blog ====================
+    BLOG_NOT_FOUND(HttpStatus.NOT_FOUND, "BLOG_001", "Blog not found", LogLevel.WARN),
+
+    // ==================== Chat ====================
+    SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "CHAT_001", "Chat session not found", LogLevel.WARN),
+
+    // ==================== Embed ====================
+    EMBED_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "EMBED_001", "Embedding failed", LogLevel.ERROR),
+
+    // ==================== Crawl ====================
+    CRAWL_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CRAWL_001", "Crawl failed", LogLevel.ERROR),
 }

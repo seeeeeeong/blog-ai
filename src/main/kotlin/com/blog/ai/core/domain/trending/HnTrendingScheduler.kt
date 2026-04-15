@@ -49,9 +49,9 @@ class HnTrendingScheduler(
             entity.fetchedAt = OffsetDateTime.now()
             hnTrendingRepository.save(entity)
 
-            log.info("HN trending 갱신: {}건", items.size)
+            log.info("HN trending updated: {} items", items.size)
         } catch (e: Exception) {
-            log.error("HN trending 갱신 실패: {}", e.message)
+            log.error("HN trending update failed: {}", e.message)
         }
     }
 }

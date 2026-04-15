@@ -16,7 +16,7 @@ class CrawlScheduler(
 
     @Scheduled(cron = "0 0 */3 * * *")
     fun crawlAndEmbed() {
-        log.info("스케줄 크롤링 시작")
+        log.info("Scheduled crawl started")
         val saved = crawlService.crawlAll()
         if (saved > 0) {
             articleEmbedService.embedPending()
