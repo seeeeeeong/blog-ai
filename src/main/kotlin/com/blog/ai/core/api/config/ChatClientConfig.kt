@@ -12,6 +12,10 @@ import org.springframework.context.annotation.Configuration
 @Configuration
 class ChatClientConfig {
 
+    companion object {
+        private const val RAG_TOP_K = 5
+    }
+
     @Bean
     fun chatClient(
         chatClientBuilder: ChatClient.Builder,
@@ -20,7 +24,7 @@ class ChatClientConfig {
     ): ChatClient {
         val retriever = VectorStoreDocumentRetriever.builder()
             .vectorStore(vectorStore)
-            .topK(5)
+            .topK(RAG_TOP_K)
             .build()
 
         val ragAdvisor = RetrievalAugmentationAdvisor.builder()

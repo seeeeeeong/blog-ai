@@ -2,7 +2,7 @@ package com.blog.ai.core.domain.crawl
 
 import com.blog.ai.core.domain.blog.BlogCacheService
 import com.blog.ai.storage.blog.BlogRepository
-import org.slf4j.LoggerFactory
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -16,7 +16,9 @@ class CrawlService(
     private val blogCacheService: BlogCacheService,
 ) {
 
-    private val log = LoggerFactory.getLogger(javaClass)
+    companion object {
+        private val log = KotlinLogging.logger {}
+    }
 
     fun crawlAll(): Int {
         val blogs = blogRepository.findAllByActiveTrue()
@@ -28,7 +30,7 @@ class CrawlService(
                 val saved = articleSaveService.saveNewArticles(blog, parsed)
                 totalSaved += saved
             } catch (e: Exception) {
-                log.error("Crawl failed: blog={}, error={}", blog.name, e.message)
+                log.error(e) { "Crawl failed: blog=${blog.name}" }
             }
         }
 
@@ -37,7 +39,7 @@ class CrawlService(
             blogCacheService.evictAll()
         }
 
-        log.info("Crawl completed: {} articles saved", totalSaved)
+        log.info { "Crawl completed: $totalSaved articles saved" }
         return totalSaved
     }
 }

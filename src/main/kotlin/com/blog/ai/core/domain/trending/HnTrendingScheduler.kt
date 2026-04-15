@@ -3,11 +3,10 @@ package com.blog.ai.core.domain.trending
 import com.blog.ai.storage.trending.HnTrendingEntity
 import com.blog.ai.storage.trending.HnTrendingRepository
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.slf4j.LoggerFactory
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
-import java.time.OffsetDateTime
 
 @Component
 class HnTrendingScheduler(
@@ -16,11 +15,10 @@ class HnTrendingScheduler(
 ) {
 
     companion object {
+        private val log = KotlinLogging.logger {}
         private const val TOP_STORIES_LIMIT = 10
         private const val SINGLETON_ENTITY_ID = 1
     }
-
-    private val log = LoggerFactory.getLogger(javaClass)
 
     @Scheduled(cron = "0 0 */6 * * *")
     fun fetch() {
@@ -45,18 +43,19 @@ class HnTrendingScheduler(
                         score = (item["score"] as? Number)?.toInt() ?: 0,
                     )
                 } catch (e: Exception) {
+                    log.debug(e) { "HN item fetch failed: id=$id" }
                     null
                 }
             }
 
-            val entity = hnTrendingRepository.findById(SINGLETON_ENTITY_ID).orElse(HnTrendingEntity())
-            entity.items = objectMapper.writeValueAsString(items)
-            entity.fetchedAt = OffsetDateTime.now()
+            val entity = hnTrendingRepository.findById(SINGLETON_ENTITY_ID)
+                .orElseGet { HnTrendingEntity.create() }
+            entity.updateItems(objectMapper.writeValueAsString(items))
             hnTrendingRepository.save(entity)
 
-            log.info("HN trending updated: {} items", items.size)
+            log.info { "HN trending updated: ${items.size} items" }
         } catch (e: Exception) {
-            log.error("HN trending update failed: {}", e.message)
+            log.error(e) { "HN trending update failed" }
         }
     }
 }

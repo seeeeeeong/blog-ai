@@ -1,7 +1,7 @@
 package com.blog.ai.core.domain.article
 
 import com.blog.ai.storage.article.ArticleRepository
-import org.slf4j.LoggerFactory
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.embedding.EmbeddingModel
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -15,11 +15,10 @@ class ArticleEmbedService(
 ) {
 
     companion object {
+        private val log = KotlinLogging.logger {}
         private const val DEFAULT_EMBED_LIMIT = 10
         const val MAX_EMBED_RETRIES = 5
     }
-
-    private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
     fun embedPending(limit: Int = DEFAULT_EMBED_LIMIT): Int {
@@ -40,15 +39,15 @@ class ArticleEmbedService(
                 }
 
                 embedded++
-                log.debug("Embedding completed: id={}, title={}", article.id, article.title)
+                log.debug { "Embedding completed: id=${article.id}, title=${article.title}" }
             } catch (e: Exception) {
-                log.error("Embedding failed: id={}, error={}", article.id, e.message)
+                log.error(e) { "Embedding failed: id=${article.id}" }
                 articleRepository.updateEmbedError(article.id, e.message ?: "unknown")
             }
         }
 
         if (embedded > 0) {
-            log.info("Embedding processed: {} articles completed", embedded)
+            log.info { "Embedding processed: $embedded articles completed" }
         }
         return embedded
     }

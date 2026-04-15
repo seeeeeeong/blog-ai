@@ -2,7 +2,7 @@ package com.blog.ai.scheduler
 
 import com.blog.ai.core.domain.article.ArticleEmbedService
 import com.blog.ai.core.domain.crawl.CrawlService
-import org.slf4j.LoggerFactory
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
@@ -12,11 +12,13 @@ class CrawlScheduler(
     private val articleEmbedService: ArticleEmbedService,
 ) {
 
-    private val log = LoggerFactory.getLogger(javaClass)
+    companion object {
+        private val log = KotlinLogging.logger {}
+    }
 
     @Scheduled(cron = "0 0 */3 * * *")
     fun crawlAndEmbed() {
-        log.info("Scheduled crawl started")
+        log.info { "Scheduled crawl started" }
         val saved = crawlService.crawlAll()
         if (saved > 0) {
             articleEmbedService.embedPending()

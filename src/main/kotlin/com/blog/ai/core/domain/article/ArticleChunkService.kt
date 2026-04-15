@@ -1,6 +1,7 @@
 package com.blog.ai.core.domain.article
 
 import com.blog.ai.storage.article.ArticleChunkRepository
+import com.blog.ai.storage.article.SaveChunkCommand
 import org.springframework.ai.document.Document
 import org.springframework.ai.vectorstore.VectorStore
 import org.springframework.stereotype.Service
@@ -27,7 +28,14 @@ class ArticleChunkService(
             val doc = Document(docContent, mapOf("articleId" to articleId, "chunkIndex" to index))
             vectorStore.add(listOf(doc))
 
-            articleChunkRepository.saveChunk(articleId, index, chunk, "")
+            articleChunkRepository.saveChunk(
+                SaveChunkCommand(
+                    articleId = articleId,
+                    chunkIndex = index,
+                    content = chunk,
+                    embedding = "",
+                ),
+            )
         }
     }
 

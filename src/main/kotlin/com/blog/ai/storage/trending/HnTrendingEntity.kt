@@ -13,8 +13,20 @@ class HnTrendingEntity(
     val id: Int = 1,
 
     @Column(columnDefinition = "JSONB")
-    var items: String? = null,
+    private var items: String? = null,
 
     @Column(name = "fetched_at")
-    var fetchedAt: OffsetDateTime? = OffsetDateTime.now(),
-)
+    private var fetchedAt: OffsetDateTime? = OffsetDateTime.now(),
+) {
+
+    companion object {
+        fun create(): HnTrendingEntity = HnTrendingEntity()
+    }
+
+    fun updateItems(itemsJson: String) {
+        items = itemsJson
+        fetchedAt = OffsetDateTime.now()
+    }
+
+    fun getItemsJson(): String? = items
+}

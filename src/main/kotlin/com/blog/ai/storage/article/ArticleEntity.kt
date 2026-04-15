@@ -46,4 +46,28 @@ class ArticleEntity(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
-)
+) {
+
+    companion object {
+        fun create(
+            blog: BlogEntity,
+            title: String,
+            url: String,
+            urlHash: String,
+            content: String? = null,
+            publishedAt: OffsetDateTime? = null,
+        ): ArticleEntity {
+            require(title.isNotBlank()) { "Article title must not be blank" }
+            require(url.isNotBlank()) { "Article url must not be blank" }
+            require(urlHash.isNotBlank()) { "Article urlHash must not be blank" }
+            return ArticleEntity(
+                blog = blog,
+                title = title,
+                url = url,
+                urlHash = urlHash,
+                content = content,
+                publishedAt = publishedAt,
+            )
+        }
+    }
+}

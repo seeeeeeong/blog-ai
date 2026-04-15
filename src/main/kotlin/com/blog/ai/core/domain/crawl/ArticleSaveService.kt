@@ -3,7 +3,7 @@ package com.blog.ai.core.domain.crawl
 import com.blog.ai.storage.article.ArticleEntity
 import com.blog.ai.storage.article.ArticleRepository
 import com.blog.ai.storage.blog.BlogEntity
-import org.slf4j.LoggerFactory
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.OffsetDateTime
@@ -14,7 +14,9 @@ class ArticleSaveService(
     private val articleRepository: ArticleRepository,
 ) {
 
-    private val log = LoggerFactory.getLogger(javaClass)
+    companion object {
+        private val log = KotlinLogging.logger {}
+    }
 
     @Transactional
     fun saveNewArticles(blog: BlogEntity, parsed: List<ParsedArticle>): Int {
@@ -24,7 +26,7 @@ class ArticleSaveService(
             if (articleRepository.existsByUrlHash(article.urlHash)) continue
 
             articleRepository.save(
-                ArticleEntity(
+                ArticleEntity.create(
                     blog = blog,
                     title = article.title,
                     url = article.url,
@@ -37,7 +39,7 @@ class ArticleSaveService(
         }
 
         if (saved > 0) {
-            log.info("Crawl: blog={}, saved={}", blog.name, saved)
+            log.info { "Crawl: blog=${blog.name}, saved=$saved" }
         }
         return saved
     }

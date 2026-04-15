@@ -1,7 +1,7 @@
 package com.blog.ai.core.domain.crawl
 
 import com.blog.ai.core.support.properties.SlackProperties
-import org.slf4j.LoggerFactory
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 
@@ -10,7 +10,9 @@ class SlackNotifier(
     private val slackProperties: SlackProperties,
 ) {
 
-    private val log = LoggerFactory.getLogger(javaClass)
+    companion object {
+        private val log = KotlinLogging.logger {}
+    }
 
     fun send(message: String) {
         if (slackProperties.webhookUrl.isBlank()) return
@@ -23,7 +25,7 @@ class SlackNotifier(
                 .retrieve()
                 .toBodilessEntity()
         } catch (e: Exception) {
-            log.warn("Slack notification failed: {}", e.message)
+            log.error(e) { "Slack notification failed" }
         }
     }
 }

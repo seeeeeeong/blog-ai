@@ -19,7 +19,7 @@ class TrendingController(
         val response = items.map { item ->
             TrendingResponse(
                 title = item.title,
-                url = item.url,
+                url = item.url ?: "",
                 score = item.score,
             )
         }

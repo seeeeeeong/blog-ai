@@ -20,7 +20,7 @@ class ChatService(
 
     @Transactional
     fun createSession(): UUID {
-        val session = chatSessionRepository.save(ChatSessionEntity())
+        val session = chatSessionRepository.save(ChatSessionEntity.create())
         return session.id
     }
 

@@ -2,7 +2,7 @@ package com.blog.ai.core.domain.crawl
 
 import com.rometools.rome.io.SyndFeedInput
 import com.rometools.rome.io.XmlReader
-import org.slf4j.LoggerFactory
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Component
 import java.net.URI
 import java.security.MessageDigest
@@ -12,7 +12,9 @@ class RssFeedParser(
     private val contentCleaner: ContentCleaner,
 ) {
 
-    private val log = LoggerFactory.getLogger(javaClass)
+    companion object {
+        private val log = KotlinLogging.logger {}
+    }
 
     fun parse(rssUrl: String): List<ParsedArticle> {
         return try {
@@ -31,7 +33,7 @@ class RssFeedParser(
                 )
             }
         } catch (e: Exception) {
-            log.warn("RSS parse failed: url={}, error={}", rssUrl, e.message)
+            log.warn(e) { "RSS parse failed: url=$rssUrl" }
             emptyList()
         }
     }

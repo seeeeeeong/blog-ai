@@ -12,6 +12,13 @@ import java.time.Duration
 @EnableCaching
 class CacheConfig {
 
+    companion object {
+        private const val BLOG_CACHE_MAX_SIZE = 100L
+        private val BLOG_CACHE_TTL: Duration = Duration.ofHours(6)
+        private const val SIMILAR_CACHE_MAX_SIZE = 200L
+        private val SIMILAR_CACHE_TTL: Duration = Duration.ofHours(1)
+    }
+
     @Bean
     fun cacheManager(): CacheManager {
         val manager = CaffeineCacheManager()
@@ -19,15 +26,15 @@ class CacheConfig {
         manager.registerCustomCache(
             "blogs",
             Caffeine.newBuilder()
-                .expireAfterWrite(Duration.ofHours(6))
-                .maximumSize(100)
+                .expireAfterWrite(BLOG_CACHE_TTL)
+                .maximumSize(BLOG_CACHE_MAX_SIZE)
                 .build(),
         )
         manager.registerCustomCache(
             "similar",
             Caffeine.newBuilder()
-                .expireAfterWrite(Duration.ofHours(1))
-                .maximumSize(200)
+                .expireAfterWrite(SIMILAR_CACHE_TTL)
+                .maximumSize(SIMILAR_CACHE_MAX_SIZE)
                 .build(),
         )
 

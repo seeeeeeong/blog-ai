@@ -1,0 +1,48 @@
+complexity:
+  active: true
+  CyclomaticComplexity:
+    threshold: 10
+  LongMethod:
+    threshold: 40
+  LongParameterList:
+    functionThreshold: 4
+    constructorThreshold: 7
+  NestedBlockDepth:
+    threshold: 2
+  TooManyFunctions:
+    thresholdInClasses: 15
+
+naming:
+  active: true
+
+style:
+  active: true
+  MaxLineLength:
+    active: true
+    maxLineLength: 120
+  MagicNumber:
+    active: true
+    ignoreNumbers:
+      - '-1'
+      - '0'
+      - '1'
+      - '2'
+  WildcardImport:
+    active: true
+  UseCheckOrError:
+    active: true
+  UseRequire:
+    active: true
+  ForbiddenMethodCall:
+    active: true
+    methods:
+      - reason: "Use structured logging instead of println"
+        value: "kotlin.io.println"
+      - reason: "Use structured logging instead of println"
+        value: "java.io.PrintStream.println"
+
+potential-bugs:
+  active: true
+  UnreachableCode:
+    active: true
+
