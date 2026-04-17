@@ -24,6 +24,9 @@ enum class ErrorType(
     // ==================== Blog ====================
     BLOG_NOT_FOUND(HttpStatus.NOT_FOUND, "BLOG_001", "Blog not found", LogLevel.WARN),
 
+    // ==================== Chat ====================
+    SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "CHAT_001", "Chat session not found", LogLevel.WARN),
+
     // ==================== Embed ====================
     EMBED_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "EMBED_001", "Embedding failed", LogLevel.ERROR),
 

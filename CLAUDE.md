@@ -18,7 +18,7 @@ Crawls Korean/international tech blogs, embeds content, and provides similarity 
 com.blog.ai
 ├── core
 │   ├── api
-│   │   ├── config          # AppConfig, CacheConfig, WebConfig
+│   │   ├── config          # AppConfig, CacheConfig, ChatClientConfig, WebConfig
 │   │   └── controller/v1
 │   │       ├── request      # Request DTOs (data class, validation)
 │   │       └── response     # Response DTOs (companion of())
@@ -26,8 +26,10 @@ com.blog.ai
 │   │   └── {context}        # Service, Command, Domain model
 │   │       ├── article      # ArticleAdminService, ArticleChunkService, ArticleEmbedService
 │   │       ├── blog         # BlogCacheService
+│   │       ├── chat         # ChatService
 │   │       ├── crawl        # CrawlService, CrawlAsyncService, ArticleSaveService, RssFeedParser
-│   │       └── similar      # SimilarService
+│   │       ├── similar      # SimilarService
+│   │       └── trending     # HnTrendingService
 │   └── support
 │       ├── error            # CoreException, ErrorType, ErrorMessage
 │       ├── properties       # @ConfigurationProperties
