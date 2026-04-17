@@ -36,7 +36,14 @@ class ArticleEmbedService(
 
                 val content = article.content?.takeIf { it.isNotBlank() }
                 if (content != null) {
-                    articleChunkService.saveChunks(articleId, article.title, content)
+                    val metadata = ChunkMetadata(
+                        articleId = articleId,
+                        title = article.title,
+                        company = article.blog.company,
+                        url = article.url,
+                        publishedAt = article.publishedAt,
+                    )
+                    articleChunkService.saveChunks(metadata, content)
                 }
 
                 embedded++
