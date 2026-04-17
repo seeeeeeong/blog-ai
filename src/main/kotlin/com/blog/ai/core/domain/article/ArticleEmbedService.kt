@@ -16,7 +16,7 @@ class ArticleEmbedService(
 
     companion object {
         private val log = KotlinLogging.logger {}
-        private const val DEFAULT_EMBED_LIMIT = 10
+        private const val DEFAULT_EMBED_LIMIT = 50
         const val MAX_EMBED_RETRIES = 5
     }
 

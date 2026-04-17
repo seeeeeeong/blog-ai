@@ -28,7 +28,7 @@ class AdminController(
     @PostMapping("/crawl")
     fun triggerCrawl(@RequestHeader("X-Admin-Key") adminKey: String): ApiResponse<String> {
         requireAdminKey(adminKey)
-        crawlAsyncService.crawlAndEmbed()
+        crawlAsyncService.crawlAsync()
         return ApiResponse.success("Crawl started")
     }
 
