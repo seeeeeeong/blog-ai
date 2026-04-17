@@ -28,13 +28,12 @@ com.blog.ai
 │   │       ├── blog         # BlogCacheService
 │   │       ├── chat         # ChatService
 │   │       ├── crawl        # CrawlService, CrawlAsyncService, ArticleSaveService, RssFeedParser
-│   │       ├── similar      # SimilarService
-│   │       └── trending     # HnTrendingService
+│   │       └── similar      # SimilarService
 │   └── support
 │       ├── error            # CoreException, ErrorType, ErrorMessage
 │       ├── properties       # @ConfigurationProperties
 │       └── response         # ApiResponse<T>, PageResponse, ResultType
-├── scheduler                # CrawlScheduler, EmbeddingRetryScheduler, HnTrendingScheduler
+├── scheduler                # CrawlScheduler, EmbeddingRetryScheduler
 └── storage
     └── {context}            # Entity, Repository, Extensions
 ```
