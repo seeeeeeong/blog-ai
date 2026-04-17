@@ -3,13 +3,12 @@ package com.blog.ai.core.api.controller.v1
 import com.blog.ai.core.api.controller.v1.response.ArticleAdminResponse
 import com.blog.ai.core.domain.article.ArticleAdminService
 import com.blog.ai.core.domain.article.ArticleEmbedService
-import com.blog.ai.core.domain.crawl.CrawlService
+import com.blog.ai.core.domain.crawl.CrawlAsyncService
 import com.blog.ai.core.support.error.CoreException
 import com.blog.ai.core.support.error.ErrorType
 import com.blog.ai.core.support.properties.AdminProperties
 import com.blog.ai.core.support.response.ApiResponse
 import com.blog.ai.core.support.response.PageResponse
-import org.springframework.scheduling.annotation.Async
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestHeader
@@ -21,34 +20,28 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/admin")
 class AdminController(
     private val adminProperties: AdminProperties,
-    private val crawlService: CrawlService,
+    private val crawlAsyncService: CrawlAsyncService,
     private val articleEmbedService: ArticleEmbedService,
     private val articleAdminService: ArticleAdminService,
 ) {
 
     @PostMapping("/crawl")
     fun triggerCrawl(@RequestHeader("X-Admin-Key") adminKey: String): ApiResponse<String> {
-        validateAdminKey(adminKey)
-        crawlAsync()
+        requireAdminKey(adminKey)
+        crawlAsyncService.crawlAndEmbed()
         return ApiResponse.success("Crawl started")
-    }
-
-    @Async
-    fun crawlAsync() {
-        crawlService.crawlAll()
-        articleEmbedService.embedPending()
     }
 
     @PostMapping("/embed")
     fun triggerEmbed(@RequestHeader("X-Admin-Key") adminKey: String): ApiResponse<Int> {
-        validateAdminKey(adminKey)
+        requireAdminKey(adminKey)
         val count = articleEmbedService.embedPending()
         return ApiResponse.success(count)
     }
 
     @PostMapping("/embed/retry")
     fun retryEmbed(@RequestHeader("X-Admin-Key") adminKey: String): ApiResponse<Int> {
-        validateAdminKey(adminKey)
+        requireAdminKey(adminKey)
         articleEmbedService.clearRetriableErrors()
         val count = articleEmbedService.embedPending()
         return ApiResponse.success(count)
@@ -60,7 +53,7 @@ class AdminController(
         @RequestParam(defaultValue = "20") limit: Int,
         @RequestParam(defaultValue = "0") offset: Int,
     ): ApiResponse<PageResponse<ArticleAdminResponse>> {
-        validateAdminKey(adminKey)
+        requireAdminKey(adminKey)
         val articles = articleAdminService.findArticlesForAdmin(limit + 1, offset)
         val hasNext = articles.size > limit
         val response = articles.take(limit).map(ArticleAdminResponse.Companion::of)
@@ -69,7 +62,7 @@ class AdminController(
 
     @GetMapping("/stats")
     fun getStats(@RequestHeader("X-Admin-Key") adminKey: String): ApiResponse<Map<String, Any>> {
-        validateAdminKey(adminKey)
+        requireAdminKey(adminKey)
         return ApiResponse.success(
             mapOf(
                 "totalArticles" to articleAdminService.countTotal(),
@@ -78,9 +71,8 @@ class AdminController(
         )
     }
 
-    private fun validateAdminKey(key: String) {
-        val isValid = key == adminProperties.apiKey
-        if (isValid) return
+    private fun requireAdminKey(key: String) {
+        if (key == adminProperties.apiKey) return
         throw CoreException(ErrorType.UNAUTHORIZED)
     }
 }

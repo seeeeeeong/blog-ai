@@ -1,8 +1,10 @@
 package com.blog.ai.core.domain.crawl
 
+import com.blog.ai.core.support.error.CoreException
+import com.blog.ai.core.support.error.ErrorType
 import com.blog.ai.storage.article.ArticleEntity
 import com.blog.ai.storage.article.ArticleRepository
-import com.blog.ai.storage.blog.BlogEntity
+import com.blog.ai.storage.blog.BlogRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -12,6 +14,7 @@ import java.time.ZoneOffset
 @Service
 class ArticleSaveService(
     private val articleRepository: ArticleRepository,
+    private val blogRepository: BlogRepository,
 ) {
 
     companion object {
@@ -19,7 +22,10 @@ class ArticleSaveService(
     }
 
     @Transactional
-    fun saveNewArticles(blog: BlogEntity, parsed: List<ParsedArticle>): Int {
+    fun saveNewArticles(blogId: Long, parsed: List<ParsedArticle>): Int {
+        val blog = blogRepository.findById(blogId)
+            .orElseThrow { CoreException(ErrorType.BLOG_NOT_FOUND) }
+
         var saved = 0
 
         for (article in parsed) {

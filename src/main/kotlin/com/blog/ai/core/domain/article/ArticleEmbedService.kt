@@ -26,23 +26,24 @@ class ArticleEmbedService(
         var embedded = 0
 
         for (article in articles) {
+            val articleId = requireNotNull(article.id)
             try {
                 val text = "${article.title} ${article.content ?: ""}"
                 val response = embeddingModel.embed(text)
                 val vector = response.joinToString(",", "[", "]")
 
-                articleRepository.updateEmbedding(article.id, vector, text)
+                articleRepository.updateEmbedding(articleId, vector, text)
 
                 val content = article.content?.takeIf { it.isNotBlank() }
                 if (content != null) {
-                    articleChunkService.saveChunks(article.id, article.title, content)
+                    articleChunkService.saveChunks(articleId, article.title, content)
                 }
 
                 embedded++
-                log.debug { "Embedding completed: id=${article.id}, title=${article.title}" }
+                log.debug { "Embedding completed: id=$articleId, title=${article.title}" }
             } catch (e: Exception) {
-                log.error(e) { "Embedding failed: id=${article.id}" }
-                articleRepository.updateEmbedError(article.id, e.message ?: "unknown")
+                log.error(e) { "Embedding failed: id=$articleId" }
+                articleRepository.updateEmbedError(articleId, e.message ?: "unknown")
             }
         }
 

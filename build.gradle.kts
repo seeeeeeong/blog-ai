@@ -8,7 +8,7 @@ plugins {
     id("org.springframework.boot") version "3.5.9"
     id("io.spring.dependency-management") version "1.1.7"
     id("org.jlleitschuh.gradle.ktlint") version "12.1.0"
-    id("io.gitlab.arturbosch.detekt") version "1.23.6"
+    id("io.gitlab.arturbosch.detekt") version "1.23.7"
 }
 
 group = "com.blog"
@@ -75,7 +75,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
-    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.6")
+    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.8")
 }
 
 tasks.withType<KotlinCompile>().configureEach {
@@ -89,7 +89,7 @@ tasks.withType<Test>().configureEach {
 }
 
 ktlint {
-    version.set("1.2.1")
+    version.set("1.5.0")
     ignoreFailures.set(false)
 }
 

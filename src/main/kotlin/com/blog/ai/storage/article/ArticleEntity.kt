@@ -10,23 +10,29 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import org.hibernate.Hibernate
 import java.time.OffsetDateTime
 
 @Entity
 @Table(name = "articles")
 class ArticleEntity(
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long? = null,
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "blog_id", nullable = false)
-    val blog: BlogEntity = BlogEntity(),
+    val blog: BlogEntity,
 
     @Column(nullable = false, columnDefinition = "TEXT")
-    val title: String = "",
+    val title: String,
 
     @Column(nullable = false, columnDefinition = "TEXT")
-    val url: String = "",
+    val url: String,
 
     @Column(name = "url_hash", nullable = false, length = 64)
-    val urlHash: String = "",
+    val urlHash: String,
 
     @Column(columnDefinition = "TEXT")
     val content: String? = null,
@@ -37,16 +43,27 @@ class ArticleEntity(
     @Column(name = "crawled_at", nullable = false, updatable = false)
     val crawledAt: OffsetDateTime = OffsetDateTime.now(),
 
+    embedError: String? = null,
+    embedRetryCount: Int = 0,
+
+) {
+
     @Column(name = "embed_error", columnDefinition = "TEXT")
-    var embedError: String? = null,
+    var embedError: String? = embedError
+        protected set
 
     @Column(name = "embed_retry_count", nullable = false)
-    var embedRetryCount: Int = 0,
+    var embedRetryCount: Int = embedRetryCount
+        protected set
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L,
-) {
+    fun markEmbedError(error: String) {
+        this.embedError = error
+        this.embedRetryCount++
+    }
+
+    fun clearEmbedError() {
+        this.embedError = null
+    }
 
     companion object {
         fun create(
@@ -70,4 +87,13 @@ class ArticleEntity(
             )
         }
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || Hibernate.getClass(this) != Hibernate.getClass(other)) return false
+        other as ArticleEntity
+        return id != null && id == other.id
+    }
+
+    override fun hashCode(): Int = Hibernate.getClass(this).hashCode()
 }
