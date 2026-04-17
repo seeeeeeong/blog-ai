@@ -23,13 +23,6 @@ class CacheConfig : CachingConfigurer {
                     .maximumSize(100)
                     .build(),
             )
-            registerCustomCache(
-                "similar",
-                Caffeine.newBuilder()
-                    .expireAfterWrite(Duration.ofHours(1))
-                    .maximumSize(200)
-                    .build(),
-            )
         }
     }
 }
