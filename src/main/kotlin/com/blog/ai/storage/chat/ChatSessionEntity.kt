@@ -4,7 +4,6 @@ import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
-import org.hibernate.Hibernate
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -23,13 +22,4 @@ class ChatSessionEntity(
     companion object {
         fun create(): ChatSessionEntity = ChatSessionEntity()
     }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || Hibernate.getClass(this) != Hibernate.getClass(other)) return false
-        other as ChatSessionEntity
-        return id == other.id
-    }
-
-    override fun hashCode(): Int = Hibernate.getClass(this).hashCode()
 }

@@ -10,7 +10,6 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
-import org.hibernate.Hibernate
 import java.time.OffsetDateTime
 
 @Entity
@@ -87,13 +86,4 @@ class ArticleEntity(
             )
         }
     }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || Hibernate.getClass(this) != Hibernate.getClass(other)) return false
-        other as ArticleEntity
-        return id != null && id == other.id
-    }
-
-    override fun hashCode(): Int = Hibernate.getClass(this).hashCode()
 }
