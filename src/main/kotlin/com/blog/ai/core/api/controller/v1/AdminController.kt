@@ -4,6 +4,7 @@ import com.blog.ai.core.api.controller.v1.response.ArticleAdminResponse
 import com.blog.ai.core.domain.article.ArticleAdminService
 import com.blog.ai.core.domain.article.ArticleEmbedService
 import com.blog.ai.core.domain.crawl.CrawlAsyncService
+import com.blog.ai.core.domain.post.BlogPostEmbedService
 import com.blog.ai.core.support.error.CoreException
 import com.blog.ai.core.support.error.ErrorType
 import com.blog.ai.core.support.properties.AdminProperties
@@ -23,6 +24,7 @@ class AdminController(
     private val crawlAsyncService: CrawlAsyncService,
     private val articleEmbedService: ArticleEmbedService,
     private val articleAdminService: ArticleAdminService,
+    private val blogPostEmbedService: BlogPostEmbedService,
 ) {
     @PostMapping("/crawl")
     fun triggerCrawl(
@@ -49,6 +51,16 @@ class AdminController(
         requireAdminKey(adminKey)
         articleEmbedService.clearRetriableErrors()
         val count = articleEmbedService.embedPending()
+        return ApiResponse.success(count)
+    }
+
+    @PostMapping("/blog-posts/embed")
+    fun triggerBlogPostEmbed(
+        @RequestHeader("X-Admin-Key") adminKey: String,
+    ): ApiResponse<Int> {
+        requireAdminKey(adminKey)
+        blogPostEmbedService.clearRetriableErrors()
+        val count = blogPostEmbedService.embedPending()
         return ApiResponse.success(count)
     }
 

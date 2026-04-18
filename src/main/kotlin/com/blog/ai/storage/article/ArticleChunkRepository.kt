@@ -10,11 +10,10 @@ class ArticleChunkRepository(
 ) {
     fun saveChunk(command: SaveChunkCommand) {
         jdbcTemplate.update(
-            "INSERT INTO article_chunks (article_id, chunk_index, content, embedding) VALUES (?, ?, ?, CAST(? AS vector))",
+            "INSERT INTO article_chunks (article_id, chunk_index, content) VALUES (?, ?, ?)",
             command.articleId,
             command.chunkIndex,
             command.content,
-            command.embedding,
         )
     }
 

@@ -52,7 +52,6 @@ class ArticleChunkService(
                     articleId = metadata.articleId,
                     chunkIndex = index,
                     content = chunk,
-                    embedding = "",
                 ),
             )
         }
