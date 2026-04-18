@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service
 class CrawlAsyncService(
     private val crawlService: CrawlService,
 ) {
-
     @Async
     fun crawlAsync() {
         crawlService.crawlAll()

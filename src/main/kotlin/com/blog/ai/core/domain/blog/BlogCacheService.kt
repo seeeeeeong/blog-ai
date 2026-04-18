@@ -12,11 +12,8 @@ import org.springframework.transaction.annotation.Transactional
 class BlogCacheService(
     private val blogRepository: BlogRepository,
 ) {
-
     @Cacheable("blogs")
-    fun getActiveBlogs(): List<Blog> {
-        return blogRepository.findAllByActiveTrue().map { it.toBlog() }
-    }
+    fun getActiveBlogs(): List<Blog> = blogRepository.findAllByActiveTrue().map { it.toBlog() }
 
     @CacheEvict("blogs", allEntries = true)
     fun evictAll() {

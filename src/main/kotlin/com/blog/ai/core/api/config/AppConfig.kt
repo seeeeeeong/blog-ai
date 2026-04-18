@@ -7,11 +7,10 @@ import org.springframework.context.annotation.Configuration
 
 @Configuration
 class AppConfig {
-
     @Bean
-    fun kotlinModule(): KotlinModule {
-        return KotlinModule.Builder()
+    fun kotlinModule(): KotlinModule =
+        KotlinModule
+            .Builder()
             .enable(KotlinFeature.NullIsSameAsDefault)
             .build()
-    }
 }

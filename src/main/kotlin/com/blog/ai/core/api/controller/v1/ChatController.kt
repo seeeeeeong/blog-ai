@@ -17,7 +17,6 @@ import java.util.UUID
 class ChatController(
     private val chatService: ChatService,
 ) {
-
     @GetMapping("/session")
     fun createSession(): ApiResponse<ChatSessionResponse> {
         val sessionId = chatService.createSession()
@@ -28,7 +27,5 @@ class ChatController(
     fun chat(
         @RequestParam question: String,
         @RequestParam sessionId: UUID,
-    ): Flux<ServerSentEvent<String>> {
-        return chatService.chat(sessionId, question)
-    }
+    ): Flux<ServerSentEvent<String>> = chatService.chat(sessionId, question)
 }

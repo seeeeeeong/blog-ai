@@ -11,7 +11,6 @@ import org.springframework.context.annotation.Configuration
 
 @Configuration
 class ChatClientConfig {
-
     companion object {
         private const val RAG_TOP_K = 5
     }
@@ -22,17 +21,23 @@ class ChatClientConfig {
         vectorStore: VectorStore,
         chatMemory: ChatMemory,
     ): ChatClient {
-        val retriever = VectorStoreDocumentRetriever.builder()
-            .vectorStore(vectorStore)
-            .topK(RAG_TOP_K)
-            .build()
+        val retriever =
+            VectorStoreDocumentRetriever
+                .builder()
+                .vectorStore(vectorStore)
+                .topK(RAG_TOP_K)
+                .build()
 
-        val ragAdvisor = RetrievalAugmentationAdvisor.builder()
-            .documentRetriever(retriever)
-            .build()
+        val ragAdvisor =
+            RetrievalAugmentationAdvisor
+                .builder()
+                .documentRetriever(retriever)
+                .build()
 
-        val memoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory)
-            .build()
+        val memoryAdvisor =
+            MessageChatMemoryAdvisor
+                .builder(chatMemory)
+                .build()
 
         return chatClientBuilder
             .defaultSystem(
@@ -42,8 +47,7 @@ class ChatClientConfig {
                 Always include sources (company name, article title, URL) in your responses.
                 Respond in Korean, but use technical terms as-is.
                 """.trimIndent(),
-            )
-            .defaultAdvisors(ragAdvisor, memoryAdvisor)
+            ).defaultAdvisors(ragAdvisor, memoryAdvisor)
             .build()
     }
 }

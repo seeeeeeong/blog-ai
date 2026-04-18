@@ -9,16 +9,14 @@ data class ApiResponse<T>(
     val error: ErrorMessage? = null,
 ) {
     companion object {
-        fun success(): ApiResponse<Any> {
-            return ApiResponse(ResultType.SUCCESS, null, null)
-        }
+        fun success(): ApiResponse<Any> = ApiResponse(ResultType.SUCCESS, null, null)
 
-        fun <S> success(data: S): ApiResponse<S> {
-            return ApiResponse(ResultType.SUCCESS, data, null)
-        }
+        fun <S> success(data: S): ApiResponse<S> = ApiResponse(ResultType.SUCCESS, data, null)
 
-        fun <S> error(errorType: ErrorType, data: Any? = null, message: String? = null): ApiResponse<S> {
-            return ApiResponse(ResultType.ERROR, null, ErrorMessage(errorType, data, message))
-        }
+        fun <S> error(
+            errorType: ErrorType,
+            data: Any? = null,
+            message: String? = null,
+        ): ApiResponse<S> = ApiResponse(ResultType.ERROR, null, ErrorMessage(errorType, data, message))
     }
 }

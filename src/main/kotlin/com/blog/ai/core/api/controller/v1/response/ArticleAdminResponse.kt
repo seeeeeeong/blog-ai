@@ -14,15 +14,16 @@ data class ArticleAdminResponse(
     val crawledAt: OffsetDateTime,
 ) {
     companion object {
-        fun of(article: ArticleAdmin) = ArticleAdminResponse(
-            id = article.id,
-            title = article.title,
-            url = article.url,
-            urlHash = article.urlHash,
-            company = article.company,
-            embedded = article.embedded,
-            embedError = article.embedError,
-            crawledAt = article.crawledAt,
-        )
+        fun of(article: ArticleAdmin) =
+            ArticleAdminResponse(
+                id = article.id,
+                title = article.title,
+                url = article.url,
+                urlHash = article.urlHash,
+                company = article.company,
+                embedded = article.embedded,
+                embedError = article.embedError,
+                crawledAt = article.crawledAt,
+            )
     }
 }

@@ -10,9 +10,11 @@ import java.time.OffsetDateTime
 class ArticleAdminService(
     private val articleRepository: ArticleRepository,
 ) {
-
-    fun findArticlesForAdmin(limit: Int, offset: Int): List<ArticleAdmin> {
-        return articleRepository.findArticlesForAdmin(limit, offset).map { row ->
+    fun findArticlesForAdmin(
+        limit: Int,
+        offset: Int,
+    ): List<ArticleAdmin> =
+        articleRepository.findArticlesForAdmin(limit, offset).map { row ->
             ArticleAdmin(
                 id = (row[0] as Number).toLong(),
                 title = row[1] as String,
@@ -24,13 +26,8 @@ class ArticleAdminService(
                 crawledAt = row[7] as OffsetDateTime,
             )
         }
-    }
 
-    fun countTotal(): Long {
-        return articleRepository.count()
-    }
+    fun countTotal(): Long = articleRepository.count()
 
-    fun countUnembedded(): Long {
-        return articleRepository.countUnembedded()
-    }
+    fun countUnembedded(): Long = articleRepository.countUnembedded()
 }

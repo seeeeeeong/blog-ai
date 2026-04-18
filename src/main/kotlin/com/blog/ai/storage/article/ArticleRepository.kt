@@ -5,7 +5,6 @@ import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 
 interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
-
     fun existsByUrlHash(urlHash: String): Boolean
 
     @Query(
@@ -25,18 +24,26 @@ interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
         """,
         nativeQuery = true,
     )
-    fun updateEmbedding(id: Long, embedding: String, searchText: String)
+    fun updateEmbedding(
+        id: Long,
+        embedding: String,
+        searchText: String,
+    )
 
     @Modifying
     @Query(
         value = "UPDATE articles SET embed_error = :error, embed_retry_count = embed_retry_count + 1 WHERE id = :id",
         nativeQuery = true,
     )
-    fun updateEmbedError(id: Long, error: String)
+    fun updateEmbedError(
+        id: Long,
+        error: String,
+    )
 
     @Modifying
     @Query(
-        value = "UPDATE articles SET embed_error = NULL WHERE embed_error IS NOT NULL AND embed_retry_count <= :maxRetries",
+        value = "UPDATE articles SET embed_error = NULL " +
+            "WHERE embed_error IS NOT NULL AND embed_retry_count <= :maxRetries",
         nativeQuery = true,
     )
     fun clearRetriableEmbedErrors(maxRetries: Int): Int
@@ -53,7 +60,10 @@ interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
         """,
         nativeQuery = true,
     )
-    fun findSimilarByVector(vector: String, limit: Int): List<Array<Any>>
+    fun findSimilarByVector(
+        vector: String,
+        limit: Int,
+    ): List<Array<Any>>
 
     @Query(
         value = """
@@ -66,7 +76,10 @@ interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
         """,
         nativeQuery = true,
     )
-    fun findArticlesForAdmin(limit: Int, offset: Int): List<Array<Any>>
+    fun findArticlesForAdmin(
+        limit: Int,
+        offset: Int,
+    ): List<Array<Any>>
 
     @Query("SELECT COUNT(*) FROM articles WHERE embedding IS NULL AND embed_error IS NULL", nativeQuery = true)
     fun countUnembedded(): Long

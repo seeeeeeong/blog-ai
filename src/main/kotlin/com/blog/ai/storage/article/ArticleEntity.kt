@@ -15,38 +15,27 @@ import java.time.OffsetDateTime
 @Entity
 @Table(name = "articles")
 class ArticleEntity(
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long? = null,
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "blog_id", nullable = false)
     val blog: BlogEntity,
-
     @Column(nullable = false, columnDefinition = "TEXT")
     val title: String,
-
     @Column(nullable = false, columnDefinition = "TEXT")
     val url: String,
-
     @Column(name = "url_hash", nullable = false, length = 64)
     val urlHash: String,
-
     @Column(columnDefinition = "TEXT")
     val content: String? = null,
-
     @Column(name = "published_at")
     val publishedAt: OffsetDateTime? = null,
-
     @Column(name = "crawled_at", nullable = false, updatable = false)
     val crawledAt: OffsetDateTime = OffsetDateTime.now(),
-
     embedError: String? = null,
     embedRetryCount: Int = 0,
-
 ) {
-
     @Column(name = "embed_error", columnDefinition = "TEXT")
     var embedError: String? = embedError
         protected set

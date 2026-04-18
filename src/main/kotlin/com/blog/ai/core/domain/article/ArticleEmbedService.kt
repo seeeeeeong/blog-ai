@@ -13,7 +13,6 @@ class ArticleEmbedService(
     private val embeddingModel: EmbeddingModel,
     private val articleChunkService: ArticleChunkService,
 ) {
-
     companion object {
         private val log = KotlinLogging.logger {}
         private const val DEFAULT_EMBED_LIMIT = 50
@@ -36,13 +35,14 @@ class ArticleEmbedService(
 
                 val content = article.content?.takeIf { it.isNotBlank() }
                 if (content != null) {
-                    val metadata = ChunkMetadata(
-                        articleId = articleId,
-                        title = article.title,
-                        company = article.blog.company,
-                        url = article.url,
-                        publishedAt = article.publishedAt,
-                    )
+                    val metadata =
+                        ChunkMetadata(
+                            articleId = articleId,
+                            title = article.title,
+                            company = article.blog.company,
+                            url = article.url,
+                            publishedAt = article.publishedAt,
+                        )
                     articleChunkService.saveChunks(metadata, content)
                 }
 
@@ -61,7 +61,6 @@ class ArticleEmbedService(
     }
 
     @Transactional
-    fun clearRetriableErrors(maxRetries: Int = MAX_EMBED_RETRIES): Int {
-        return articleRepository.clearRetriableEmbedErrors(maxRetries)
-    }
+    fun clearRetriableErrors(maxRetries: Int = MAX_EMBED_RETRIES): Int =
+        articleRepository.clearRetriableEmbedErrors(maxRetries)
 }

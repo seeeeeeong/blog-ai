@@ -6,7 +6,6 @@ class CoreException(
     override val message: String = errorType.message,
     override val cause: Throwable? = null,
 ) : RuntimeException(message, cause) {
-
     constructor(errorType: ErrorType, cause: Throwable) : this(
         errorType = errorType,
         data = null,

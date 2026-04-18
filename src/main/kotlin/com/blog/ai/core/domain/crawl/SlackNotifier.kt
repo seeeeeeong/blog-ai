@@ -9,7 +9,6 @@ import org.springframework.web.client.RestClient
 class SlackNotifier(
     private val slackProperties: SlackProperties,
 ) {
-
     companion object {
         private val log = KotlinLogging.logger {}
     }
@@ -18,7 +17,8 @@ class SlackNotifier(
         if (slackProperties.webhookUrl.isBlank()) return
 
         try {
-            RestClient.create()
+            RestClient
+                .create()
                 .post()
                 .uri(slackProperties.webhookUrl)
                 .body(mapOf("text" to message))

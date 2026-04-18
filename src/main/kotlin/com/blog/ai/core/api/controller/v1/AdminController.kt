@@ -24,23 +24,28 @@ class AdminController(
     private val articleEmbedService: ArticleEmbedService,
     private val articleAdminService: ArticleAdminService,
 ) {
-
     @PostMapping("/crawl")
-    fun triggerCrawl(@RequestHeader("X-Admin-Key") adminKey: String): ApiResponse<String> {
+    fun triggerCrawl(
+        @RequestHeader("X-Admin-Key") adminKey: String,
+    ): ApiResponse<String> {
         requireAdminKey(adminKey)
         crawlAsyncService.crawlAsync()
         return ApiResponse.success("Crawl started")
     }
 
     @PostMapping("/embed")
-    fun triggerEmbed(@RequestHeader("X-Admin-Key") adminKey: String): ApiResponse<Int> {
+    fun triggerEmbed(
+        @RequestHeader("X-Admin-Key") adminKey: String,
+    ): ApiResponse<Int> {
         requireAdminKey(adminKey)
         val count = articleEmbedService.embedPending()
         return ApiResponse.success(count)
     }
 
     @PostMapping("/embed/retry")
-    fun retryEmbed(@RequestHeader("X-Admin-Key") adminKey: String): ApiResponse<Int> {
+    fun retryEmbed(
+        @RequestHeader("X-Admin-Key") adminKey: String,
+    ): ApiResponse<Int> {
         requireAdminKey(adminKey)
         articleEmbedService.clearRetriableErrors()
         val count = articleEmbedService.embedPending()
@@ -61,7 +66,9 @@ class AdminController(
     }
 
     @GetMapping("/stats")
-    fun getStats(@RequestHeader("X-Admin-Key") adminKey: String): ApiResponse<Map<String, Any>> {
+    fun getStats(
+        @RequestHeader("X-Admin-Key") adminKey: String,
+    ): ApiResponse<Map<String, Any>> {
         requireAdminKey(adminKey)
         return ApiResponse.success(
             mapOf(

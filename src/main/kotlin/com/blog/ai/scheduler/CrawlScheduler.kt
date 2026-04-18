@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component
 class CrawlScheduler(
     private val crawlService: CrawlService,
 ) {
-
     companion object {
         private val log = KotlinLogging.logger {}
     }

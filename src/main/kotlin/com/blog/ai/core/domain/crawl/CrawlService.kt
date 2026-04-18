@@ -11,7 +11,6 @@ class CrawlService(
     private val articleSaveService: ArticleSaveService,
     private val slackNotifier: SlackNotifier,
 ) {
-
     companion object {
         private val log = KotlinLogging.logger {}
     }

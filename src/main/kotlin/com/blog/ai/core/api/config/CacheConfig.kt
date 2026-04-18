@@ -12,17 +12,16 @@ import java.time.Duration
 @Configuration
 @EnableCaching
 class CacheConfig : CachingConfigurer {
-
     @Bean
-    override fun cacheManager(): CacheManager {
-        return CaffeineCacheManager().apply {
+    override fun cacheManager(): CacheManager =
+        CaffeineCacheManager().apply {
             registerCustomCache(
                 "blogs",
-                Caffeine.newBuilder()
+                Caffeine
+                    .newBuilder()
                     .expireAfterWrite(Duration.ofHours(6))
                     .maximumSize(100)
                     .build(),
             )
         }
-    }
 }

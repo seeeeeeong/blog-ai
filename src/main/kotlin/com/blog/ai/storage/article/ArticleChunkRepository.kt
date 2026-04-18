@@ -8,11 +8,13 @@ import org.springframework.stereotype.Repository
 class ArticleChunkRepository(
     private val jdbcTemplate: JdbcTemplate,
 ) {
-
     fun saveChunk(command: SaveChunkCommand) {
         jdbcTemplate.update(
             "INSERT INTO article_chunks (article_id, chunk_index, content, embedding) VALUES (?, ?, ?, CAST(? AS vector))",
-            command.articleId, command.chunkIndex, command.content, command.embedding,
+            command.articleId,
+            command.chunkIndex,
+            command.content,
+            command.embedding,
         )
     }
 

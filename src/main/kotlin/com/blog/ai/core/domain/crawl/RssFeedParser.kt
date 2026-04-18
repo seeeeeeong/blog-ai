@@ -11,7 +11,6 @@ import java.security.MessageDigest
 class RssFeedParser(
     private val contentCleaner: ContentCleaner,
 ) {
-
     companion object {
         private val log = KotlinLogging.logger {}
     }
@@ -22,8 +21,9 @@ class RssFeedParser(
             feed.entries.mapNotNull { entry ->
                 val url = entry.link ?: return@mapNotNull null
                 val title = entry.title ?: return@mapNotNull null
-                val rawContent = entry.contents?.firstOrNull()?.value
-                    ?: entry.description?.value
+                val rawContent =
+                    entry.contents?.firstOrNull()?.value
+                        ?: entry.description?.value
                 ParsedArticle(
                     title = title.trim(),
                     url = url.trim(),

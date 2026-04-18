@@ -17,7 +17,6 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 @RestControllerAdvice
 class ApiControllerAdvice {
-
     companion object {
         private val log = KotlinLogging.logger {}
     }

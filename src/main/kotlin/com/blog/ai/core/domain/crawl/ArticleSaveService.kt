@@ -16,15 +16,19 @@ class ArticleSaveService(
     private val articleRepository: ArticleRepository,
     private val blogRepository: BlogRepository,
 ) {
-
     companion object {
         private val log = KotlinLogging.logger {}
     }
 
     @Transactional
-    fun saveNewArticles(blogId: Long, parsed: List<ParsedArticle>): Int {
-        val blog = blogRepository.findById(blogId)
-            .orElseThrow { CoreException(ErrorType.BLOG_NOT_FOUND) }
+    fun saveNewArticles(
+        blogId: Long,
+        parsed: List<ParsedArticle>,
+    ): Int {
+        val blog =
+            blogRepository
+                .findById(blogId)
+                .orElseThrow { CoreException(ErrorType.BLOG_NOT_FOUND) }
 
         var saved = 0
 

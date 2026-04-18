@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component
 class EmbeddingScheduler(
     private val articleEmbedService: ArticleEmbedService,
 ) {
-
     companion object {
         private val log = KotlinLogging.logger {}
         private const val INTERVAL_MS = 1_800_000L
