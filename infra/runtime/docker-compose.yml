@@ -1,0 +1,83 @@
+services:
+  blog-ai:
+    image: ${BLOG_AI_IMAGE}
+    container_name: blog-ai
+    restart: always
+    ports:
+      - "8081:8081"
+    env_file:
+      - /opt/services/env/blog-ai.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - services
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8081/actuator/health/liveness"]
+      interval: 10s
+      timeout: 10s
+      retries: 18
+      start_period: 90s
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: blog-ai-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: blog_ai
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - /opt/services/data/postgres:/var/lib/postgresql/data
+    networks:
+      - services
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d blog_ai"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: blog-ai-node-exporter
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    networks:
+      - services
+    mem_limit: 24m
+
+  alloy:
+    image: grafana/alloy:v1.5.1
+    container_name: blog-ai-alloy
+    restart: always
+    environment:
+      - PROMETHEUS_REMOTE_WRITE_URL=${PROMETHEUS_REMOTE_WRITE_URL}
+      - PROMETHEUS_USERNAME=${PROMETHEUS_USERNAME}
+      - PROMETHEUS_PASSWORD=${PROMETHEUS_PASSWORD}
+    volumes:
+      - /opt/services/config.alloy:/etc/alloy/config.alloy:ro
+      - /opt/services/data/alloy:/var/lib/alloy/data
+    command:
+      - run
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    networks:
+      - services
+    mem_limit: 128m
+
+networks:
+  services:
+    driver: bridge
