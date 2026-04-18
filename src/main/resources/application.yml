@@ -77,10 +77,6 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
-  jpa:
-    hibernate:
-      ddl-auto: update
-
 logging:
   level:
     com.blog.ai: INFO
