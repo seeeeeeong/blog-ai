@@ -1,0 +1,36 @@
+spring:
+  ai:
+    openai:
+      api-key: test-dummy-key
+      embedding:
+        options:
+          model: text-embedding-3-small
+      chat:
+        options:
+          model: gpt-4o-mini
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+admin:
+  api-key: test-admin
+
+internal:
+  api-key: test-internal
+
+slack:
+  webhook-url: ""
+
+cors:
+  allowed-origins: http://localhost
+
+logging:
+  level:
+    com.blog.ai: INFO
+    org.hibernate: WARN
+    org.springframework.ai: WARN

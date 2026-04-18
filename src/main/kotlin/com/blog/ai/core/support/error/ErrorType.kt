@@ -32,4 +32,7 @@ enum class ErrorType(
 
     // ==================== Crawl ====================
     CRAWL_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CRAWL_001", "Crawl failed", LogLevel.ERROR),
+
+    // ==================== BlogPost ====================
+    BLOG_POST_INVALID_PAYLOAD(HttpStatus.BAD_REQUEST, "POST_001", "Invalid blog post payload"),
 }
