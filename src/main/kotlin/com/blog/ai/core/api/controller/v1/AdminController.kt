@@ -1,10 +1,12 @@
 package com.blog.ai.core.api.controller.v1
 
 import com.blog.ai.core.api.controller.v1.response.ArticleAdminResponse
+import com.blog.ai.core.api.controller.v1.response.SimilarDiagnoseResponse
 import com.blog.ai.core.domain.article.ArticleAdminService
 import com.blog.ai.core.domain.article.ArticleEmbedService
 import com.blog.ai.core.domain.crawl.CrawlAsyncService
 import com.blog.ai.core.domain.post.BlogPostEmbedService
+import com.blog.ai.core.domain.post.BlogPostSimilarService
 import com.blog.ai.core.support.error.CoreException
 import com.blog.ai.core.support.error.ErrorType
 import com.blog.ai.core.support.properties.AdminProperties
@@ -25,6 +27,7 @@ class AdminController(
     private val articleEmbedService: ArticleEmbedService,
     private val articleAdminService: ArticleAdminService,
     private val blogPostEmbedService: BlogPostEmbedService,
+    private val blogPostSimilarService: BlogPostSimilarService,
 ) {
     @PostMapping("/crawl")
     fun triggerCrawl(
@@ -75,6 +78,17 @@ class AdminController(
         val hasNext = articles.size > limit
         val response = articles.take(limit).map(ArticleAdminResponse.Companion::of)
         return ApiResponse.success(PageResponse(response, hasNext))
+    }
+
+    @GetMapping("/similar/diagnose")
+    fun diagnoseSimilar(
+        @RequestHeader("X-Admin-Key") adminKey: String,
+        @RequestParam postId: String,
+        @RequestParam(defaultValue = "10") limit: Int,
+    ): ApiResponse<SimilarDiagnoseResponse> {
+        requireAdminKey(adminKey)
+        val result = blogPostSimilarService.diagnose(postId, limit)
+        return ApiResponse.success(SimilarDiagnoseResponse.of(result))
     }
 
     @GetMapping("/stats")

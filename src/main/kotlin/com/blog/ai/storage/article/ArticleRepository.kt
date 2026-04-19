@@ -68,6 +68,23 @@ interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
 
     @Query(
         value = """
+            SELECT a.id, a.title, a.url, b.company,
+                   ts_rank(a.search_vector, plainto_tsquery('simple', :queryText)) AS score
+            FROM articles a
+            JOIN blogs b ON b.id = a.blog_id
+            WHERE a.search_vector @@ plainto_tsquery('simple', :queryText)
+            ORDER BY score DESC
+            LIMIT :limit
+        """,
+        nativeQuery = true,
+    )
+    fun findSimilarByBm25(
+        queryText: String,
+        limit: Int,
+    ): List<Array<Any>>
+
+    @Query(
+        value = """
             WITH q AS (
                 SELECT CAST(:vector AS vector) AS v,
                        plainto_tsquery('simple', :queryText) AS ts
