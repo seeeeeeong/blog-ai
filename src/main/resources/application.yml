@@ -63,6 +63,13 @@ internal:
 slack:
   webhook-url: ${SLACK_WEBHOOK_URL:}
 
+sentry:
+  dsn: ${SENTRY_DSN:}
+  environment: ${SENTRY_ENVIRONMENT:prod}
+  release: ${APP_VERSION:unknown}
+  send-default-pii: false
+  traces-sample-rate: 0.0
+
 management:
   endpoints:
     web:

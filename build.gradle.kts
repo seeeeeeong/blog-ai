@@ -51,6 +51,10 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
+
+    // Sentry
+    implementation("io.sentry:sentry-spring-boot-starter-jakarta:7.14.0")
+    implementation("io.sentry:sentry-logback:7.14.0")
     implementation("org.springframework.boot:spring-boot-starter-cache")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
