@@ -38,11 +38,6 @@ spring:
       chat:
         options:
           model: gpt-4o-mini
-    chat:
-      memory:
-        repository:
-          jdbc:
-            initialize-schema: always
     vectorstore:
       pgvector:
         initialize-schema: true
