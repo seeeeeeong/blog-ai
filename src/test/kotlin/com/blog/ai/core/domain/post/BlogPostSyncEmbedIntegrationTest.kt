@@ -112,7 +112,7 @@ class BlogPostSyncEmbedIntegrationTest
             assertNull(embeddingText(externalId))
 
             val vector = FloatArray(1536) { 0.5f }.joinToString(",", "[", "]")
-            val updated = inTx { repository.updateEmbedding(staleId, vector, "stale text", staleHash) }
+            val updated = inTx { repository.updateEmbedding(staleId, vector, "T", "stale text", staleHash) }
             assertEquals(0, updated)
             assertNull(embeddingText(externalId))
 
@@ -130,7 +130,7 @@ class BlogPostSyncEmbedIntegrationTest
             syncService.softDelete(externalId, time(2), "d1")
 
             val vector = FloatArray(1536) { 0.3f }.joinToString(",", "[", "]")
-            val updated = inTx { repository.updateEmbedding(snapshot.id!!, vector, "body", snapshot.contentHash) }
+            val updated = inTx { repository.updateEmbedding(snapshot.id!!, vector, "T", "body", snapshot.contentHash) }
             assertEquals(0, updated)
             assertNull(embeddingText(externalId))
             assertTrue(repository.findByExternalId(externalId)!!.isDeleted)

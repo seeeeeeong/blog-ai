@@ -108,7 +108,9 @@ interface BlogPostRepository : JpaRepository<BlogPostEntity, Long> {
         value = """
             UPDATE blog_posts
             SET embedding = CAST(:embedding AS vector),
-                search_vector = to_tsvector('simple', :searchText),
+                search_vector =
+                    setweight(to_tsvector('simple', korean_bigrams(:title)), 'A') ||
+                    setweight(to_tsvector('simple', korean_bigrams(:content)), 'B'),
                 embed_error = NULL
             WHERE id = :id
               AND content_hash IS NOT DISTINCT FROM :contentHash
@@ -119,7 +121,8 @@ interface BlogPostRepository : JpaRepository<BlogPostEntity, Long> {
     fun updateEmbedding(
         id: Long,
         embedding: String,
-        searchText: String,
+        title: String,
+        content: String,
         contentHash: String?,
     ): Int
 

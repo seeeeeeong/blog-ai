@@ -11,11 +11,13 @@ import org.springframework.transaction.annotation.Transactional
 class BlogPostEmbedService(
     private val blogPostRepository: BlogPostRepository,
     private val embeddingModel: EmbeddingModel,
+    private val blogPostChunkService: BlogPostChunkService,
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
         private const val DEFAULT_EMBED_LIMIT = 50
         const val MAX_EMBED_RETRIES = 5
+        private const val MAX_EMBED_CONTENT_LENGTH = 6000
     }
 
     @Transactional
@@ -27,15 +29,22 @@ class BlogPostEmbedService(
             val postId = requireNotNull(post.id)
             val snapshotHash = post.contentHash
             try {
-                val text = "${post.title} ${post.content ?: ""}"
-                val response = embeddingModel.embed(text)
+                val title = post.title
+                val content = post.content ?: ""
+                val embedText = "$title ${content.take(MAX_EMBED_CONTENT_LENGTH)}"
+                val response = embeddingModel.embed(embedText)
                 val vector = response.joinToString(",", "[", "]")
 
-                val updated = blogPostRepository.updateEmbedding(postId, vector, text, snapshotHash)
+                val updated = blogPostRepository.updateEmbedding(postId, vector, title, content, snapshotHash)
                 if (updated == 0) {
                     log.info { "BlogPost embedding skipped (stale snapshot): id=$postId" }
                     continue
                 }
+
+                if (content.isNotBlank()) {
+                    blogPostChunkService.saveChunks(postId, title, content)
+                }
+
                 embedded++
                 log.debug { "BlogPost embedding completed: id=$postId, externalId=${post.externalId}" }
             } catch (e: Exception) {

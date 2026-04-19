@@ -18,7 +18,9 @@ interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
         value = """
             UPDATE articles
             SET embedding = CAST(:embedding AS vector),
-                search_vector = to_tsvector('simple', :searchText),
+                search_vector =
+                    setweight(to_tsvector('simple', korean_bigrams(:title)), 'A') ||
+                    setweight(to_tsvector('simple', korean_bigrams(:content)), 'B'),
                 embed_error = NULL
             WHERE id = :id
         """,
@@ -27,7 +29,8 @@ interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
     fun updateEmbedding(
         id: Long,
         embedding: String,
-        searchText: String,
+        title: String,
+        content: String,
     )
 
     @Modifying
@@ -69,10 +72,13 @@ interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
     @Query(
         value = """
             SELECT a.id, a.title, a.url, b.company,
-                   ts_rank(a.search_vector, plainto_tsquery('simple', :queryText)) AS score
+                   ts_rank_cd(
+                       a.search_vector,
+                       plainto_tsquery('simple', korean_bigrams(:queryText))
+                   ) AS score
             FROM articles a
             JOIN blogs b ON b.id = a.blog_id
-            WHERE a.search_vector @@ plainto_tsquery('simple', :queryText)
+            WHERE a.search_vector @@ plainto_tsquery('simple', korean_bigrams(:queryText))
             ORDER BY score DESC
             LIMIT :limit
         """,
@@ -87,7 +93,7 @@ interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
         value = """
             WITH q AS (
                 SELECT CAST(:vector AS vector) AS v,
-                       plainto_tsquery('simple', :queryText) AS ts
+                       plainto_tsquery('simple', korean_bigrams(:queryText)) AS ts
             ),
             vec AS (
                 SELECT a.id,
@@ -100,7 +106,7 @@ interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
             bm25 AS (
                 SELECT a.id,
                        ROW_NUMBER() OVER (
-                           ORDER BY ts_rank(a.search_vector, (SELECT ts FROM q)) DESC
+                           ORDER BY ts_rank_cd(a.search_vector, (SELECT ts FROM q)) DESC
                        ) AS rnk
                 FROM articles a
                 WHERE a.search_vector @@ (SELECT ts FROM q)

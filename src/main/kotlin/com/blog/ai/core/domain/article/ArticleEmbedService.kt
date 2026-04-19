@@ -17,6 +17,7 @@ class ArticleEmbedService(
         private val log = KotlinLogging.logger {}
         private const val DEFAULT_EMBED_LIMIT = 50
         const val MAX_EMBED_RETRIES = 5
+        private const val MAX_EMBED_CONTENT_LENGTH = 6000
     }
 
     @Transactional
@@ -27,14 +28,15 @@ class ArticleEmbedService(
         for (article in articles) {
             val articleId = requireNotNull(article.id)
             try {
-                val text = "${article.title} ${article.content ?: ""}"
-                val response = embeddingModel.embed(text)
+                val title = article.title
+                val content = article.content ?: ""
+                val embedText = "$title ${content.take(MAX_EMBED_CONTENT_LENGTH)}"
+                val response = embeddingModel.embed(embedText)
                 val vector = response.joinToString(",", "[", "]")
 
-                articleRepository.updateEmbedding(articleId, vector, text)
+                articleRepository.updateEmbedding(articleId, vector, title, content)
 
-                val content = article.content?.takeIf { it.isNotBlank() }
-                if (content != null) {
+                if (content.isNotBlank()) {
                     val metadata =
                         ChunkMetadata(
                             articleId = articleId,

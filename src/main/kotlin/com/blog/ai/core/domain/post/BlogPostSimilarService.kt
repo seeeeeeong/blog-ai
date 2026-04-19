@@ -14,6 +14,7 @@ class BlogPostSimilarService(
     companion object {
         private const val DEFAULT_LIMIT = 10
         private const val CANDIDATE_POOL_SIZE = 50
+        private const val CONTENT_SNIPPET_LENGTH = 300
     }
 
     fun findSimilar(
@@ -52,7 +53,10 @@ class BlogPostSimilarService(
     private fun buildQueryText(
         title: String,
         content: String?,
-    ): String = "$title ${content ?: ""}".trim()
+    ): String {
+        val contentSnippet = content?.take(CONTENT_SNIPPET_LENGTH).orEmpty()
+        return "$title $contentSnippet".trim()
+    }
 
     private fun toSimilarArticle(row: Array<Any>): SimilarArticle =
         SimilarArticle(
