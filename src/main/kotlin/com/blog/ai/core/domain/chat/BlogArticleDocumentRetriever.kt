@@ -1,11 +1,14 @@
 package com.blog.ai.core.domain.chat
 
 import com.blog.ai.storage.article.ArticleRepository
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.document.Document
 import org.springframework.ai.embedding.EmbeddingModel
 import org.springframework.ai.rag.Query
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever
 import org.springframework.stereotype.Component
+
+private val log = KotlinLogging.logger {}
 
 @Component
 class BlogArticleDocumentRetriever(
@@ -24,7 +27,19 @@ class BlogArticleDocumentRetriever(
 
         val vector = embeddingModel.embed(text).joinToString(",", "[", "]")
         val rows = articleRepository.findHybridForChat(vector, text, CANDIDATE_POOL_SIZE, TOP_K)
-        return rows.map(::toDocument)
+        val documents = rows.map(::toDocument)
+
+        log.info {
+            val titles =
+                documents.joinToString(" | ") { d ->
+                    val t = d.metadata["title"] as? String ?: "?"
+                    val c = d.metadata["company"] as? String ?: "?"
+                    "$c/$t"
+                }
+            "Chat retrieval: query='${text.take(80)}' hits=${documents.size} [$titles]"
+        }
+
+        return documents
     }
 
     private fun toDocument(row: Array<Any>): Document {
