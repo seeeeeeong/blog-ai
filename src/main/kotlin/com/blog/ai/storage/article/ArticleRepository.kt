@@ -74,11 +74,11 @@ interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
             SELECT a.id, a.title, a.url, b.company,
                    ts_rank_cd(
                        a.search_vector,
-                       plainto_tsquery('simple', korean_bigrams(:queryText))
+                       korean_bigram_tsquery(:queryText)
                    ) AS score
             FROM articles a
             JOIN blogs b ON b.id = a.blog_id
-            WHERE a.search_vector @@ plainto_tsquery('simple', korean_bigrams(:queryText))
+            WHERE a.search_vector @@ korean_bigram_tsquery(:queryText)
             ORDER BY score DESC
             LIMIT :limit
         """,
@@ -93,7 +93,7 @@ interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
         value = """
             WITH q AS (
                 SELECT CAST(:vector AS vector) AS v,
-                       plainto_tsquery('simple', korean_bigrams(:queryText)) AS ts
+                       korean_bigram_tsquery(:queryText) AS ts
             ),
             vec AS (
                 SELECT a.id,
