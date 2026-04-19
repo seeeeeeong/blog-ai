@@ -63,6 +63,17 @@ internal:
 slack:
   webhook-url: ${SLACK_WEBHOOK_URL:}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
 logging:
   level:
     com.blog.ai: DEBUG
