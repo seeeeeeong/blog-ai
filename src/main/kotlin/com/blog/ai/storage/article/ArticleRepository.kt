@@ -110,6 +110,7 @@ interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
                        ) AS rnk
                 FROM articles a
                 WHERE a.search_vector @@ (SELECT ts FROM q)
+                ORDER BY ts_rank_cd(a.search_vector, (SELECT ts FROM q)) DESC
                 LIMIT :candidatePoolSize
             ),
             fused AS (
