@@ -36,7 +36,8 @@ class BlogArticleDocumentRetriever(
         val score = (row[5] as Number).toDouble()
 
         val snippet = content.take(CONTENT_SNIPPET_LENGTH)
-        val body = if (snippet.isBlank()) title else "$title\n\n$snippet"
+        val source = "Source: [$company - $title]($url)"
+        val body = if (snippet.isBlank()) source else "$source\n\n$snippet"
 
         val metadata =
             mapOf(
