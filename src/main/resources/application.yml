@@ -58,6 +58,11 @@ internal:
 slack:
   webhook-url: ${SLACK_WEBHOOK_URL:}
 
+jina:
+  api-key: ${JINA_API_KEY:}
+  rerank-url: https://api.jina.ai/v1/rerank
+  rerank-model: jina-reranker-v2-base-multilingual
+
 sentry:
   dsn: ${SENTRY_DSN:}
   environment: ${SENTRY_ENVIRONMENT:prod}

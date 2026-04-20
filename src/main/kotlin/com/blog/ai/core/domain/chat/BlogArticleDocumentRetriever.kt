@@ -23,15 +23,17 @@ class BlogArticleDocumentRetriever(
     private val blogPostRepository: BlogPostRepository,
     private val chatQueryRewriter: ChatQueryRewriter,
     private val vectorStore: VectorStore,
+    private val jinaRerankClient: JinaRerankClient,
 ) : DocumentRetriever {
     companion object {
         private const val MY_POST_TOP_K = 8
         private const val MY_POST_GROUP_LIMIT = 3
         private const val MY_POST_SIMILARITY_THRESHOLD = 0.5
-        private const val EXTERNAL_CHUNK_TOP_K = 8
+        private const val EXTERNAL_CHUNK_CANDIDATE_POOL = 20
         private const val EXTERNAL_ARTICLE_TOP_K = 5
         private const val SUPPLEMENTARY_ARTICLE_TOP_K = 3
-        private const val CANDIDATE_POOL_SIZE = 50
+        private const val ARTICLE_CANDIDATE_POOL = 20
+        private const val HYBRID_CANDIDATE_POOL_SIZE = 50
         private const val CONTENT_SNIPPET_LENGTH = 1500
         private const val MIN_SCORE_THRESHOLD = 0.005
         private const val EXTERNAL_CHUNK_SIMILARITY_THRESHOLD = 0.2
@@ -51,19 +53,22 @@ class BlogArticleDocumentRetriever(
 
         val myPostDocs = retrieveFromMyPosts(text)
         if (myPostDocs.isNotEmpty()) {
-            val supplementary = retrieveSupplementaryArticles(text, SUPPLEMENTARY_ARTICLE_TOP_K)
+            val supplementaryCandidates = retrieveFromArticles(text, ARTICLE_CANDIDATE_POOL)
+            val supplementary = jinaRerankClient.rerank(text, supplementaryCandidates, SUPPLEMENTARY_ARTICLE_TOP_K)
             val combined = myPostDocs + supplementary
             logRetrieval("author+supplementary", text, combined)
             return combined
         }
 
-        val externalChunkDocs = retrieveFromChunks(text)
-        if (externalChunkDocs.isNotEmpty()) {
-            logRetrieval("external-chunks", text, externalChunkDocs)
-            return externalChunkDocs
+        val externalChunkCandidates = retrieveFromChunks(text, EXTERNAL_CHUNK_CANDIDATE_POOL)
+        if (externalChunkCandidates.isNotEmpty()) {
+            val reranked = jinaRerankClient.rerank(text, externalChunkCandidates, EXTERNAL_ARTICLE_TOP_K)
+            logRetrieval("external-chunks", text, reranked)
+            return reranked
         }
 
-        val articleDocs = retrieveFromArticles(text, EXTERNAL_ARTICLE_TOP_K)
+        val articleCandidates = retrieveFromArticles(text, ARTICLE_CANDIDATE_POOL)
+        val articleDocs = jinaRerankClient.rerank(text, articleCandidates, EXTERNAL_ARTICLE_TOP_K)
         logRetrieval("external-articles", text, articleDocs)
         return articleDocs
     }
@@ -110,17 +115,15 @@ class BlogArticleDocumentRetriever(
         )
     }
 
-    private fun retrieveSupplementaryArticles(
+    private fun retrieveFromChunks(
         text: String,
         topK: Int,
-    ): List<Document> = retrieveFromArticles(text, topK)
-
-    private fun retrieveFromChunks(text: String): List<Document> {
+    ): List<Document> {
         val searchRequest =
             SearchRequest
                 .builder()
                 .query(text)
-                .topK(EXTERNAL_CHUNK_TOP_K)
+                .topK(topK)
                 .similarityThreshold(EXTERNAL_CHUNK_SIMILARITY_THRESHOLD)
                 .build()
 
@@ -128,7 +131,6 @@ class BlogArticleDocumentRetriever(
         return chunks
             .groupBy { it.metadata["articleId"] }
             .entries
-            .take(EXTERNAL_ARTICLE_TOP_K)
             .map { (_, articleChunks) ->
                 val first = articleChunks.first()
                 val title = first.metadata["title"] as? String ?: ""
@@ -155,7 +157,7 @@ class BlogArticleDocumentRetriever(
         topK: Int,
     ): List<Document> {
         val vector = embeddingModel.embed(text).joinToString(",", "[", "]")
-        val rows = articleRepository.findHybridForChat(vector, text, CANDIDATE_POOL_SIZE, topK)
+        val rows = articleRepository.findHybridForChat(vector, text, HYBRID_CANDIDATE_POOL_SIZE, topK)
         return rows
             .map(::toArticleDocument)
             .filter { (it.metadata["score"] as Double) >= MIN_SCORE_THRESHOLD }
@@ -197,10 +199,12 @@ class BlogArticleDocumentRetriever(
                 val type = d.metadata["sourceType"] as? String ?: "?"
                 val t = d.metadata["title"] as? String ?: "?"
                 val c = d.metadata["company"] as? String ?: "me"
+                val rerank = d.metadata["rerankScore"] as? Double
                 val sim = d.metadata["similarity"] as? Double
                 val score = d.metadata["score"] as? Double
-                val s = sim ?: score
-                if (s != null) "$type:$c/$t(${"%.3f".format(s)})" else "$type:$c/$t"
+                val s = rerank ?: sim ?: score
+                val tag = if (rerank != null) "r" else ""
+                if (s != null) "$type:$c/$t($tag${"%.3f".format(s)})" else "$type:$c/$t"
             }
         log.info { "Chat retrieval mode=$mode query='${text.take(80)}' hits=${documents.size} [$labels]" }
     }
