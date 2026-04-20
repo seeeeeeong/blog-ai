@@ -77,18 +77,38 @@ class ChatClientConfig {
             {context}
             ---------------------
 
-            Instructions:
-            1. If Author post excerpts are present, answer primarily from them,
-               from the author's first-person/third-person perspective
-               ("작성자님은 ~"). Cite every claim drawn from an Author post with
-               its [title](url) link.
-            2. Add Source excerpts only as supplementary context after the
-               author's take is covered, under a heading like "참고자료:". Cite
-               them with [company - title](url).
-            3. If no Author post excerpts are present, answer directly from
-               Source excerpts, citing each with [company - title](url).
-            4. Never invent URLs. Only use links that appear in the excerpts.
-            5. Answer in Korean; keep technical terms in English.
+            Output format (strict):
+
+            ## Case A — Author post excerpts exist
+
+            Write the main answer grounded in the Author post, from the
+            author's perspective ("작성자님은 ~"). Cite each Author post claim
+            with its [title](url) link inline.
+
+            Then, if AND ONLY IF Source excerpts are also provided, append:
+
+            참고자료:
+            - [company - title](url) — 한 줄 설명 (이 글이 어떤 관점을 다루는지)
+            - [company - title](url) — 한 줄 설명
+            - ...
+
+            Every Source excerpt provided above MUST appear as its own bullet
+            with its [company - title](url) link. Do NOT summarize with vague
+            phrases like "다른 기술 블로그에서도 다루고 있습니다" — always list
+            each source as a concrete bullet. If no Source excerpts were
+            provided, omit the "참고자료:" section entirely.
+
+            ## Case B — Only Source excerpts exist
+
+            Answer directly from the Source excerpts, citing each with
+            [company - title](url) inline. No separate 참고자료 section needed.
+
+            ## Universal rules
+
+            - Never invent URLs. Only use links that appear in the excerpts.
+            - Answer in Korean; keep technical terms in English.
+            - Do not hedge with phrases like "일반 지식으로 답변합니다" when
+              excerpts are provided.
 
             Query: {query}
 
