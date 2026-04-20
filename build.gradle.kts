@@ -75,6 +75,9 @@ dependencies {
     implementation("com.rometools:rome:2.1.0")
     implementation("org.jsoup:jsoup:1.17.2")
 
+    // Tokenizer (OpenAI cl100k_base) for token-aware truncation
+    implementation("com.knuddels:jtokkit:1.1.0")
+
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")

@@ -1,5 +1,6 @@
 package com.blog.ai.core.domain.post
 
+import com.blog.ai.core.support.text.TokenTruncator
 import com.blog.ai.storage.post.BlogPostEntity
 import com.blog.ai.storage.post.BlogPostRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -15,7 +16,7 @@ class BlogPostEmbedWorker(
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
-        private const val MAX_EMBED_CONTENT_LENGTH = 6000
+        private const val MAX_EMBED_TOKENS = 7500
     }
 
     @Transactional
@@ -24,7 +25,7 @@ class BlogPostEmbedWorker(
         val snapshotHash = post.contentHash
         val title = post.title
         val content = post.content ?: ""
-        val embedText = "$title ${content.take(MAX_EMBED_CONTENT_LENGTH)}"
+        val embedText = TokenTruncator.truncate("$title $content", MAX_EMBED_TOKENS)
         val vector = embeddingModel.embed(embedText).joinToString(",", "[", "]")
 
         val updated = blogPostRepository.updateEmbedding(postId, vector, title, content, snapshotHash)

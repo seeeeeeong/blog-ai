@@ -1,5 +1,6 @@
 package com.blog.ai.core.domain.article
 
+import com.blog.ai.core.support.text.TokenTruncator
 import com.blog.ai.storage.article.ArticleRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.embedding.EmbeddingModel
@@ -17,7 +18,7 @@ class ArticleEmbedService(
         private val log = KotlinLogging.logger {}
         private const val DEFAULT_EMBED_LIMIT = 50
         const val MAX_EMBED_RETRIES = 5
-        private const val MAX_EMBED_CONTENT_LENGTH = 6000
+        private const val MAX_EMBED_TOKENS = 7500
     }
 
     @Transactional
@@ -30,7 +31,7 @@ class ArticleEmbedService(
             try {
                 val title = article.title
                 val content = article.content ?: ""
-                val embedText = "$title ${content.take(MAX_EMBED_CONTENT_LENGTH)}"
+                val embedText = TokenTruncator.truncate("$title $content", MAX_EMBED_TOKENS)
                 val response = embeddingModel.embed(embedText)
                 val vector = response.joinToString(",", "[", "]")
 
