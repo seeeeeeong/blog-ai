@@ -201,4 +201,32 @@ interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
 
     @Query("SELECT COUNT(*) FROM articles WHERE embedding IS NULL AND embed_error IS NULL", nativeQuery = true)
     fun countUnembedded(): Long
+
+    @Query(
+        value = "SELECT * FROM articles WHERE content IS NULL ORDER BY id LIMIT :limit",
+        nativeQuery = true,
+    )
+    fun findWithoutContent(limit: Int): List<ArticleEntity>
+
+    @Modifying
+    @Query(
+        value = "UPDATE articles SET content = :content WHERE id = :id",
+        nativeQuery = true,
+    )
+    fun updateContent(
+        id: Long,
+        content: String,
+    )
+
+    @Modifying
+    @Query(
+        value = """
+            UPDATE articles
+            SET embedding = NULL, search_vector = NULL,
+                embed_error = NULL, embed_retry_count = 0
+            WHERE id = :id
+        """,
+        nativeQuery = true,
+    )
+    fun resetEmbeddingForArticle(id: Long)
 }

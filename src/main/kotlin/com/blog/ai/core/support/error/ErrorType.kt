@@ -26,6 +26,8 @@ enum class ErrorType(
 
     // ==================== Chat ====================
     SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "CHAT_001", "Chat session not found", LogLevel.WARN),
+    CHAT_RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "CHAT_002", "Chat rate limit exceeded"),
+    INVALID_FEEDBACK(HttpStatus.BAD_REQUEST, "CHAT_003", "Invalid feedback rating"),
 
     // ==================== Embed ====================
     EMBED_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "EMBED_001", "Embedding failed", LogLevel.ERROR),

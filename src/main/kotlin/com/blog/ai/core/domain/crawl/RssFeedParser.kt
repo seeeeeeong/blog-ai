@@ -10,6 +10,7 @@ import java.security.MessageDigest
 @Component
 class RssFeedParser(
     private val contentCleaner: ContentCleaner,
+    private val webContentScraper: WebContentScraper,
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
@@ -24,11 +25,13 @@ class RssFeedParser(
                 val rawContent =
                     entry.contents?.firstOrNull()?.value
                         ?: entry.description?.value
+                val rssContent = contentCleaner.clean(rawContent)
+                val content = rssContent ?: webContentScraper.scrape(url.trim())
                 ParsedArticle(
                     title = title.trim(),
                     url = url.trim(),
                     urlHash = sha256(url.trim()),
-                    content = contentCleaner.clean(rawContent),
+                    content = content,
                     publishedAt = entry.publishedDate?.toInstant(),
                 )
             }

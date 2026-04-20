@@ -1,7 +1,9 @@
 package com.blog.ai.core.domain.chat
 
+import com.blog.ai.core.api.controller.v1.response.ChatMessageResponse
 import com.blog.ai.core.support.error.CoreException
 import com.blog.ai.core.support.error.ErrorType
+import com.blog.ai.storage.chat.ChatMessageRepository
 import com.blog.ai.storage.chat.ChatSessionEntity
 import com.blog.ai.storage.chat.ChatSessionRepository
 import org.springframework.ai.chat.client.ChatClient
@@ -16,7 +18,13 @@ import java.util.UUID
 class ChatService(
     private val chatClient: ChatClient,
     private val chatSessionRepository: ChatSessionRepository,
+    private val chatMessageRepository: ChatMessageRepository,
+    private val chatRateLimiter: ChatRateLimiter,
 ) {
+    companion object {
+        private const val MESSAGE_HISTORY_LIMIT = 50
+    }
+
     @Transactional
     fun createSession(): UUID {
         val session = chatSessionRepository.save(ChatSessionEntity.create())
@@ -26,11 +34,14 @@ class ChatService(
     fun chat(
         sessionId: UUID,
         question: String,
+        clientIp: String,
     ): Flux<ServerSentEvent<String>> {
-        val sessionExists = chatSessionRepository.existsById(sessionId)
-        if (sessionExists) return streamChat(sessionId, question)
-        throw CoreException(ErrorType.SESSION_NOT_FOUND)
+        requireSessionExists(sessionId)
+        chatRateLimiter.checkAndIncrement(sessionId, clientIp)
+        return streamChat(sessionId, question)
     }
+
+    fun remainingMessages(sessionId: UUID): Int = chatRateLimiter.remainingMessages(sessionId)
 
     private fun streamChat(
         sessionId: UUID,
@@ -45,4 +56,18 @@ class ChatService(
             .content()
             .map { content -> ServerSentEvent.builder(content).build() }
             .concatWith(Flux.just(ServerSentEvent.builder<String>("[DONE]").build()))
+
+    fun getMessages(sessionId: UUID): List<ChatMessageResponse> {
+        requireSessionExists(sessionId)
+        return chatMessageRepository
+            .findRecentBySessionId(sessionId, MESSAGE_HISTORY_LIMIT)
+            .filter { it.role in listOf("user", "assistant") }
+            .map(ChatMessageResponse::of)
+    }
+
+    private fun requireSessionExists(sessionId: UUID) {
+        if (!chatSessionRepository.existsById(sessionId)) {
+            throw CoreException(ErrorType.SESSION_NOT_FOUND)
+        }
+    }
 }
