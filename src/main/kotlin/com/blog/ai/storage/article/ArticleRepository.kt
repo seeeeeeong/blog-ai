@@ -229,4 +229,7 @@ interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
         nativeQuery = true,
     )
     fun resetEmbeddingForArticle(id: Long)
+
+    @Query("SELECT COUNT(*) FROM articles WHERE content IS NULL", nativeQuery = true)
+    fun countWithoutContent(): Long
 }

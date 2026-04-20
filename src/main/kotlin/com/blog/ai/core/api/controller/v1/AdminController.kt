@@ -4,6 +4,7 @@ import com.blog.ai.core.api.controller.v1.response.ArticleAdminResponse
 import com.blog.ai.core.api.controller.v1.response.SimilarDiagnoseResponse
 import com.blog.ai.core.domain.article.ArticleAdminService
 import com.blog.ai.core.domain.article.ArticleEmbedService
+import com.blog.ai.core.domain.crawl.ContentBackfillService
 import com.blog.ai.core.domain.crawl.CrawlAsyncService
 import com.blog.ai.core.domain.post.BlogPostEmbedService
 import com.blog.ai.core.domain.post.BlogPostSimilarService
@@ -28,6 +29,7 @@ class AdminController(
     private val articleAdminService: ArticleAdminService,
     private val blogPostEmbedService: BlogPostEmbedService,
     private val blogPostSimilarService: BlogPostSimilarService,
+    private val contentBackfillService: ContentBackfillService,
 ) {
     @PostMapping("/crawl")
     fun triggerCrawl(
@@ -91,6 +93,26 @@ class AdminController(
         return ApiResponse.success(SimilarDiagnoseResponse.of(result))
     }
 
+    @PostMapping("/backfill/content")
+    fun triggerContentBackfill(
+        @RequestHeader("X-Admin-Key") adminKey: String,
+        @RequestParam(defaultValue = "50") batchSize: Int,
+    ): ApiResponse<Int> {
+        requireAdminKey(adminKey)
+        val filled = contentBackfillService.backfillMissingContent(batchSize)
+        return ApiResponse.success(filled)
+    }
+
+    @PostMapping("/backfill/embedding")
+    fun triggerEmbeddingReprocess(
+        @RequestHeader("X-Admin-Key") adminKey: String,
+    ): ApiResponse<Int> {
+        requireAdminKey(adminKey)
+        articleEmbedService.clearRetriableErrors()
+        val count = articleEmbedService.embedPending()
+        return ApiResponse.success(count)
+    }
+
     @GetMapping("/stats")
     fun getStats(
         @RequestHeader("X-Admin-Key") adminKey: String,
@@ -100,6 +122,7 @@ class AdminController(
             mapOf(
                 "totalArticles" to articleAdminService.countTotal(),
                 "unembedded" to articleAdminService.countUnembedded(),
+                "withoutContent" to articleAdminService.countWithoutContent(),
             ),
         )
     }

@@ -30,4 +30,6 @@ class ArticleAdminService(
     fun countTotal(): Long = articleRepository.count()
 
     fun countUnembedded(): Long = articleRepository.countUnembedded()
+
+    fun countWithoutContent(): Long = articleRepository.countWithoutContent()
 }
