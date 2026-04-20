@@ -51,16 +51,6 @@ class AdminController(
         return ApiResponse.success(count)
     }
 
-    @PostMapping("/embed/retry")
-    fun retryEmbed(
-        @RequestHeader("X-Admin-Key") adminKey: String,
-    ): ApiResponse<Int> {
-        requireAdminKey(adminKey)
-        articleEmbedService.clearRetriableErrors()
-        val count = articleEmbedService.embedPending()
-        return ApiResponse.success(count)
-    }
-
     @PostMapping("/blog-posts/embed")
     fun triggerBlogPostEmbed(
         @RequestHeader("X-Admin-Key") adminKey: String,
