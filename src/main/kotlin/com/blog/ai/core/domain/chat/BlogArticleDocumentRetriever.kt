@@ -27,7 +27,7 @@ class BlogArticleDocumentRetriever(
     companion object {
         private const val MY_POST_TOP_K = 8
         private const val MY_POST_GROUP_LIMIT = 3
-        private const val MY_POST_SIMILARITY_THRESHOLD = 0.25
+        private const val MY_POST_SIMILARITY_THRESHOLD = 0.5
         private const val EXTERNAL_CHUNK_TOP_K = 8
         private const val EXTERNAL_ARTICLE_TOP_K = 5
         private const val SUPPLEMENTARY_ARTICLE_TOP_K = 3
@@ -197,7 +197,10 @@ class BlogArticleDocumentRetriever(
                 val type = d.metadata["sourceType"] as? String ?: "?"
                 val t = d.metadata["title"] as? String ?: "?"
                 val c = d.metadata["company"] as? String ?: "me"
-                "$type:$c/$t"
+                val sim = d.metadata["similarity"] as? Double
+                val score = d.metadata["score"] as? Double
+                val s = sim ?: score
+                if (s != null) "$type:$c/$t(${"%.3f".format(s)})" else "$type:$c/$t"
             }
         log.info { "Chat retrieval mode=$mode query='${text.take(80)}' hits=${documents.size} [$labels]" }
     }

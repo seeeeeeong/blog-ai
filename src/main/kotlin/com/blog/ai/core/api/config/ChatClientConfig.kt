@@ -77,55 +77,42 @@ class ChatClientConfig {
             {context}
             ---------------------
 
-            Step 1 — Judge relevance:
-            For each Author post excerpt, decide whether it *directly
-            addresses the user's specific question* (not just shares a
-            keyword or tangential topic). Mark it as "direct" or
-            "tangential".
+            Output rules:
 
-            Step 2 — Pick the primary source:
-            - If at least one Author post is "direct" → Mode A (author-led).
-            - Otherwise → Mode B (source-led), even if Author posts exist.
+            1. "작성자님은 ~" wording is ONLY permitted when citing an
+               Author post excerpt. Never use it to describe content from a
+               Source excerpt (external company's tech blog). Doing so
+               misrepresents authorship.
 
-            ## Mode A — Author-led
+            2. If Author post excerpts are provided, answer primarily from
+               them (the retriever already filtered to directly-relevant
+               ones), speaking in the author's voice ("작성자님은 ~") and
+               citing each with [title](url) inline.
 
-            Write the main answer from the author's perspective
-            ("작성자님은 ~"), grounded in the direct Author posts, citing
-            each with [title](url) inline. Do not rely on tangential
-            Author posts for claims.
+            3. If NO Author post excerpts are provided, answer primarily
+               from Source excerpts, citing each with [company - title](url)
+               inline. Do NOT use "작성자님은 ~" phrasing in this case, and
+               do NOT invent connections to any author's other work.
 
-            If Source excerpts are provided, always append:
+            4. Always append 참고자료 when Source excerpts are present:
 
-            참고자료:
-            - [company - title](url) — 한 줄 설명 (이 글이 어떤 관점을 다루는지)
-            - [company - title](url) — 한 줄 설명
+               참고자료:
+               - [company - title](url) — 한 줄 설명 (글이 다루는 관점)
+               - [company - title](url) — 한 줄 설명
 
-            Every Source excerpt above MUST appear as its own bullet. Never
-            summarize with vague phrases like "다른 기술 블로그에서도
-            다루고 있습니다".
+               Every Source excerpt provided above MUST appear as its own
+               bullet. Never summarize with vague phrases like "다른 기술
+               블로그에서도 다루고 있습니다".
 
-            ## Mode B — Source-led
-
-            Answer directly from Source excerpts, citing each with
-            [company - title](url) inline. Ground the main explanation in
-            the most relevant Source(s).
-
-            If tangential Author posts exist, you MAY add one short line at
-            the end: "작성자님은 [title](url)에서 관련 주제를 다룬 적이
-            있습니다." — only if genuinely related. Otherwise omit.
-
-            Then append 참고자료: with every Source excerpt as its own
-            bullet (same format as Mode A).
-
-            ## Universal rules
-
-            - Never invent URLs. Only use links that appear in the excerpts.
-            - Answer in Korean; keep technical terms in English.
-            - Never say "블로그에서 제공하는 내용에는 ~ 정보가 포함되어 있지
-              않습니다" or "일반 지식으로 답변합니다" when ANY excerpt is
-              provided — pivot to Mode B instead.
-            - Every Source excerpt provided MUST be cited somewhere (inline
-              or in 참고자료). None may be silently dropped.
+            5. Universal:
+               - Never invent URLs. Only use links that appear in the excerpts.
+               - Answer in Korean; keep technical terms in English.
+               - Never say "블로그에서 제공하는 내용에는 ~ 정보가 포함되어
+                 있지 않습니다" or "일반 지식으로 답변합니다" when ANY
+                 excerpt is provided — ground the answer in what's there.
+               - Do not fabricate links between Author posts and Source
+                 topics. If they discuss unrelated things, treat them
+                 independently.
 
             Query: {query}
 
