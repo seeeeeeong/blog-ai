@@ -11,6 +11,7 @@ import com.blog.ai.core.domain.post.BlogPostSimilarService
 import com.blog.ai.core.support.error.CoreException
 import com.blog.ai.core.support.error.ErrorType
 import com.blog.ai.core.support.properties.AdminProperties
+import com.blog.ai.core.support.properties.InternalProperties
 import com.blog.ai.core.support.response.ApiResponse
 import com.blog.ai.core.support.response.PageResponse
 import org.springframework.web.bind.annotation.GetMapping
@@ -30,6 +31,7 @@ class AdminController(
     private val blogPostEmbedService: BlogPostEmbedService,
     private val blogPostSimilarService: BlogPostSimilarService,
     private val contentBackfillService: ContentBackfillService,
+    private val internalProperties: InternalProperties,
 ) {
     @PostMapping("/crawl")
     fun triggerCrawl(
@@ -129,6 +131,7 @@ class AdminController(
 
     private fun requireAdminKey(key: String) {
         if (key == adminProperties.apiKey) return
+        if (key == internalProperties.apiKey) return
         throw CoreException(ErrorType.UNAUTHORIZED)
     }
 }
