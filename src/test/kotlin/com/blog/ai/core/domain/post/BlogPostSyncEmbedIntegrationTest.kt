@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentMatchers.anyList
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
 import org.springframework.ai.embedding.EmbeddingModel
@@ -39,6 +40,10 @@ class BlogPostSyncEmbedIntegrationTest
         fun reset() {
             jdbcTemplate.update("TRUNCATE TABLE blog_posts RESTART IDENTITY CASCADE")
             Mockito.`when`(embeddingModel.embed(anyString())).thenReturn(FloatArray(1536) { 0.1f })
+            Mockito.`when`(embeddingModel.embed(anyList<String>())).thenAnswer { inv ->
+                val texts = inv.getArgument<List<String>>(0)
+                texts.map { FloatArray(1536) { 0.1f } }
+            }
         }
 
         @Test

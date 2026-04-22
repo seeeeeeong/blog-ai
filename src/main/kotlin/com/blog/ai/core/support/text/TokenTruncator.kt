@@ -15,4 +15,6 @@ object TokenTruncator {
         if (!result.isTruncated) return text
         return encoding.decode(result.tokens)
     }
+
+    fun countTokens(text: String): Int = encoding.countTokens(text)
 }
