@@ -4,6 +4,7 @@ import com.rometools.rome.io.SyndFeedInput
 import com.rometools.rome.io.XmlReader
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Component
+import java.io.ByteArrayInputStream
 import java.io.StringReader
 import java.net.URI
 import java.security.MessageDigest
@@ -15,6 +16,8 @@ class RssFeedParser(
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
+        private const val CONNECT_TIMEOUT_MS = 3_000
+        private const val READ_TIMEOUT_MS = 10_000
 
         private val INVALID_XML_CHARS = Regex("[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]")
 
@@ -22,14 +25,15 @@ class RssFeedParser(
     }
 
     fun parse(rssUrl: String): List<ParsedArticle> {
+        val raw = fetchRawBytes(rssUrl) ?: return emptyList()
         return try {
             val feed =
                 try {
-                    SyndFeedInput().build(XmlReader(URI(rssUrl).toURL()))
+                    SyndFeedInput().build(XmlReader(ByteArrayInputStream(raw)))
                 } catch (e: com.rometools.rome.io.ParsingFeedException) {
                     log.info { "Retrying RSS parse after sanitizing invalid XML chars: url=$rssUrl" }
-                    val raw = URI(rssUrl).toURL().readText()
-                    SyndFeedInput().build(StringReader(sanitizeXml(raw)))
+                    val sanitized = sanitizeXml(String(raw, Charsets.UTF_8))
+                    SyndFeedInput().build(StringReader(sanitized))
                 }
             feed.entries.mapNotNull { entry ->
                 val url = entry.link ?: return@mapNotNull null
@@ -52,6 +56,19 @@ class RssFeedParser(
             emptyList()
         }
     }
+
+    private fun fetchRawBytes(rssUrl: String): ByteArray? =
+        try {
+            val conn =
+                URI(rssUrl).toURL().openConnection().apply {
+                    connectTimeout = CONNECT_TIMEOUT_MS
+                    readTimeout = READ_TIMEOUT_MS
+                }
+            conn.getInputStream().use { it.readBytes() }
+        } catch (e: Exception) {
+            log.warn(e) { "RSS fetch failed: url=$rssUrl" }
+            null
+        }
 
     private fun sha256(input: String): String {
         val bytes = MessageDigest.getInstance("SHA-256").digest(input.toByteArray())

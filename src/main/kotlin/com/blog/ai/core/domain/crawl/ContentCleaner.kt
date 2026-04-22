@@ -1,12 +1,14 @@
 package com.blog.ai.core.domain.crawl
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jsoup.Jsoup
 import org.springframework.stereotype.Component
 
 @Component
 class ContentCleaner {
     companion object {
-        private const val MAX_LENGTH = 5000
+        private val log = KotlinLogging.logger {}
+        private const val DEFENSIVE_MAX_LENGTH = 200_000
     }
 
     fun clean(html: String?): String? {
@@ -21,6 +23,10 @@ class ContentCleaner {
 
         if (text.isBlank()) return null
 
-        return if (text.length > MAX_LENGTH) text.substring(0, MAX_LENGTH) else text
+        if (text.length > DEFENSIVE_MAX_LENGTH) {
+            log.warn { "Content exceeds defensive limit, truncating: length=${text.length}" }
+            return text.substring(0, DEFENSIVE_MAX_LENGTH)
+        }
+        return text
     }
 }

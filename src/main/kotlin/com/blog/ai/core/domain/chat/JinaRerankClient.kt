@@ -6,6 +6,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.document.Document
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
+import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 
@@ -16,13 +17,20 @@ class JinaRerankClient(
     companion object {
         private val log = KotlinLogging.logger {}
         private const val DOC_SNIPPET_LIMIT = 2000
+        private const val CONNECT_TIMEOUT_MS = 2_000
+        private const val READ_TIMEOUT_MS = 5_000
     }
 
     private val restClient: RestClient =
         RestClient
             .builder()
             .baseUrl(jinaProperties.rerankUrl)
-            .build()
+            .requestFactory(
+                SimpleClientHttpRequestFactory().apply {
+                    setConnectTimeout(CONNECT_TIMEOUT_MS)
+                    setReadTimeout(READ_TIMEOUT_MS)
+                },
+            ).build()
 
     fun rerank(
         query: String,
