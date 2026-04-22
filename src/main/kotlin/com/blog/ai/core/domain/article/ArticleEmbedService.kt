@@ -9,6 +9,7 @@ import org.springframework.ai.embedding.EmbeddingModel
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.sql.Timestamp
+import java.time.Instant
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 
@@ -101,9 +102,18 @@ class ArticleEmbedService(
             title = row[1] as String,
             content = (row[2] as String?) ?: "",
             url = row[3] as String,
-            publishedAt = (row[4] as Timestamp?)?.toInstant()?.atOffset(ZoneOffset.UTC),
+            publishedAt = toOffsetDateTime(row[4]),
             company = row[5] as String,
         )
+
+    private fun toOffsetDateTime(value: Any?): OffsetDateTime? =
+        when (value) {
+            null -> null
+            is OffsetDateTime -> value
+            is Instant -> value.atOffset(ZoneOffset.UTC)
+            is Timestamp -> value.toInstant().atOffset(ZoneOffset.UTC)
+            else -> error("unexpected published_at type: ${value.javaClass}")
+        }
 }
 
 data class ArticleEmbedSnapshot(
