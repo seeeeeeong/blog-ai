@@ -1,5 +1,7 @@
 package com.blog.ai.core.domain.chat
 
+import com.blog.ai.storage.article.ArticleChunkHit
+import com.blog.ai.storage.article.ArticleChunkRepository
 import com.blog.ai.storage.article.ArticleRepository
 import com.blog.ai.storage.post.BlogPostChunkHit
 import com.blog.ai.storage.post.BlogPostChunkRepository
@@ -9,8 +11,6 @@ import org.springframework.ai.document.Document
 import org.springframework.ai.embedding.EmbeddingModel
 import org.springframework.ai.rag.Query
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever
-import org.springframework.ai.vectorstore.SearchRequest
-import org.springframework.ai.vectorstore.VectorStore
 import org.springframework.stereotype.Component
 
 private val log = KotlinLogging.logger {}
@@ -19,10 +19,10 @@ private val log = KotlinLogging.logger {}
 class BlogArticleDocumentRetriever(
     private val embeddingModel: EmbeddingModel,
     private val articleRepository: ArticleRepository,
+    private val articleChunkRepository: ArticleChunkRepository,
     private val blogPostChunkRepository: BlogPostChunkRepository,
     private val blogPostRepository: BlogPostRepository,
     private val chatQueryRewriter: ChatQueryRewriter,
-    private val vectorStore: VectorStore,
     private val jinaRerankClient: JinaRerankClient,
 ) : DocumentRetriever {
     companion object {
@@ -119,37 +119,42 @@ class BlogArticleDocumentRetriever(
         text: String,
         topK: Int,
     ): List<Document> {
-        val searchRequest =
-            SearchRequest
-                .builder()
-                .query(text)
-                .topK(topK)
-                .similarityThreshold(EXTERNAL_CHUNK_SIMILARITY_THRESHOLD)
-                .build()
+        val vector = embeddingModel.embed(text).joinToString(",", "[", "]")
+        val hits =
+            articleChunkRepository.findSimilarChunks(
+                queryVector = vector,
+                topK = topK,
+                similarityThreshold = EXTERNAL_CHUNK_SIMILARITY_THRESHOLD,
+            )
+        if (hits.isEmpty()) return emptyList()
 
-        val chunks = vectorStore.similaritySearch(searchRequest) ?: return emptyList()
-        return chunks
-            .groupBy { it.metadata["articleId"] }
+        return hits
+            .groupBy { it.articleId }
             .entries
-            .map { (_, articleChunks) ->
-                val first = articleChunks.first()
-                val title = first.metadata["title"] as? String ?: ""
-                val company = first.metadata["company"] as? String ?: ""
-                val url = first.metadata["url"] as? String ?: ""
-                val combinedContent =
-                    articleChunks.joinToString("\n\n") { it.text?.take(CONTENT_SNIPPET_LENGTH) ?: "" }
-                val source = "Source: [$company - $title]($url)"
+            .map { (_, articleChunks) -> buildExternalChunkDocument(articleChunks) }
+    }
 
-                Document(
-                    "$source\n\n$combinedContent",
-                    mapOf(
-                        "sourceType" to "external",
-                        "title" to title,
-                        "company" to company,
-                        "url" to url,
-                    ),
-                )
-            }
+    private fun buildExternalChunkDocument(chunks: List<ArticleChunkHit>): Document {
+        val first = chunks.first()
+        val title = first.title
+        val company = first.company
+        val url = first.url
+        val combinedContent =
+            chunks
+                .sortedBy { it.chunkIndex }
+                .joinToString("\n\n") { it.content.take(CONTENT_SNIPPET_LENGTH) }
+        val source = "Source: [$company - $title]($url)"
+
+        return Document(
+            "$source\n\n$combinedContent",
+            mapOf(
+                "sourceType" to "external",
+                "title" to title,
+                "company" to company,
+                "url" to url,
+                "similarity" to chunks.maxOf { it.similarity },
+            ),
+        )
     }
 
     private fun retrieveFromArticles(

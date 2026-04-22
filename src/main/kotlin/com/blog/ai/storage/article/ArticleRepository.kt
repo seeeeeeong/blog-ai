@@ -13,6 +13,19 @@ interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
     )
     fun findUnembedded(limit: Int): List<ArticleEntity>
 
+    @Query(
+        value = """
+            SELECT a.id, a.title, a.content, a.url, a.published_at, b.company
+            FROM articles a
+            JOIN blogs b ON b.id = a.blog_id
+            WHERE a.embedding IS NULL AND a.embed_error IS NULL
+            ORDER BY a.id
+            LIMIT :limit
+        """,
+        nativeQuery = true,
+    )
+    fun findUnembeddedSnapshots(limit: Int): List<Array<Any>>
+
     @Modifying
     @Query(
         value = """
@@ -229,6 +242,19 @@ interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
         nativeQuery = true,
     )
     fun resetEmbeddingForArticle(id: Long)
+
+    @Modifying
+    @Query(
+        value = """
+            UPDATE articles
+            SET embedding = NULL,
+                embed_error = NULL,
+                embed_retry_count = 0
+            WHERE content IS NOT NULL
+        """,
+        nativeQuery = true,
+    )
+    fun resetAllEmbeddingsForReprocess(): Int
 
     @Query("SELECT COUNT(*) FROM articles WHERE content IS NULL", nativeQuery = true)
     fun countWithoutContent(): Long

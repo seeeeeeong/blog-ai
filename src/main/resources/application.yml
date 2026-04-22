@@ -38,13 +38,6 @@ spring:
       chat:
         options:
           model: gpt-4o-mini
-    vectorstore:
-      pgvector:
-        initialize-schema: true
-        dimensions: 1536
-        index-type: hnsw
-        distance-type: cosine_distance
-        schema-name: public
 
 cors:
   allowed-origins: ${CORS_ORIGINS:http://localhost:5173}

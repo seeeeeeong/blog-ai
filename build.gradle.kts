@@ -60,7 +60,6 @@ dependencies {
 
     // Spring AI
     implementation("org.springframework.ai:spring-ai-starter-model-openai")
-    implementation("org.springframework.ai:spring-ai-starter-vector-store-pgvector")
     implementation("org.springframework.ai:spring-ai-rag")
 
     // Database

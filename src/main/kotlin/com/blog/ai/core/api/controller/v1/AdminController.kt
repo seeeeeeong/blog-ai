@@ -105,6 +105,15 @@ class AdminController(
         return ApiResponse.success(count)
     }
 
+    @PostMapping("/articles/re-embed")
+    fun triggerArticleReembed(
+        @RequestHeader("X-Admin-Key") adminKey: String,
+    ): ApiResponse<Int> {
+        requireAdminKey(adminKey)
+        val pended = articleAdminService.markAllForReembed()
+        return ApiResponse.success(pended)
+    }
+
     @GetMapping("/stats")
     fun getStats(
         @RequestHeader("X-Admin-Key") adminKey: String,
