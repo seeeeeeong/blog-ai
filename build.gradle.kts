@@ -78,6 +78,10 @@ dependencies {
     // Tokenizer (OpenAI cl100k_base) for token-aware truncation
     implementation("com.knuddels:jtokkit:1.1.0")
 
+    // ShedLock — distributed scheduler coordination (2 instances)
+    implementation("net.javacrumbs.shedlock:shedlock-spring:7.7.0")
+    implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.7.0")
+
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")

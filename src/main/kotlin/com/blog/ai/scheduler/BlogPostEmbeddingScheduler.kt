@@ -2,6 +2,7 @@ package com.blog.ai.scheduler
 
 import com.blog.ai.core.domain.post.BlogPostEmbedService
 import io.github.oshai.kotlinlogging.KotlinLogging
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
@@ -15,6 +16,7 @@ class BlogPostEmbeddingScheduler(
     }
 
     @Scheduled(fixedDelay = INTERVAL_MS)
+    @SchedulerLock(name = "blogPostEmbedding", lockAtMostFor = "PT15M", lockAtLeastFor = "PT10S")
     fun embed() {
         try {
             val cleared = blogPostEmbedService.clearRetriableErrors()
