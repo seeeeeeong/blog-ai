@@ -2,53 +2,44 @@ package com.blog.ai.core.domain.chat
 
 import com.blog.ai.core.support.error.CoreException
 import com.blog.ai.core.support.error.ErrorType
-import com.github.benmanes.caffeine.cache.Caffeine
+import com.blog.ai.storage.chat.ChatRateLimitRepository
+import com.blog.ai.storage.chat.RateLimitOutcome
+import com.blog.ai.storage.chat.RateLimitRequest
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.util.UUID
-import java.util.concurrent.atomic.AtomicInteger
 
 @Component
-class ChatRateLimiter {
+class ChatRateLimiter(
+    private val chatRateLimitRepository: ChatRateLimitRepository,
+) {
     companion object {
         private const val MAX_MESSAGES_PER_SESSION = 30
         private const val MAX_MESSAGES_PER_IP_PER_HOUR = 60
+        private val SESSION_TTL: Duration = Duration.ofHours(24)
+        private val IP_TTL: Duration = Duration.ofHours(1)
     }
-
-    private val sessionCounters =
-        Caffeine
-            .newBuilder()
-            .expireAfterWrite(Duration.ofHours(24))
-            .maximumSize(10_000)
-            .build<UUID, AtomicInteger>()
-
-    private val ipCounters =
-        Caffeine
-            .newBuilder()
-            .expireAfterWrite(Duration.ofHours(1))
-            .maximumSize(50_000)
-            .build<String, AtomicInteger>()
 
     fun checkAndIncrement(
         sessionId: UUID,
         clientIp: String,
     ) {
-        val sessionCount = sessionCounters.get(sessionId) { AtomicInteger(0) }
-        if (sessionCount.get() >= MAX_MESSAGES_PER_SESSION) {
-            throw CoreException(ErrorType.CHAT_RATE_LIMITED)
-        }
-
-        val ipCount = ipCounters.get(clientIp) { AtomicInteger(0) }
-        if (ipCount.get() >= MAX_MESSAGES_PER_IP_PER_HOUR) {
-            throw CoreException(ErrorType.CHAT_RATE_LIMITED)
-        }
-
-        sessionCount.incrementAndGet()
-        ipCount.incrementAndGet()
+        val outcome =
+            chatRateLimitRepository.tryConsume(
+                RateLimitRequest(
+                    sessionKey = sessionId.toString(),
+                    ipKey = clientIp,
+                    sessionMax = MAX_MESSAGES_PER_SESSION,
+                    ipMax = MAX_MESSAGES_PER_IP_PER_HOUR,
+                    sessionTtl = SESSION_TTL,
+                    ipTtl = IP_TTL,
+                ),
+            )
+        if (outcome != RateLimitOutcome.OK) throw CoreException(ErrorType.CHAT_RATE_LIMITED)
     }
 
     fun remainingMessages(sessionId: UUID): Int {
-        val count = sessionCounters.getIfPresent(sessionId)?.get() ?: 0
-        return (MAX_MESSAGES_PER_SESSION - count).coerceAtLeast(0)
+        val used = chatRateLimitRepository.getActiveCount(ChatRateLimitRepository.SCOPE_SESSION, sessionId.toString())
+        return (MAX_MESSAGES_PER_SESSION - used).coerceAtLeast(0)
     }
 }

@@ -1,0 +1,27 @@
+package com.blog.ai.scheduler
+
+import com.blog.ai.storage.chat.ChatRateLimitRepository
+import io.github.oshai.kotlinlogging.KotlinLogging
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
+import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.stereotype.Component
+
+@Component
+class ChatRateLimitCleanupScheduler(
+    private val chatRateLimitRepository: ChatRateLimitRepository,
+) {
+    companion object {
+        private val log = KotlinLogging.logger {}
+    }
+
+    @Scheduled(cron = "0 0 4 * * *", zone = "Asia/Seoul")
+    @SchedulerLock(name = "chatRateLimitCleanup", lockAtMostFor = "PT5M", lockAtLeastFor = "PT10S")
+    fun cleanup() {
+        try {
+            val deleted = chatRateLimitRepository.deleteExpired()
+            if (deleted > 0) log.info { "ChatRateLimit cleaned expired rows: $deleted" }
+        } catch (e: Exception) {
+            log.error(e) { "ChatRateLimit cleanup failed" }
+        }
+    }
+}
