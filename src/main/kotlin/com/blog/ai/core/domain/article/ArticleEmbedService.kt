@@ -1,5 +1,6 @@
 package com.blog.ai.core.domain.article
 
+import com.blog.ai.core.support.jdbc.JdbcTimestamps
 import com.blog.ai.core.support.text.EmbeddingBatcher
 import com.blog.ai.core.support.text.TextSplitter
 import com.blog.ai.core.support.text.TokenTruncator
@@ -8,10 +9,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.embedding.EmbeddingModel
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.sql.Timestamp
-import java.time.Instant
 import java.time.OffsetDateTime
-import java.time.ZoneOffset
 
 @Service
 class ArticleEmbedService(
@@ -102,18 +100,9 @@ class ArticleEmbedService(
             title = row[1] as String,
             content = (row[2] as String?) ?: "",
             url = row[3] as String,
-            publishedAt = toOffsetDateTime(row[4]),
+            publishedAt = JdbcTimestamps.toOffsetDateTime(row[4]),
             company = row[5] as String,
         )
-
-    private fun toOffsetDateTime(value: Any?): OffsetDateTime? =
-        when (value) {
-            null -> null
-            is OffsetDateTime -> value
-            is Instant -> value.atOffset(ZoneOffset.UTC)
-            is Timestamp -> value.toInstant().atOffset(ZoneOffset.UTC)
-            else -> error("unexpected published_at type: ${value.javaClass}")
-        }
 }
 
 data class ArticleEmbedSnapshot(

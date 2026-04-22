@@ -1,11 +1,11 @@
 package com.blog.ai.core.domain.article
 
+import com.blog.ai.core.support.jdbc.JdbcTimestamps
 import com.blog.ai.storage.article.ArticleChunkRepository
 import com.blog.ai.storage.article.ArticleRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
-import java.time.OffsetDateTime
 
 @Service
 @Transactional(readOnly = true)
@@ -32,7 +32,7 @@ class ArticleAdminService(
                 company = row[4] as String,
                 embedded = row[5] as Boolean,
                 embedError = row[6] as? String,
-                crawledAt = row[7] as OffsetDateTime,
+                crawledAt = requireNotNull(JdbcTimestamps.toOffsetDateTime(row[7])) { "crawled_at must not be null" },
             )
         }
 
