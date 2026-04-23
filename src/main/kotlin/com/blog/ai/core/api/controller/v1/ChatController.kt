@@ -45,7 +45,7 @@ class ChatController(
     fun getMessages(
         @RequestParam sessionId: UUID,
     ): ApiResponse<List<ChatMessageResponse>> {
-        val messages = chatService.getMessages(sessionId)
+        val messages = chatService.getMessages(sessionId).map(ChatMessageResponse::of)
         return ApiResponse.success(messages)
     }
 

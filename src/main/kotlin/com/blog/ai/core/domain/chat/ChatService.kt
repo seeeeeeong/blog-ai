@@ -1,11 +1,11 @@
 package com.blog.ai.core.domain.chat
 
-import com.blog.ai.core.api.controller.v1.response.ChatMessageResponse
 import com.blog.ai.core.support.error.CoreException
 import com.blog.ai.core.support.error.ErrorType
 import com.blog.ai.storage.chat.ChatMessageRepository
 import com.blog.ai.storage.chat.ChatSessionEntity
 import com.blog.ai.storage.chat.ChatSessionRepository
+import com.blog.ai.storage.chat.toMessage
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.http.codec.ServerSentEvent
 import org.springframework.stereotype.Service
@@ -57,12 +57,12 @@ class ChatService(
             .map { content -> ServerSentEvent.builder(content).build() }
             .concatWith(Flux.just(ServerSentEvent.builder<String>("[DONE]").build()))
 
-    fun getMessages(sessionId: UUID): List<ChatMessageResponse> {
+    fun getMessages(sessionId: UUID): List<ChatMessage> {
         requireSessionExists(sessionId)
         return chatMessageRepository
             .findRecentBySessionId(sessionId, MESSAGE_HISTORY_LIMIT)
             .filter { it.role in listOf("user", "assistant") }
-            .map(ChatMessageResponse::of)
+            .map { it.toMessage() }
     }
 
     private fun requireSessionExists(sessionId: UUID) {
