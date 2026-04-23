@@ -8,7 +8,7 @@ plugins {
     id("org.springframework.boot") version "3.5.9"
     id("io.spring.dependency-management") version "1.1.7"
     id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
-    id("io.gitlab.arturbosch.detekt") version "1.23.7"
+    id("io.gitlab.arturbosch.detekt") version "1.23.8"
 }
 
 group = "com.blog"
@@ -113,6 +113,7 @@ detekt {
 }
 
 // Disable detekt tasks until detekt 2.0 stable supports Kotlin 2.3
+// (verified 2026-04-23: detekt 1.23.8 refuses to run on Kotlin 2.3.0 and no 2.x is on Gradle Plugin Portal)
 tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
     enabled = false
 }
