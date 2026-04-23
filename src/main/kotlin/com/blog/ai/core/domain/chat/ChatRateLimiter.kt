@@ -42,4 +42,6 @@ class ChatRateLimiter(
         val used = chatRateLimitRepository.getActiveCount(ChatRateLimitRepository.SCOPE_SESSION, sessionId.toString())
         return (MAX_MESSAGES_PER_SESSION - used).coerceAtLeast(0)
     }
+
+    fun cleanupExpired(): Int = chatRateLimitRepository.deleteExpired()
 }
