@@ -21,15 +21,23 @@ class ChatFeedbackService(
         messageId: String,
         rating: String,
     ) {
-        if (rating !in VALID_RATINGS) {
-            throw CoreException(ErrorType.INVALID_FEEDBACK)
-        }
-        if (!chatSessionRepository.existsById(sessionId)) {
-            throw CoreException(ErrorType.SESSION_NOT_FOUND)
-        }
+        requireValidRating(rating)
+        requireSessionExists(sessionId)
         chatFeedbackRepository.save(
             ChatFeedbackEntity.create(sessionId, messageId, rating),
         )
+    }
+
+    private fun requireValidRating(rating: String) {
+        if (rating !in VALID_RATINGS) {
+            throw CoreException(ErrorType.INVALID_FEEDBACK)
+        }
+    }
+
+    private fun requireSessionExists(sessionId: UUID) {
+        if (!chatSessionRepository.existsById(sessionId)) {
+            throw CoreException(ErrorType.SESSION_NOT_FOUND)
+        }
     }
 
     companion object {
