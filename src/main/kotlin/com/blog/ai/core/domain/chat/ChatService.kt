@@ -31,6 +31,7 @@ class ChatService(
         return session.id
     }
 
+    @Transactional
     fun chat(
         sessionId: UUID,
         question: String,
