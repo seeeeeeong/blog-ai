@@ -160,22 +160,6 @@ interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
     ): List<Array<Any>>
 
     @Query(
-        value = """
-            SELECT a.id, a.title, a.url, a.url_hash, b.company,
-                   a.embedding IS NOT NULL AS embedded, a.embed_error, a.crawled_at
-            FROM articles a
-            JOIN blogs b ON b.id = a.blog_id
-            ORDER BY a.crawled_at DESC
-            LIMIT :limit OFFSET :offset
-        """,
-        nativeQuery = true,
-    )
-    fun findArticlesForAdmin(
-        limit: Int,
-        offset: Int,
-    ): List<Array<Any>>
-
-    @Query(
         value = "SELECT * FROM articles WHERE content IS NULL ORDER BY id LIMIT :limit",
         nativeQuery = true,
     )
