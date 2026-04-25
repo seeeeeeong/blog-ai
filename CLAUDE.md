@@ -71,6 +71,80 @@ com.blog.ai
 - Functions must stay under 40 lines
 - Log in English using KotlinLogging
 - Max line length: 120 characters
+- Split files by *public coupling*, not by "one type per file." A type lives in its own file when it is part of a **public contract** — Request/Response DTOs (Controller↔Service boundary), domain models, types accepted from or returned to another bounded context, Commands consumed by multiple services or schedulers, Hits/Results visible across layers. **Internal implementation data types** of a single feature flow — Snapshots, Batches, intermediate aggregates, Commands consumed only by helpers of one service — go in a sibling **`{Feature}Internals.kt`** file next to the owner service in the same package. **Helper services / Spring components** (Committer, Worker, etc.) always live in their own `.kt` file even when they're scoped to one flow — never colocate `@Service` / `@Component` classes with data classes in `Internals.kt`, and never put data classes inside the same file as a service class. The aim is "follow one feature in two or three files (use-case service + Internals.kt + helper service if any)," not "one type per file regardless." If a type acquires a caller outside its origin feature, promote it to its own file.
+
+```kotlin
+// Bad — every internal step in its own file, fan-out across 5 files for one flow
+// ArticleEmbedService.kt, ArticleEmbedCommitter.kt, ArticleEmbedSnapshot.kt,
+// ArticleEmbedBatch.kt, ArticleEmbedCommitCommand.kt
+
+// Bad — service mixed with its data classes in the same file
+// ArticleEmbedInternals.kt
+data class ArticleEmbedCommitCommand(...)
+@Service
+class ArticleEmbedCommitter(...) { ... }   // service does not belong in Internals.kt
+
+// Good — service files hold only services; Internals.kt holds only data classes
+// ArticleEmbedService.kt          → use-case service only
+class ArticleEmbedService(
+    private val articleEmbedCommitter: ArticleEmbedCommitter,
+    ...
+) { ... }
+
+// ArticleEmbedCommitter.kt        → helper service only
+@Service
+class ArticleEmbedCommitter(...) { ... }
+
+// ArticleEmbedInternals.kt        → sibling file, data classes only
+internal data class ArticleEmbedSnapshot(...)
+internal data class ArticleEmbedBatch(...)
+data class ArticleEmbedCommitCommand(...)
+data class SaveChunkCommand(...)
+
+// Public Request/Response/domain model — still own file
+// ArticleResponse.kt, Article.kt, SimilarRequest.kt
+```
+
+  Prefer `internal` visibility for co-located data types — it documents the single-owner intent and stops cross-package callers from forming. Treat it as a recommendation, not a hard rule: Spring DI (a `public` service cannot accept an `internal` constructor parameter — Kotlin's `EXPOSED_PARAMETER_TYPE`), public method signatures that include the type, Jackson serialization, or test access may legitimately require broader visibility. Drop `internal` when one of those constraints actually bites; don't add it just to satisfy a checklist.
+- Keep `if` conditions plain. Avoid `!`, avoid safe-call chains (`x?.foo() == true`), avoid null comparisons buried in compound conditions. Flatten the value first — with `?: return`, `?: continue`, `takeIf { ... }`, or a named boolean — so the `if` itself reads as a domain concept on a non-nullable receiver. Prefer a positive condition with early return, then handle the failure case after; the happy path reads forward instead of as "not the bad thing." Prefer the positive form of negated extension calls (`isNotBlank()` over `!isNullOrBlank()`, `isNotEmpty()` over `!isEmpty()`, `result.isTruncated` over `!result.isTruncated` with branches swapped).
+
+```kotlin
+// Bad — negation buried in a method call
+if (!chatSessionRepository.existsById(sessionId)) {
+    throw CoreException(ErrorType.SESSION_NOT_FOUND)
+}
+
+// Good — name the boolean, branch positively, throw after
+val sessionExists = chatSessionRepository.existsById(sessionId)
+if (sessionExists) return
+throw CoreException(ErrorType.SESSION_NOT_FOUND)
+
+// Bad — negated extension call, or safe-call chain in the condition
+if (!cleaned.isNullOrBlank()) return cleaned
+if (cleaned?.isNotBlank() == true) return cleaned
+
+// Good — flatten with `?: continue`/`?: return`, then a plain positive check
+val cleaned = contentCleaner.clean(element.html()) ?: continue
+if (cleaned.isNotBlank()) return cleaned
+```
+
+- Use `?.` (safe-call) sparingly — only when each step in the chain has a genuinely nullable receiver from an external boundary you don't control. Don't paper over branching logic with long `?.foo()?.bar()?.baz()` chains; flatten to non-null at the earliest point with `?: return` / `?: continue`, then operate on the non-nullable value. Multiple `?.` calls in a row are a code smell — usually one of the receivers is non-nullable in practice and the chain is hiding a clearer guard. Two `?.` calls walking a third-party object graph (e.g. `entry.contents?.firstOrNull()?.value`) are fine — that's the "necessary moment."
+
+```kotlin
+// Bad — long safe-call chain hiding the control flow
+val firstIp = request.getHeader("X-Forwarded-For")
+    ?.split(",")
+    ?.firstOrNull()
+    ?.trim()
+    ?.takeIf { it.isNotBlank() }
+return firstIp ?: request.remoteAddr
+
+// Good — bail out early via elvis, then work on a non-null String
+val forwarded = request.getHeader("X-Forwarded-For") ?: return request.remoteAddr
+val firstIp = forwarded.split(",").first().trim()
+if (firstIp.isNotBlank()) return firstIp
+return request.remoteAddr
+```
 
 ### API Response
 
@@ -137,13 +211,9 @@ class ArticleEntity(
     companion object {
         fun create(...): ArticleEntity { ... }
     }
-
-    override fun equals(other: Any?): Boolean { ... Hibernate.getClass ... }
-    override fun hashCode(): Int = Hibernate.getClass(this).hashCode()
 }
 ```
 
-- Use `Hibernate.getClass(this)` for proxy-safe `equals`/`hashCode`
 - Mutable fields: constructor param → body `var ... protected set`
 - Encapsulate state changes behind methods
 - Use `companion object { fun create() }` factory with `require` validation
