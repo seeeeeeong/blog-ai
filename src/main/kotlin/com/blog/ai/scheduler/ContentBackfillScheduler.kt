@@ -1,6 +1,6 @@
 package com.blog.ai.scheduler
 
-import com.blog.ai.core.domain.crawl.ContentBackfillService
+import com.blog.ai.core.domain.crawl.CrawlService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.scheduling.annotation.Scheduled
@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class ContentBackfillScheduler(
-    private val contentBackfillService: ContentBackfillService,
+    private val crawlService: CrawlService,
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
@@ -18,7 +18,7 @@ class ContentBackfillScheduler(
     @SchedulerLock(name = "contentBackfill", lockAtMostFor = "PT1H", lockAtLeastFor = "PT1M")
     fun backfill() {
         try {
-            contentBackfillService.backfillMissingContent()
+            crawlService.backfillMissingContent()
         } catch (e: Exception) {
             log.error(e) { "Content backfill failed" }
         }

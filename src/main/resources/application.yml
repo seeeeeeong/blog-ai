@@ -48,9 +48,6 @@ admin:
 internal:
   api-key: ${INTERNAL_API_KEY:changeme}
 
-slack:
-  webhook-url: ${SLACK_WEBHOOK_URL:}
-
 jina:
   api-key: ${JINA_API_KEY:}
   rerank-url: https://api.jina.ai/v1/rerank

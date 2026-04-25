@@ -23,8 +23,3 @@ data class JinaProperties(
     val rerankUrl: String = "https://api.jina.ai/v1/rerank",
     val rerankModel: String = "jina-reranker-v2-base-multilingual",
 )
-
-@ConfigurationProperties(prefix = "slack")
-data class SlackProperties(
-    val webhookUrl: String = "",
-)
