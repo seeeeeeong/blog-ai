@@ -1,7 +1,11 @@
 package com.blog.ai.core.domain.post
 
-import com.blog.ai.storage.article.ArticleRepository
 import com.blog.ai.storage.post.BlogPostRepository
+import com.blog.ai.storage.rag.RagChunkGranularity
+import com.blog.ai.storage.rag.RagChunkHit
+import com.blog.ai.storage.rag.RagChunkRepository
+import com.blog.ai.storage.rag.RagSearchQuery
+import com.blog.ai.storage.rag.RagSourceType
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -10,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional(readOnly = true)
 class BlogPostSimilarService(
     private val blogPostRepository: BlogPostRepository,
-    private val articleRepository: ArticleRepository,
+    private val ragChunkRepository: RagChunkRepository,
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
@@ -42,12 +46,25 @@ class BlogPostSimilarService(
         val post = blogPostRepository.findByExternalId(externalId) ?: return SimilarResult.notFound()
         if (post.isDeleted) return SimilarResult.deleted()
 
-        val vector = blogPostRepository.findEmbeddingText(externalId) ?: return SimilarResult.pending()
+        val postId = post.id ?: return SimilarResult.pending()
+        val vector =
+            ragChunkRepository.findDocumentVector(RagSourceType.AUTHOR_POST, postId)
+                ?: return SimilarResult.pending()
 
         val queryText = buildQueryText(post.title, post.content)
-        val rows = articleRepository.findSimilarHybrid(vector, queryText, CANDIDATE_POOL_SIZE, limit)
+        val hits =
+            ragChunkRepository.searchHybrid(
+                RagSearchQuery(
+                    sourceType = RagSourceType.EXTERNAL_ARTICLE,
+                    granularity = RagChunkGranularity.DOCUMENT,
+                    queryVector = vector,
+                    queryText = queryText,
+                    candidatePoolSize = CANDIDATE_POOL_SIZE,
+                    limit = limit,
+                ),
+            )
 
-        return SimilarResult.ready(rows.map(::toSimilarArticle))
+        return SimilarResult.ready(hits.map(::toSimilarArticle))
     }
 
     private fun buildQueryText(
@@ -58,12 +75,12 @@ class BlogPostSimilarService(
         return "$title $contentSnippet".trim()
     }
 
-    private fun toSimilarArticle(row: Array<Any>): SimilarArticle =
+    private fun toSimilarArticle(hit: RagChunkHit): SimilarArticle =
         SimilarArticle(
-            id = (row[0] as Number).toLong(),
-            title = row[1] as String,
-            url = row[2] as String,
-            company = row[3] as String,
-            score = (row[4] as Number).toDouble(),
+            id = hit.sourceId,
+            title = hit.title,
+            url = hit.url.orEmpty(),
+            company = hit.company.orEmpty(),
+            score = hit.score,
         )
 }

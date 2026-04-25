@@ -1,5 +1,6 @@
 package com.blog.ai.core.domain.post
 
+import com.blog.ai.core.domain.rag.RagChunkService
 import com.blog.ai.storage.post.BlogPostRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
@@ -8,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class BlogPostEmbedCommitter(
     private val blogPostRepository: BlogPostRepository,
-    private val blogPostChunkService: BlogPostChunkService,
+    private val ragChunkService: RagChunkService,
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
@@ -16,19 +17,19 @@ class BlogPostEmbedCommitter(
 
     @Transactional
     fun commit(command: BlogPostEmbedCommitCommand): Boolean {
-        val updated =
-            blogPostRepository.updateEmbedding(
-                command.postId,
-                command.docVector,
-                command.title,
-                command.content,
-                command.snapshotHash,
-            )
+        val updated = blogPostRepository.markEmbedded(command.postId, command.snapshotHash)
         if (updated == 0) {
             log.info { "BlogPost embedding skipped (stale snapshot): id=${command.postId}" }
             return false
         }
-        blogPostChunkService.replaceChunks(command.postId, command.chunks)
+        ragChunkService.replaceAuthorPost(
+            postId = command.postId,
+            title = command.title,
+            url = command.url,
+            content = command.content,
+            docVector = command.docVector,
+            chunks = command.chunks,
+        )
         return true
     }
 

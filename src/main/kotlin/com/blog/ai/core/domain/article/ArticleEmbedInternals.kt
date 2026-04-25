@@ -20,6 +20,8 @@ internal data class ArticleEmbedBatch(
 data class ArticleEmbedCommitCommand(
     val articleId: Long,
     val title: String,
+    val url: String,
+    val company: String,
     val content: String,
     val docVector: String,
     val chunks: List<SaveChunkCommand>,

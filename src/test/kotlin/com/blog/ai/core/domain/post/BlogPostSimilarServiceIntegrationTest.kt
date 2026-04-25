@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Import
 import org.springframework.jdbc.core.JdbcTemplate
-import org.springframework.transaction.support.TransactionTemplate
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 
@@ -27,11 +26,10 @@ class BlogPostSimilarServiceIntegrationTest
         private val articleRepository: ArticleRepository,
         private val blogRepository: BlogRepository,
         private val jdbcTemplate: JdbcTemplate,
-        private val transactionTemplate: TransactionTemplate,
     ) {
         @BeforeEach
         fun reset() {
-            jdbcTemplate.update("TRUNCATE TABLE article_chunks RESTART IDENTITY")
+            jdbcTemplate.update("TRUNCATE TABLE rag_chunks RESTART IDENTITY")
             jdbcTemplate.update("TRUNCATE TABLE articles RESTART IDENTITY CASCADE")
             jdbcTemplate.update("TRUNCATE TABLE blogs RESTART IDENTITY CASCADE")
             jdbcTemplate.update("TRUNCATE TABLE blog_posts RESTART IDENTITY CASCADE")
@@ -126,7 +124,32 @@ class BlogPostSimilarServiceIntegrationTest
                     ),
                 )
             val id = requireNotNull(saved.id)
-            transactionTemplate.execute { articleRepository.updateEmbedding(id, embedding, title, content) }
+            jdbcTemplate.update(
+                "UPDATE articles SET embedded_at = NOW() WHERE id = ?",
+                id,
+            )
+            jdbcTemplate.update(
+                """
+                INSERT INTO rag_chunks (
+                    source_type, source_id, granularity, chunk_index,
+                    title, url, company, content, embedding, search_vector
+                )
+                VALUES (
+                    'EXTERNAL_ARTICLE', ?, 'DOCUMENT', -1, ?, ?, ?,
+                    ?, CAST(? AS vector),
+                    setweight(to_tsvector('simple', korean_bigrams(?)), 'A') ||
+                        setweight(to_tsvector('simple', korean_bigrams(?)), 'B')
+                )
+                """.trimIndent(),
+                id,
+                title,
+                "https://example.com/${title.hashCode()}",
+                blog.company,
+                content,
+                embedding,
+                title,
+                content,
+            )
             return id
         }
 
@@ -137,20 +160,48 @@ class BlogPostSimilarServiceIntegrationTest
             embedding: String? = vector(0.1f),
             isDeleted: Boolean = false,
         ) {
+            val embeddedAtSql = if (embedding == null) "NULL" else "NOW()"
             jdbcTemplate.update(
                 """
                 INSERT INTO blog_posts (
                     external_id, title, content, source_updated_at, synced_at,
-                    is_deleted, embedding, content_hash, embed_retry_count
-                ) VALUES (?, ?, ?, NOW(), NOW(), ?, CAST(? AS vector), ?, 0)
+                    is_deleted, content_hash, embed_retry_count, embedded_at
+                ) VALUES (?, ?, ?, NOW(), NOW(), ?, ?, 0, $embeddedAtSql)
                 """.trimIndent(),
                 externalId,
                 title,
                 content,
                 isDeleted,
-                embedding,
                 "hash-$externalId",
             )
+            if (embedding != null) {
+                val postId =
+                    jdbcTemplate.queryForObject(
+                        "SELECT id FROM blog_posts WHERE external_id = ?",
+                        Long::class.java,
+                        externalId,
+                    )
+                jdbcTemplate.update(
+                    """
+                    INSERT INTO rag_chunks (
+                        source_type, source_id, granularity, chunk_index,
+                        title, url, company, content, embedding, search_vector
+                    )
+                    VALUES (
+                        'AUTHOR_POST', ?, 'DOCUMENT', -1, ?, NULL, NULL,
+                        ?, CAST(? AS vector),
+                        setweight(to_tsvector('simple', korean_bigrams(?)), 'A') ||
+                            setweight(to_tsvector('simple', korean_bigrams(?)), 'B')
+                    )
+                    """.trimIndent(),
+                    postId,
+                    title,
+                    content ?: "",
+                    embedding,
+                    title,
+                    content ?: "",
+                )
+            }
         }
 
         private fun vector(value: Float): String = FloatArray(1536) { value }.joinToString(",", "[", "]")

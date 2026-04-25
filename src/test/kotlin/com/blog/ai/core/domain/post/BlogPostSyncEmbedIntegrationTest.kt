@@ -38,6 +38,7 @@ class BlogPostSyncEmbedIntegrationTest
 
         @BeforeEach
         fun reset() {
+            jdbcTemplate.update("TRUNCATE TABLE rag_chunks RESTART IDENTITY")
             jdbcTemplate.update("TRUNCATE TABLE blog_posts RESTART IDENTITY CASCADE")
             Mockito.`when`(embeddingModel.embed(anyString())).thenReturn(FloatArray(1536) { 0.1f })
             Mockito.`when`(embeddingModel.embed(anyList<String>())).thenAnswer { inv ->
@@ -91,17 +92,18 @@ class BlogPostSyncEmbedIntegrationTest
             embedService.embedPending()
 
             val afterFirstEmbed = repository.findByExternalId(externalId)!!
-            assertNotNull(embeddingText(externalId))
+            assertTrue(isEmbedded(afterFirstEmbed.id!!))
             val originalHash = afterFirstEmbed.contentHash
 
             syncService.upsert(command(externalId, "T", "content B", time(2), "u2"))
 
             val afterUpsert = repository.findByExternalId(externalId)!!
-            assertNull(embeddingText(externalId))
+            assertFalse(isEmbedded(afterUpsert.id!!))
             assertFalse(afterUpsert.contentHash == originalHash)
 
             embedService.embedPending()
-            assertNotNull(embeddingText(externalId))
+            assertTrue(isEmbedded(afterUpsert.id!!))
+            assertTrue(hasRagChunks(afterUpsert.id!!), "rag chunks should be persisted for the post")
         }
 
         @Test
@@ -114,12 +116,11 @@ class BlogPostSyncEmbedIntegrationTest
             val staleId = staleSnapshot.id!!
 
             syncService.upsert(command(externalId, "T", "updated", time(2), "u2"))
-            assertNull(embeddingText(externalId))
+            assertFalse(isEmbedded(staleId))
 
-            val vector = FloatArray(1536) { 0.5f }.joinToString(",", "[", "]")
-            val updated = inTx { repository.updateEmbedding(staleId, vector, "T", "stale text", staleHash) }
+            val updated = inTx { repository.markEmbedded(staleId, staleHash) }
             assertEquals(0, updated)
-            assertNull(embeddingText(externalId))
+            assertFalse(isEmbedded(staleId))
 
             val errorApplied = inTx { repository.updateEmbedError(staleId, "stale error", staleHash) }
             assertEquals(0, errorApplied)
@@ -134,10 +135,9 @@ class BlogPostSyncEmbedIntegrationTest
 
             syncService.softDelete(externalId, time(2), "d1")
 
-            val vector = FloatArray(1536) { 0.3f }.joinToString(",", "[", "]")
-            val updated = inTx { repository.updateEmbedding(snapshot.id!!, vector, "T", "body", snapshot.contentHash) }
+            val updated = inTx { repository.markEmbedded(snapshot.id!!, snapshot.contentHash) }
             assertEquals(0, updated)
-            assertNull(embeddingText(externalId))
+            assertFalse(isEmbedded(snapshot.id!!))
             assertTrue(repository.findByExternalId(externalId)!!.isDeleted)
         }
 
@@ -163,7 +163,24 @@ class BlogPostSyncEmbedIntegrationTest
             seconds: Int = 0,
         ): OffsetDateTime = OffsetDateTime.of(2026, 4, 1, 10, minutes, seconds, 0, ZoneOffset.UTC)
 
-        private fun embeddingText(externalId: String): String? = repository.findEmbeddingText(externalId)
+        private fun isEmbedded(postId: Long): Boolean =
+            jdbcTemplate.queryForObject(
+                "SELECT embedded_at IS NOT NULL FROM blog_posts WHERE id = ?",
+                Boolean::class.java,
+                postId,
+            ) ?: false
+
+        private fun hasRagChunks(postId: Long): Boolean =
+            jdbcTemplate.queryForObject(
+                """
+                SELECT EXISTS (
+                    SELECT 1 FROM rag_chunks
+                    WHERE source_type = 'AUTHOR_POST' AND source_id = ?
+                )
+                """.trimIndent(),
+                Boolean::class.java,
+                postId,
+            ) ?: false
 
         private fun <T : Any> inTx(block: () -> T): T = requireNotNull(transactionTemplate.execute { block() })
     }

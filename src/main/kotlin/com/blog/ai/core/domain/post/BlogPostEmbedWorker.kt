@@ -41,6 +41,7 @@ class BlogPostEmbedWorker(
             BlogPostEmbedCommitCommand(
                 postId = snapshot.postId,
                 title = title,
+                url = snapshot.url,
                 content = content,
                 snapshotHash = snapshot.contentHash,
                 docVector = docVector,

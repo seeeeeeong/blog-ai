@@ -1,6 +1,7 @@
 package com.blog.ai.core.domain.crawl
 
 import com.blog.ai.core.domain.blog.BlogCacheService
+import com.blog.ai.core.domain.rag.RagChunkService
 import com.blog.ai.storage.article.ArticleRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
@@ -13,6 +14,7 @@ class CrawlService(
     private val articleSaveService: ArticleSaveService,
     private val articleRepository: ArticleRepository,
     private val webContentScraper: WebContentScraper,
+    private val ragChunkService: RagChunkService,
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
@@ -51,6 +53,7 @@ class CrawlService(
             val content = webContentScraper.scrape(article.url) ?: continue
             articleRepository.updateContent(articleId, content)
             articleRepository.resetEmbeddingForArticle(articleId)
+            ragChunkService.deleteExternalArticle(articleId)
             filled++
             log.debug { "Content backfilled: id=$articleId, title=${article.title}" }
         }

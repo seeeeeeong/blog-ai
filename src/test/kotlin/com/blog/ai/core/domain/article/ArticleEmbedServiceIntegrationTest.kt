@@ -1,6 +1,5 @@
 package com.blog.ai.core.domain.article
 
-import com.blog.ai.storage.article.ArticleChunkRepository
 import com.blog.ai.storage.article.ArticleEntity
 import com.blog.ai.storage.article.ArticleRepository
 import com.blog.ai.storage.blog.BlogEntity
@@ -30,7 +29,6 @@ class ArticleEmbedServiceIntegrationTest
     constructor(
         private val embedService: ArticleEmbedService,
         private val articleRepository: ArticleRepository,
-        private val articleChunkRepository: ArticleChunkRepository,
         private val blogRepository: BlogRepository,
         private val jdbcTemplate: JdbcTemplate,
     ) {
@@ -39,7 +37,7 @@ class ArticleEmbedServiceIntegrationTest
 
         @BeforeEach
         fun reset() {
-            jdbcTemplate.update("TRUNCATE TABLE article_chunks RESTART IDENTITY")
+            jdbcTemplate.update("TRUNCATE TABLE rag_chunks RESTART IDENTITY")
             jdbcTemplate.update("TRUNCATE TABLE articles RESTART IDENTITY CASCADE")
             jdbcTemplate.update("TRUNCATE TABLE blogs RESTART IDENTITY CASCADE")
             Mockito.`when`(embeddingModel.embed(anyString())).thenReturn(FloatArray(1536) { 0.1f })
@@ -68,12 +66,9 @@ class ArticleEmbedServiceIntegrationTest
 
             assertEquals(1, processed)
             val articleId = requireNotNull(saved.id)
-            assertTrue(hasEmbedding(articleId), "article row should have embedding set")
+            assertTrue(isEmbedded(articleId), "article row should be marked embedded")
             assertNull(loadEmbedError(articleId), "embed_error should stay null on success")
-            assertTrue(
-                articleChunkRepository.findChunkIndicesByArticleId(articleId).isNotEmpty(),
-                "chunks should be persisted for the article",
-            )
+            assertTrue(hasRagChunks(articleId), "rag chunks should be persisted for the article")
         }
 
         private fun seedBlog(): BlogEntity =
@@ -86,9 +81,9 @@ class ArticleEmbedServiceIntegrationTest
                 ),
             )
 
-        private fun hasEmbedding(articleId: Long): Boolean =
+        private fun isEmbedded(articleId: Long): Boolean =
             jdbcTemplate.queryForObject(
-                "SELECT embedding IS NOT NULL FROM articles WHERE id = ?",
+                "SELECT embedded_at IS NOT NULL FROM articles WHERE id = ?",
                 Boolean::class.java,
                 articleId,
             ) ?: false
@@ -99,4 +94,16 @@ class ArticleEmbedServiceIntegrationTest
                 String::class.java,
                 articleId,
             )
+
+        private fun hasRagChunks(articleId: Long): Boolean =
+            jdbcTemplate.queryForObject(
+                """
+                SELECT EXISTS (
+                    SELECT 1 FROM rag_chunks
+                    WHERE source_type = 'EXTERNAL_ARTICLE' AND source_id = ?
+                )
+                """.trimIndent(),
+                Boolean::class.java,
+                articleId,
+            ) ?: false
     }

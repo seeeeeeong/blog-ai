@@ -21,7 +21,6 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Import
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.bean.override.mockito.MockitoBean
-import org.springframework.transaction.support.TransactionTemplate
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 
@@ -34,7 +33,6 @@ class BlogArticleDocumentRetrieverIntegrationTest
         private val articleRepository: ArticleRepository,
         private val blogRepository: BlogRepository,
         private val jdbcTemplate: JdbcTemplate,
-        private val transactionTemplate: TransactionTemplate,
     ) {
         @MockitoBean
         private lateinit var embeddingModel: EmbeddingModel
@@ -47,8 +45,7 @@ class BlogArticleDocumentRetrieverIntegrationTest
 
         @BeforeEach
         fun reset() {
-            jdbcTemplate.update("TRUNCATE TABLE article_chunks RESTART IDENTITY")
-            jdbcTemplate.update("TRUNCATE TABLE blog_post_chunks RESTART IDENTITY")
+            jdbcTemplate.update("TRUNCATE TABLE rag_chunks RESTART IDENTITY")
             jdbcTemplate.update("TRUNCATE TABLE articles RESTART IDENTITY CASCADE")
             jdbcTemplate.update("TRUNCATE TABLE blogs RESTART IDENTITY CASCADE")
             jdbcTemplate.update("TRUNCATE TABLE blog_posts RESTART IDENTITY CASCADE")
@@ -98,6 +95,10 @@ class BlogArticleDocumentRetrieverIntegrationTest
 
             assertTrue(docs.isNotEmpty(), "expected at least one external doc")
             assertTrue(docs.all { it.metadata["sourceType"] == "external" })
+            assertTrue(
+                docs.all { it.text.orEmpty().startsWith("External source (NOT Author post):") },
+                "external docs must be explicitly marked as not author posts",
+            )
         }
 
         @Test
@@ -135,18 +136,28 @@ class BlogArticleDocumentRetrieverIntegrationTest
                     ),
                 )
             val articleId = requireNotNull(saved.id)
-            transactionTemplate.execute {
-                articleRepository.updateEmbedding(articleId, chunkVector, title, content)
-            }
             jdbcTemplate.update(
                 """
-                INSERT INTO article_chunks (article_id, chunk_index, content, embedding)
-                VALUES (?, ?, ?, CAST(? AS vector))
+                INSERT INTO rag_chunks (
+                    source_type, source_id, granularity, chunk_index,
+                    title, url, company, content, embedding, search_vector
+                )
+                VALUES (
+                    'EXTERNAL_ARTICLE', ?, 'CHUNK', ?, ?, ?, ?,
+                    ?, CAST(? AS vector),
+                    setweight(to_tsvector('simple', korean_bigrams(?)), 'A') ||
+                        setweight(to_tsvector('simple', korean_bigrams(?)), 'B')
+                )
                 """.trimIndent(),
                 articleId,
                 0,
+                title,
+                "https://example.com/${title.hashCode()}",
+                blog.company,
                 chunkContent,
                 chunkVector,
+                title,
+                chunkContent,
             )
         }
 
@@ -161,14 +172,13 @@ class BlogArticleDocumentRetrieverIntegrationTest
                 """
                 INSERT INTO blog_posts (
                     external_id, title, content, url, source_updated_at, synced_at,
-                    is_deleted, embedding, content_hash, embed_retry_count
-                ) VALUES (?, ?, ?, ?, NOW(), NOW(), false, CAST(? AS vector), ?, 0)
+                    is_deleted, content_hash, embed_retry_count, embedded_at
+                ) VALUES (?, ?, ?, ?, NOW(), NOW(), false, ?, 0, NOW())
                 """.trimIndent(),
                 externalId,
                 title,
                 "body",
                 url,
-                chunkVector,
                 "hash-$externalId",
             )
             val postId =
@@ -179,13 +189,25 @@ class BlogArticleDocumentRetrieverIntegrationTest
                 )
             jdbcTemplate.update(
                 """
-                INSERT INTO blog_post_chunks (post_id, chunk_index, content, embedding)
-                VALUES (?, ?, ?, CAST(? AS vector))
+                INSERT INTO rag_chunks (
+                    source_type, source_id, granularity, chunk_index,
+                    title, url, company, content, embedding, search_vector
+                )
+                VALUES (
+                    'AUTHOR_POST', ?, 'CHUNK', ?, ?, ?, NULL,
+                    ?, CAST(? AS vector),
+                    setweight(to_tsvector('simple', korean_bigrams(?)), 'A') ||
+                        setweight(to_tsvector('simple', korean_bigrams(?)), 'B')
+                )
                 """.trimIndent(),
                 postId,
                 0,
+                title,
+                url,
                 chunkContent,
                 chunkVector,
+                title,
+                chunkContent,
             )
         }
 

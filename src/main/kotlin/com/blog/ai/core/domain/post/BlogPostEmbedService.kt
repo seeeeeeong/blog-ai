@@ -45,6 +45,7 @@ class BlogPostEmbedService(
             postId = requireNotNull(entity.id) { "BlogPostEntity.id must not be null after load" },
             externalId = entity.externalId,
             title = entity.title,
+            url = entity.url,
             content = entity.content,
             contentHash = entity.contentHash,
         )

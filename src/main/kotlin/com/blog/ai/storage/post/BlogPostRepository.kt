@@ -11,7 +11,7 @@ interface BlogPostRepository : JpaRepository<BlogPostEntity, Long> {
     @Query(
         value = """
             SELECT * FROM blog_posts
-            WHERE embedding IS NULL
+            WHERE embedded_at IS NULL
               AND embed_error IS NULL
               AND is_deleted = false
             ORDER BY id
@@ -46,12 +46,9 @@ interface BlogPostRepository : JpaRepository<BlogPostEntity, Long> {
                 is_deleted = false,
                 deleted_at = NULL,
                 content_hash = EXCLUDED.content_hash,
-                embedding = CASE
+                embedded_at = CASE
                     WHEN blog_posts.content_hash IS DISTINCT FROM EXCLUDED.content_hash
-                        THEN NULL ELSE blog_posts.embedding END,
-                search_vector = CASE
-                    WHEN blog_posts.content_hash IS DISTINCT FROM EXCLUDED.content_hash
-                        THEN NULL ELSE blog_posts.search_vector END,
+                        THEN NULL ELSE blog_posts.embedded_at END,
                 embed_error = CASE
                     WHEN blog_posts.content_hash IS DISTINCT FROM EXCLUDED.content_hash
                         THEN NULL ELSE blog_posts.embed_error END,
@@ -107,10 +104,7 @@ interface BlogPostRepository : JpaRepository<BlogPostEntity, Long> {
     @Query(
         value = """
             UPDATE blog_posts
-            SET embedding = CAST(:embedding AS vector),
-                search_vector =
-                    setweight(to_tsvector('simple', korean_bigrams(:title)), 'A') ||
-                    setweight(to_tsvector('simple', korean_bigrams(:content)), 'B'),
+            SET embedded_at = NOW(),
                 embed_error = NULL
             WHERE id = :id
               AND content_hash IS NOT DISTINCT FROM :contentHash
@@ -118,11 +112,8 @@ interface BlogPostRepository : JpaRepository<BlogPostEntity, Long> {
         """,
         nativeQuery = true,
     )
-    fun updateEmbedding(
+    fun markEmbedded(
         id: Long,
-        embedding: String,
-        title: String,
-        content: String,
         contentHash: String?,
     ): Int
 
@@ -153,17 +144,6 @@ interface BlogPostRepository : JpaRepository<BlogPostEntity, Long> {
         nativeQuery = true,
     )
     fun clearRetriableEmbedErrors(maxRetries: Int): Int
-
-    @Query(
-        value = """
-            SELECT embedding::text FROM blog_posts
-            WHERE external_id = :externalId
-              AND embedding IS NOT NULL
-              AND is_deleted = false
-        """,
-        nativeQuery = true,
-    )
-    fun findEmbeddingText(externalId: String): String?
 
     @Query(value = "SELECT COUNT(*) FROM blog_posts WHERE is_deleted = false", nativeQuery = true)
     fun countActive(): Long

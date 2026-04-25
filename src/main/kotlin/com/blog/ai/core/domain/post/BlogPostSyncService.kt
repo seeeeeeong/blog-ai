@@ -1,5 +1,6 @@
 package com.blog.ai.core.domain.post
 
+import com.blog.ai.core.domain.rag.RagChunkService
 import com.blog.ai.storage.post.BlogPostRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
@@ -11,6 +12,7 @@ import java.time.OffsetDateTime
 @Transactional(readOnly = true)
 class BlogPostSyncService(
     private val blogPostRepository: BlogPostRepository,
+    private val ragChunkService: RagChunkService,
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
@@ -56,6 +58,7 @@ class BlogPostSyncService(
             log.info { "Delete ignored (stale): externalId=$externalId" }
             SyncResult.STALE_IGNORED
         } else {
+            blogPostRepository.findByExternalId(externalId)?.id?.let(ragChunkService::deleteAuthorPost)
             log.info { "Delete tombstoned: externalId=$externalId" }
             SyncResult.TOMBSTONED
         }

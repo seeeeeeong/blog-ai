@@ -1,5 +1,6 @@
 package com.blog.ai.core.domain.article
 
+import com.blog.ai.core.domain.rag.RagChunkService
 import com.blog.ai.storage.article.ArticleRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
@@ -8,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class ArticleEmbedCommitter(
     private val articleRepository: ArticleRepository,
-    private val articleChunkService: ArticleChunkService,
+    private val ragChunkService: RagChunkService,
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
@@ -16,8 +17,16 @@ class ArticleEmbedCommitter(
 
     @Transactional
     fun commit(command: ArticleEmbedCommitCommand) {
-        articleRepository.updateEmbedding(command.articleId, command.docVector, command.title, command.content)
-        articleChunkService.replaceChunks(command.articleId, command.chunks)
+        articleRepository.markEmbedded(command.articleId)
+        ragChunkService.replaceExternalArticle(
+            articleId = command.articleId,
+            title = command.title,
+            url = command.url,
+            company = command.company,
+            content = command.content,
+            docVector = command.docVector,
+            chunks = command.chunks,
+        )
         log.debug { "Article embedding committed: id=${command.articleId}" }
     }
 

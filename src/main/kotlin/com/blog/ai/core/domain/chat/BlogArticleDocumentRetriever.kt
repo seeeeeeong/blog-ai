@@ -1,11 +1,10 @@
 package com.blog.ai.core.domain.chat
 
-import com.blog.ai.storage.article.ArticleChunkHit
-import com.blog.ai.storage.article.ArticleChunkRepository
-import com.blog.ai.storage.article.ArticleRepository
-import com.blog.ai.storage.post.BlogPostChunkHit
-import com.blog.ai.storage.post.BlogPostChunkRepository
-import com.blog.ai.storage.post.BlogPostRepository
+import com.blog.ai.storage.rag.RagChunkGranularity
+import com.blog.ai.storage.rag.RagChunkHit
+import com.blog.ai.storage.rag.RagChunkRepository
+import com.blog.ai.storage.rag.RagSearchQuery
+import com.blog.ai.storage.rag.RagSourceType
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.document.Document
 import org.springframework.ai.embedding.EmbeddingModel
@@ -18,25 +17,20 @@ private val log = KotlinLogging.logger {}
 @Component
 class BlogArticleDocumentRetriever(
     private val embeddingModel: EmbeddingModel,
-    private val articleRepository: ArticleRepository,
-    private val articleChunkRepository: ArticleChunkRepository,
-    private val blogPostChunkRepository: BlogPostChunkRepository,
-    private val blogPostRepository: BlogPostRepository,
+    private val ragChunkRepository: RagChunkRepository,
     private val chatQueryRewriter: ChatQueryRewriter,
     private val jinaRerankClient: JinaRerankClient,
 ) : DocumentRetriever {
     companion object {
-        private const val MY_POST_TOP_K = 8
-        private const val MY_POST_GROUP_LIMIT = 3
-        private const val MY_POST_SIMILARITY_THRESHOLD = 0.5
-        private const val EXTERNAL_CHUNK_CANDIDATE_POOL = 20
-        private const val EXTERNAL_ARTICLE_TOP_K = 5
+        private const val AUTHOR_CANDIDATE_POOL = 50
+        private const val AUTHOR_TOP_K = 8
+        private const val AUTHOR_GROUP_LIMIT = 3
+        private const val AUTHOR_SIMILARITY_THRESHOLD = 0.5
+        private const val EXTERNAL_CANDIDATE_POOL = 50
+        private const val EXTERNAL_TOP_K = 5
         private const val SUPPLEMENTARY_ARTICLE_TOP_K = 3
-        private const val ARTICLE_CANDIDATE_POOL = 20
-        private const val HYBRID_CANDIDATE_POOL_SIZE = 50
         private const val CONTENT_SNIPPET_LENGTH = 1500
-        private const val MIN_SCORE_THRESHOLD = 0.005
-        private const val EXTERNAL_CHUNK_SIMILARITY_THRESHOLD = 0.2
+        private const val EXTERNAL_SIMILARITY_THRESHOLD = 0.2
     }
 
     override fun retrieve(query: Query): List<Document> {
@@ -51,148 +45,109 @@ class BlogArticleDocumentRetriever(
                 originalText
             }
 
-        val myPostDocs = retrieveFromMyPosts(text)
-        if (myPostDocs.isNotEmpty()) {
-            val supplementaryCandidates = retrieveFromArticles(text, ARTICLE_CANDIDATE_POOL)
+        val vector = embeddingModel.embed(text).joinToString(",", "[", "]")
+        val authorDocs = retrieveAuthorPosts(vector, text)
+        if (authorDocs.isNotEmpty()) {
+            val supplementaryCandidates = retrieveExternalArticles(vector, text, EXTERNAL_TOP_K)
             val supplementary = jinaRerankClient.rerank(text, supplementaryCandidates, SUPPLEMENTARY_ARTICLE_TOP_K)
-            val combined = myPostDocs + supplementary
+            val combined = authorDocs + supplementary
             logRetrieval("author+supplementary", text, combined)
             return combined
         }
 
-        val externalChunkCandidates = retrieveFromChunks(text, EXTERNAL_CHUNK_CANDIDATE_POOL)
-        if (externalChunkCandidates.isNotEmpty()) {
-            val reranked = jinaRerankClient.rerank(text, externalChunkCandidates, EXTERNAL_ARTICLE_TOP_K)
-            logRetrieval("external-chunks", text, reranked)
-            return reranked
+        val externalCandidates = retrieveExternalArticles(vector, text, EXTERNAL_TOP_K)
+        val externalDocs = jinaRerankClient.rerank(text, externalCandidates, EXTERNAL_TOP_K)
+        logRetrieval("external-only", text, externalDocs)
+        return externalDocs
+    }
+
+    private fun retrieveAuthorPosts(
+        vector: String,
+        text: String,
+    ): List<Document> {
+        val hits =
+            ragChunkRepository
+                .searchHybrid(
+                    RagSearchQuery(
+                        sourceType = RagSourceType.AUTHOR_POST,
+                        granularity = RagChunkGranularity.CHUNK,
+                        queryVector = vector,
+                        queryText = text,
+                        candidatePoolSize = AUTHOR_CANDIDATE_POOL,
+                        limit = AUTHOR_TOP_K,
+                    ),
+                ).filter { it.similarity >= AUTHOR_SIMILARITY_THRESHOLD }
+        if (hits.isEmpty()) return emptyList()
+
+        return buildDocuments(hits)
+            .take(AUTHOR_GROUP_LIMIT)
+    }
+
+    private fun retrieveExternalArticles(
+        vector: String,
+        text: String,
+        topK: Int,
+    ): List<Document> {
+        val hits =
+            ragChunkRepository
+                .searchHybrid(
+                    RagSearchQuery(
+                        sourceType = RagSourceType.EXTERNAL_ARTICLE,
+                        granularity = RagChunkGranularity.CHUNK,
+                        queryVector = vector,
+                        queryText = text,
+                        candidatePoolSize = EXTERNAL_CANDIDATE_POOL,
+                        limit = EXTERNAL_CANDIDATE_POOL,
+                    ),
+                ).filter { it.similarity >= EXTERNAL_SIMILARITY_THRESHOLD }
+        if (hits.isEmpty()) return emptyList()
+
+        return buildDocuments(hits).take(topK)
+    }
+
+    private fun buildDocuments(hits: List<RagChunkHit>): List<Document> =
+        hits
+            .groupBy { it.sourceType to it.sourceId }
+            .entries
+            .sortedByDescending { (_, groupedHits) -> groupedHits.maxOf { it.score } }
+            .map { (_, groupedHits) -> buildDocument(groupedHits) }
+
+    private fun buildDocument(hits: List<RagChunkHit>): Document {
+        val first = hits.first()
+        val combinedContent =
+            hits
+                .sortedBy { it.chunkIndex }
+                .joinToString("\n\n") { it.content.take(CONTENT_SNIPPET_LENGTH) }
+        val source = first.sourceLabel()
+        val sourceType = if (first.sourceType == RagSourceType.AUTHOR_POST) "author" else "external"
+
+        return Document(
+            "$source\n\n$combinedContent",
+            mapOf(
+                "sourceType" to sourceType,
+                "title" to first.title,
+                "url" to first.url.orEmpty(),
+                "company" to (first.company ?: "me"),
+                "similarity" to hits.maxOf { it.similarity },
+                "score" to hits.maxOf { it.score },
+            ),
+        )
+    }
+
+    private fun RagChunkHit.sourceLabel(): String =
+        when (sourceType) {
+            RagSourceType.AUTHOR_POST -> {
+                if (url.isNullOrBlank()) {
+                    "Author post: $title"
+                } else {
+                    "Author post: [$title]($url)"
+                }
+            }
+
+            RagSourceType.EXTERNAL_ARTICLE -> {
+                "External source (NOT Author post): [$company - $title](${url.orEmpty()})"
+            }
         }
-
-        val articleCandidates = retrieveFromArticles(text, ARTICLE_CANDIDATE_POOL)
-        val articleDocs = jinaRerankClient.rerank(text, articleCandidates, EXTERNAL_ARTICLE_TOP_K)
-        logRetrieval("external-articles", text, articleDocs)
-        return articleDocs
-    }
-
-    private fun retrieveFromMyPosts(text: String): List<Document> {
-        val vector = embeddingModel.embed(text).joinToString(",", "[", "]")
-        val hits =
-            blogPostChunkRepository.findSimilarChunks(
-                queryVector = vector,
-                topK = MY_POST_TOP_K,
-                similarityThreshold = MY_POST_SIMILARITY_THRESHOLD,
-            )
-        if (hits.isEmpty()) return emptyList()
-
-        return hits
-            .groupBy { it.postId }
-            .entries
-            .sortedByDescending { (_, chunks) -> chunks.maxOf { it.similarity } }
-            .take(MY_POST_GROUP_LIMIT)
-            .mapNotNull { (postId, chunks) -> buildMyPostDocument(postId, chunks) }
-    }
-
-    private fun buildMyPostDocument(
-        postId: Long,
-        chunks: List<BlogPostChunkHit>,
-    ): Document? {
-        val post = blogPostRepository.findById(postId).orElse(null) ?: return null
-        val title = post.title
-        val url = post.url ?: return null
-        val combinedContent =
-            chunks
-                .sortedBy { it.chunkIndex }
-                .joinToString("\n\n") { it.content.take(CONTENT_SNIPPET_LENGTH) }
-        val source = "Author post: [$title]($url)"
-
-        return Document(
-            "$source\n\n$combinedContent",
-            mapOf(
-                "sourceType" to "author",
-                "title" to title,
-                "url" to url,
-                "similarity" to chunks.maxOf { it.similarity },
-            ),
-        )
-    }
-
-    private fun retrieveFromChunks(
-        text: String,
-        topK: Int,
-    ): List<Document> {
-        val vector = embeddingModel.embed(text).joinToString(",", "[", "]")
-        val hits =
-            articleChunkRepository.findSimilarChunks(
-                queryVector = vector,
-                topK = topK,
-                similarityThreshold = EXTERNAL_CHUNK_SIMILARITY_THRESHOLD,
-            )
-        if (hits.isEmpty()) return emptyList()
-
-        return hits
-            .groupBy { it.articleId }
-            .entries
-            .map { (_, articleChunks) -> buildExternalChunkDocument(articleChunks) }
-    }
-
-    private fun buildExternalChunkDocument(chunks: List<ArticleChunkHit>): Document {
-        val first = chunks.first()
-        val title = first.title
-        val company = first.company
-        val url = first.url
-        val combinedContent =
-            chunks
-                .sortedBy { it.chunkIndex }
-                .joinToString("\n\n") { it.content.take(CONTENT_SNIPPET_LENGTH) }
-        val source = "Source: [$company - $title]($url)"
-
-        return Document(
-            "$source\n\n$combinedContent",
-            mapOf(
-                "sourceType" to "external",
-                "title" to title,
-                "company" to company,
-                "url" to url,
-                "similarity" to chunks.maxOf { it.similarity },
-            ),
-        )
-    }
-
-    private fun retrieveFromArticles(
-        text: String,
-        topK: Int,
-    ): List<Document> {
-        val vector = embeddingModel.embed(text).joinToString(",", "[", "]")
-        val rows = articleRepository.findHybridForChat(vector, text, HYBRID_CANDIDATE_POOL_SIZE, topK)
-        return rows
-            .map(::toArticleDocument)
-            .filter { (it.metadata["score"] as Double) >= MIN_SCORE_THRESHOLD }
-            .filter { (it.metadata["hasContent"] as Boolean) }
-    }
-
-    private fun toArticleDocument(row: Array<Any>): Document {
-        val id = (row[0] as Number).toLong()
-        val title = row[1] as String
-        val url = row[2] as String
-        val company = row[3] as String
-        val content = (row[4] as String?).orEmpty()
-        val score = (row[5] as Number).toDouble()
-
-        val snippet = content.take(CONTENT_SNIPPET_LENGTH)
-        val source = "Source: [$company - $title]($url)"
-        val body = if (snippet.isBlank()) source else "$source\n\n$snippet"
-
-        val metadata =
-            mapOf(
-                "sourceType" to "external",
-                "id" to id,
-                "title" to title,
-                "url" to url,
-                "company" to company,
-                "score" to score,
-                "hasContent" to snippet.isNotBlank(),
-            )
-        return Document(body, metadata)
-    }
 
     private fun logRetrieval(
         mode: String,

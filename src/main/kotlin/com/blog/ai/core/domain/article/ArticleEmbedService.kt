@@ -78,6 +78,8 @@ class ArticleEmbedService(
                 ArticleEmbedCommitCommand(
                     articleId = snapshot.articleId,
                     title = snapshot.title,
+                    url = snapshot.url,
+                    company = snapshot.company,
                     content = snapshot.content,
                     docVector = EmbeddingBatcher.toVectorLiteral(docVector),
                     chunks = chunks,
