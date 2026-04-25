@@ -50,24 +50,6 @@ class BlogPostSimilarService(
         return SimilarResult.ready(rows.map(::toSimilarArticle))
     }
 
-    fun diagnose(
-        externalId: String,
-        limit: Int = DEFAULT_LIMIT,
-    ): SimilarDiagnoseResult {
-        val post = blogPostRepository.findByExternalId(externalId) ?: return SimilarDiagnoseResult.notFound()
-        if (post.isDeleted) return SimilarDiagnoseResult.deleted()
-
-        val vector = blogPostRepository.findEmbeddingText(externalId) ?: return SimilarDiagnoseResult.pending()
-
-        val queryText = buildQueryText(post.title, post.content)
-        val vectorOnly = articleRepository.findSimilarByVector(vector, limit).map(::toSimilarArticle)
-        val bm25Only = articleRepository.findSimilarByBm25(queryText, limit).map(::toSimilarArticle)
-        val hybridRows = articleRepository.findSimilarHybrid(vector, queryText, CANDIDATE_POOL_SIZE, limit)
-        val hybrid = hybridRows.map(::toSimilarArticle)
-
-        return SimilarDiagnoseResult.ready(vectorOnly, bm25Only, hybrid)
-    }
-
     private fun buildQueryText(
         title: String,
         content: String?,

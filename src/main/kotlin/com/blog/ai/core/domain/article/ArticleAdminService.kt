@@ -35,10 +35,4 @@ class ArticleAdminService(
                 crawledAt = requireNotNull(JdbcTimestamps.toOffsetDateTime(row[7])) { "crawled_at must not be null" },
             )
         }
-
-    fun countTotal(): Long = articleRepository.count()
-
-    fun countUnembedded(): Long = articleRepository.countUnembedded()
-
-    fun countWithoutContent(): Long = articleRepository.countWithoutContent()
 }

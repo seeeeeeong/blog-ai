@@ -167,13 +167,4 @@ interface BlogPostRepository : JpaRepository<BlogPostEntity, Long> {
 
     @Query(value = "SELECT COUNT(*) FROM blog_posts WHERE is_deleted = false", nativeQuery = true)
     fun countActive(): Long
-
-    @Query(
-        value = """
-            SELECT COUNT(*) FROM blog_posts
-            WHERE embedding IS NULL AND embed_error IS NULL AND is_deleted = false
-        """,
-        nativeQuery = true,
-    )
-    fun countUnembedded(): Long
 }

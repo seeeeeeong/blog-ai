@@ -1,13 +1,10 @@
 package com.blog.ai.core.api.controller.v1
 
 import com.blog.ai.core.api.controller.v1.response.ArticleAdminResponse
-import com.blog.ai.core.api.controller.v1.response.SimilarDiagnoseResponse
 import com.blog.ai.core.domain.article.ArticleAdminService
 import com.blog.ai.core.domain.article.ArticleEmbedService
-import com.blog.ai.core.domain.crawl.ContentBackfillService
 import com.blog.ai.core.domain.crawl.CrawlAsyncService
 import com.blog.ai.core.domain.post.BlogPostEmbedService
-import com.blog.ai.core.domain.post.BlogPostSimilarService
 import com.blog.ai.core.support.error.CoreException
 import com.blog.ai.core.support.error.ErrorType
 import com.blog.ai.core.support.properties.AdminProperties
@@ -29,8 +26,6 @@ class AdminController(
     private val articleEmbedService: ArticleEmbedService,
     private val articleAdminService: ArticleAdminService,
     private val blogPostEmbedService: BlogPostEmbedService,
-    private val blogPostSimilarService: BlogPostSimilarService,
-    private val contentBackfillService: ContentBackfillService,
     private val internalProperties: InternalProperties,
 ) {
     @PostMapping("/crawl")
@@ -74,27 +69,6 @@ class AdminController(
         return ApiResponse.success(PageResponse(response, hasNext))
     }
 
-    @GetMapping("/similar/diagnose")
-    fun diagnoseSimilar(
-        @RequestHeader("X-Admin-Key") adminKey: String,
-        @RequestParam postId: String,
-        @RequestParam(defaultValue = "10") limit: Int,
-    ): ApiResponse<SimilarDiagnoseResponse> {
-        requireAdminKey(adminKey)
-        val result = blogPostSimilarService.diagnose(postId, limit)
-        return ApiResponse.success(SimilarDiagnoseResponse.of(result))
-    }
-
-    @PostMapping("/backfill/content")
-    fun triggerContentBackfill(
-        @RequestHeader("X-Admin-Key") adminKey: String,
-        @RequestParam(defaultValue = "50") batchSize: Int,
-    ): ApiResponse<Int> {
-        requireAdminKey(adminKey)
-        val filled = contentBackfillService.backfillMissingContent(batchSize)
-        return ApiResponse.success(filled)
-    }
-
     @PostMapping("/backfill/embedding")
     fun triggerEmbeddingReprocess(
         @RequestHeader("X-Admin-Key") adminKey: String,
@@ -112,20 +86,6 @@ class AdminController(
         requireAdminKey(adminKey)
         val pended = articleAdminService.markAllForReembed()
         return ApiResponse.success(pended)
-    }
-
-    @GetMapping("/stats")
-    fun getStats(
-        @RequestHeader("X-Admin-Key") adminKey: String,
-    ): ApiResponse<Map<String, Any>> {
-        requireAdminKey(adminKey)
-        return ApiResponse.success(
-            mapOf(
-                "totalArticles" to articleAdminService.countTotal(),
-                "unembedded" to articleAdminService.countUnembedded(),
-                "withoutContent" to articleAdminService.countWithoutContent(),
-            ),
-        )
     }
 
     private fun requireAdminKey(key: String) {
