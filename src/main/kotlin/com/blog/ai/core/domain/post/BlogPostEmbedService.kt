@@ -1,5 +1,6 @@
 package com.blog.ai.core.domain.post
 
+import com.blog.ai.storage.post.BlogPostEntity
 import com.blog.ai.storage.post.BlogPostRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
@@ -17,16 +18,15 @@ class BlogPostEmbedService(
     }
 
     fun embedPending(limit: Int = DEFAULT_EMBED_LIMIT): Int {
-        val posts = blogPostRepository.findUnembedded(limit)
+        val snapshots = blogPostRepository.findUnembedded(limit).map(::toSnapshot)
         var embedded = 0
 
-        for (post in posts) {
-            val postId = requireNotNull(post.id)
+        for (snapshot in snapshots) {
             try {
-                if (blogPostEmbedWorker.embedOne(post)) embedded++
+                if (blogPostEmbedWorker.embedOne(snapshot)) embedded++
             } catch (e: Exception) {
-                log.error(e) { "BlogPost embedding failed: id=$postId" }
-                blogPostEmbedWorker.recordError(postId, post.contentHash, e.message ?: "unknown")
+                log.error(e) { "BlogPost embedding failed: id=${snapshot.postId}" }
+                blogPostEmbedWorker.recordError(snapshot.postId, snapshot.contentHash, e.message ?: "unknown")
             }
         }
 
@@ -39,4 +39,13 @@ class BlogPostEmbedService(
     @Transactional
     fun clearRetriableErrors(maxRetries: Int = MAX_EMBED_RETRIES): Int =
         blogPostRepository.clearRetriableEmbedErrors(maxRetries)
+
+    private fun toSnapshot(entity: BlogPostEntity): BlogPostEmbedSnapshot =
+        BlogPostEmbedSnapshot(
+            postId = requireNotNull(entity.id) { "BlogPostEntity.id must not be null after load" },
+            externalId = entity.externalId,
+            title = entity.title,
+            content = entity.content,
+            contentHash = entity.contentHash,
+        )
 }

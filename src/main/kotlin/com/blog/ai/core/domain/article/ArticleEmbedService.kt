@@ -9,7 +9,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.embedding.EmbeddingModel
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.OffsetDateTime
 
 @Service
 class ArticleEmbedService(
@@ -28,48 +27,8 @@ class ArticleEmbedService(
         val snapshots = articleRepository.findUnembeddedSnapshots(limit).map(::toSnapshot)
         if (snapshots.isEmpty()) return 0
 
-        val docTexts = snapshots.map { TokenTruncator.truncate("${it.title} ${it.content}", MAX_EMBED_TOKENS) }
-        val docVectors =
-            runBatch("doc", docTexts, snapshots) ?: return 0
-
-        val chunkJobs =
-            snapshots.map { if (it.content.isBlank()) emptyList() else TextSplitter.split(it.content) }
-        val chunkTexts =
-            snapshots.zip(chunkJobs).flatMap { (snap, chunks) -> chunks.map { "${snap.title}\n\n$it" } }
-        val chunkVectors =
-            if (chunkTexts.isEmpty()) emptyList() else (runBatch("chunk", chunkTexts, snapshots) ?: return 0)
-
-        var cursor = 0
-        var embedded = 0
-        snapshots.forEachIndexed { i, snap ->
-            val jobs = chunkJobs[i]
-            val commands =
-                jobs.mapIndexed { idx, chunk ->
-                    SaveChunkCommand(
-                        articleId = snap.articleId,
-                        chunkIndex = idx,
-                        content = chunk,
-                        embedding = EmbeddingBatcher.toVectorLiteral(chunkVectors[cursor + idx]),
-                    )
-                }
-            cursor += jobs.size
-
-            try {
-                articleEmbedCommitter.commit(
-                    ArticleEmbedCommitCommand(
-                        articleId = snap.articleId,
-                        title = snap.title,
-                        content = snap.content,
-                        docVector = EmbeddingBatcher.toVectorLiteral(docVectors[i]),
-                        chunks = commands,
-                    ),
-                )
-                embedded++
-            } catch (e: Exception) {
-                log.error(e) { "Embedding commit failed: id=${snap.articleId}" }
-                articleEmbedCommitter.recordError(snap.articleId, e.message ?: "unknown")
-            }
-        }
+        val batch = embedBatch(snapshots) ?: return 0
+        val embedded = commitAll(snapshots, batch)
 
         if (embedded > 0) {
             log.info { "Embedding processed: $embedded articles completed" }
@@ -80,6 +39,71 @@ class ArticleEmbedService(
     @Transactional
     fun clearRetriableErrors(maxRetries: Int = MAX_EMBED_RETRIES): Int =
         articleRepository.clearRetriableEmbedErrors(maxRetries)
+
+    private fun embedBatch(snapshots: List<ArticleEmbedSnapshot>): ArticleEmbedBatch? {
+        val docTexts = snapshots.map { TokenTruncator.truncate("${it.title} ${it.content}", MAX_EMBED_TOKENS) }
+        val docVectors = runBatch("doc", docTexts, snapshots) ?: return null
+
+        val chunkJobs = snapshots.map { if (it.content.isBlank()) emptyList() else TextSplitter.split(it.content) }
+        val chunkTexts =
+            snapshots.zip(chunkJobs).flatMap { (snap, chunks) -> chunks.map { "${snap.title}\n\n$it" } }
+        val chunkVectors =
+            if (chunkTexts.isEmpty()) emptyList() else (runBatch("chunk", chunkTexts, snapshots) ?: return null)
+
+        return ArticleEmbedBatch(docVectors, chunkJobs, chunkVectors)
+    }
+
+    private fun commitAll(
+        snapshots: List<ArticleEmbedSnapshot>,
+        batch: ArticleEmbedBatch,
+    ): Int {
+        var cursor = 0
+        var embedded = 0
+        snapshots.forEachIndexed { i, snap ->
+            val jobs = batch.chunkJobs[i]
+            val commands = buildChunkCommands(snap.articleId, jobs, batch.chunkVectors, cursor)
+            cursor += jobs.size
+            if (commitOne(snap, batch.docVectors[i], commands)) embedded++
+        }
+        return embedded
+    }
+
+    private fun commitOne(
+        snapshot: ArticleEmbedSnapshot,
+        docVector: FloatArray,
+        chunks: List<SaveChunkCommand>,
+    ): Boolean =
+        try {
+            articleEmbedCommitter.commit(
+                ArticleEmbedCommitCommand(
+                    articleId = snapshot.articleId,
+                    title = snapshot.title,
+                    content = snapshot.content,
+                    docVector = EmbeddingBatcher.toVectorLiteral(docVector),
+                    chunks = chunks,
+                ),
+            )
+            true
+        } catch (e: Exception) {
+            log.error(e) { "Embedding commit failed: id=${snapshot.articleId}" }
+            articleEmbedCommitter.recordError(snapshot.articleId, e.message ?: "unknown")
+            false
+        }
+
+    private fun buildChunkCommands(
+        articleId: Long,
+        jobs: List<String>,
+        chunkVectors: List<FloatArray>,
+        cursor: Int,
+    ): List<SaveChunkCommand> =
+        jobs.mapIndexed { idx, chunk ->
+            SaveChunkCommand(
+                articleId = articleId,
+                chunkIndex = idx,
+                content = chunk,
+                embedding = EmbeddingBatcher.toVectorLiteral(chunkVectors[cursor + idx]),
+            )
+        }
 
     private fun runBatch(
         kind: String,
@@ -104,12 +128,3 @@ class ArticleEmbedService(
             company = row[5] as String,
         )
 }
-
-data class ArticleEmbedSnapshot(
-    val articleId: Long,
-    val title: String,
-    val content: String,
-    val url: String,
-    val publishedAt: OffsetDateTime?,
-    val company: String,
-)

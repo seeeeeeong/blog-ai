@@ -3,7 +3,6 @@ package com.blog.ai.core.domain.post
 import com.blog.ai.core.support.text.EmbeddingBatcher
 import com.blog.ai.core.support.text.TextSplitter
 import com.blog.ai.core.support.text.TokenTruncator
-import com.blog.ai.storage.post.BlogPostEntity
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.embedding.EmbeddingModel
 import org.springframework.stereotype.Service
@@ -18,11 +17,9 @@ class BlogPostEmbedWorker(
         private const val MAX_EMBED_TOKENS = 7500
     }
 
-    fun embedOne(post: BlogPostEntity): Boolean {
-        val postId = requireNotNull(post.id)
-        val snapshotHash = post.contentHash
-        val title = post.title
-        val content = post.content ?: ""
+    fun embedOne(snapshot: BlogPostEmbedSnapshot): Boolean {
+        val title = snapshot.title
+        val content = snapshot.content ?: ""
 
         val docText = TokenTruncator.truncate("$title $content", MAX_EMBED_TOKENS)
         val chunks = if (content.isBlank()) emptyList() else TextSplitter.split(content)
@@ -33,7 +30,7 @@ class BlogPostEmbedWorker(
         val chunkCommands =
             chunks.mapIndexed { index, chunk ->
                 SaveBlogPostChunkCommand(
-                    postId = postId,
+                    postId = snapshot.postId,
                     chunkIndex = index,
                     content = chunk,
                     embedding = EmbeddingBatcher.toVectorLiteral(vectors[index + 1]),
@@ -42,16 +39,16 @@ class BlogPostEmbedWorker(
 
         val command =
             BlogPostEmbedCommitCommand(
-                postId = postId,
+                postId = snapshot.postId,
                 title = title,
                 content = content,
-                snapshotHash = snapshotHash,
+                snapshotHash = snapshot.contentHash,
                 docVector = docVector,
                 chunks = chunkCommands,
             )
         val committed = blogPostEmbedCommitter.commit(command)
         if (committed) {
-            log.debug { "BlogPost embedding completed: id=$postId, externalId=${post.externalId}" }
+            log.debug { "BlogPost embedding completed: id=${snapshot.postId}, externalId=${snapshot.externalId}" }
         }
         return committed
     }

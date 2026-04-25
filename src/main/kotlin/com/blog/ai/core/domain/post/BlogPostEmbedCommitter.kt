@@ -41,12 +41,3 @@ class BlogPostEmbedCommitter(
         blogPostRepository.updateEmbedError(postId, message, snapshotHash)
     }
 }
-
-data class BlogPostEmbedCommitCommand(
-    val postId: Long,
-    val title: String,
-    val content: String,
-    val snapshotHash: String?,
-    val docVector: String,
-    val chunks: List<SaveBlogPostChunkCommand>,
-)

@@ -78,7 +78,7 @@ class ArticleEmbedServiceIntegrationTest
 
         private fun seedBlog(): BlogEntity =
             blogRepository.save(
-                BlogEntity(
+                BlogEntity.create(
                     name = "Example Eng",
                     company = "Example",
                     rssUrl = "https://example.com/rss",

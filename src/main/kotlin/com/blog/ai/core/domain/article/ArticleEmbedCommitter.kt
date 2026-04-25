@@ -29,11 +29,3 @@ class ArticleEmbedCommitter(
         articleRepository.updateEmbedError(articleId, message)
     }
 }
-
-data class ArticleEmbedCommitCommand(
-    val articleId: Long,
-    val title: String,
-    val content: String,
-    val docVector: String,
-    val chunks: List<SaveChunkCommand>,
-)
