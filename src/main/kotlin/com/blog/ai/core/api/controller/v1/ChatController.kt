@@ -68,11 +68,9 @@ class ChatController(
     }
 
     private fun resolveClientIp(request: HttpServletRequest): String {
-        val forwarded = request.getHeader("X-Forwarded-For")
-        if (forwarded != null) {
-            val firstIp = forwarded.split(",").firstOrNull()?.trim()
-            if (!firstIp.isNullOrBlank()) return firstIp
-        }
+        val forwarded = request.getHeader("X-Forwarded-For") ?: return request.remoteAddr
+        val firstIp = forwarded.split(",").first().trim()
+        if (firstIp.isNotBlank()) return firstIp
         return request.remoteAddr
     }
 }

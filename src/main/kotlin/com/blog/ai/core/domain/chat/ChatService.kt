@@ -66,8 +66,8 @@ class ChatService(
     }
 
     private fun requireSessionExists(sessionId: UUID) {
-        if (!chatSessionRepository.existsById(sessionId)) {
-            throw CoreException(ErrorType.SESSION_NOT_FOUND)
-        }
+        val sessionExists = chatSessionRepository.existsById(sessionId)
+        if (sessionExists) return
+        throw CoreException(ErrorType.SESSION_NOT_FOUND)
     }
 }

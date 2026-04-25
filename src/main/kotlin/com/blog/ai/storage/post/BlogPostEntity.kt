@@ -78,4 +78,24 @@ class BlogPostEntity(
     @Column(name = "deleted_at")
     var deletedAt: OffsetDateTime? = deletedAt
         protected set
+
+    companion object {
+        fun create(command: CreateBlogPostCommand): BlogPostEntity {
+            require(command.externalId.isNotBlank()) { "BlogPost externalId must not be blank" }
+            require(command.title.isNotBlank()) { "BlogPost title must not be blank" }
+            return BlogPostEntity(
+                externalId = command.externalId,
+                title = command.title,
+                content = command.content,
+                url = command.url,
+                author = command.author,
+                publishedAt = command.publishedAt,
+                contentHash = command.contentHash,
+                sourceUpdatedAt = command.sourceUpdatedAt,
+                lastEventId = command.lastEventId,
+                isDeleted = command.isDeleted,
+                deletedAt = command.deletedAt,
+            )
+        }
+    }
 }

@@ -31,4 +31,26 @@ class BlogEntity(
     fun deactivate() {
         this.active = false
     }
+
+    companion object {
+        fun create(
+            name: String,
+            company: String,
+            rssUrl: String,
+            homeUrl: String,
+            active: Boolean = true,
+        ): BlogEntity {
+            require(name.isNotBlank()) { "Blog name must not be blank" }
+            require(company.isNotBlank()) { "Blog company must not be blank" }
+            require(rssUrl.isNotBlank()) { "Blog rssUrl must not be blank" }
+            require(homeUrl.isNotBlank()) { "Blog homeUrl must not be blank" }
+            return BlogEntity(
+                name = name,
+                company = company,
+                rssUrl = rssUrl,
+                homeUrl = homeUrl,
+                active = active,
+            )
+        }
+    }
 }

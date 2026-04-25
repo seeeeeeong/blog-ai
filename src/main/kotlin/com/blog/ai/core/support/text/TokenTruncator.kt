@@ -12,8 +12,8 @@ object TokenTruncator {
     ): String {
         require(maxTokens > 0) { "maxTokens must be positive: $maxTokens" }
         val result = encoding.encode(text, maxTokens)
-        if (!result.isTruncated) return text
-        return encoding.decode(result.tokens)
+        if (result.isTruncated) return encoding.decode(result.tokens)
+        return text
     }
 
     fun countTokens(text: String): Int = encoding.countTokens(text)

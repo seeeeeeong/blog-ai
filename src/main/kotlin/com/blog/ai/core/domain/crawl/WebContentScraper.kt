@@ -47,8 +47,8 @@ class WebContentScraper(
     private fun extractContent(doc: Document): String? {
         for (selector in CONTENT_SELECTORS) {
             val element = doc.selectFirst(selector) ?: continue
-            val cleaned = contentCleaner.clean(element.html())
-            if (!cleaned.isNullOrBlank()) return cleaned
+            val cleaned = contentCleaner.clean(element.html()) ?: continue
+            if (cleaned.isNotBlank()) return cleaned
         }
         val body = doc.body() ?: return null
         val bodyText = contentCleaner.clean(body.html())
