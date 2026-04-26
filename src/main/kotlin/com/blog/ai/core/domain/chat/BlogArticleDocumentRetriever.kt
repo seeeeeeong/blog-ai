@@ -23,12 +23,13 @@ class BlogArticleDocumentRetriever(
 ) : DocumentRetriever {
     companion object {
         private const val AUTHOR_CANDIDATE_POOL = 50
-        private const val AUTHOR_TOP_K = 8
+        private const val AUTHOR_TOP_K = 15
         private const val AUTHOR_GROUP_LIMIT = 3
-        private const val AUTHOR_SIMILARITY_THRESHOLD = 0.5
+        private const val AUTHOR_SIMILARITY_THRESHOLD = 0.45
         private const val EXTERNAL_CANDIDATE_POOL = 50
-        private const val EXTERNAL_TOP_K = 5
-        private const val SUPPLEMENTARY_ARTICLE_TOP_K = 3
+        private const val EXTERNAL_RERANK_INPUT = 30
+        private const val EXTERNAL_FINAL_TOP_N = 5
+        private const val SUPPLEMENTARY_FINAL_TOP_N = 3
         private const val CONTENT_SNIPPET_LENGTH = 1500
         private const val EXTERNAL_SIMILARITY_THRESHOLD = 0.2
     }
@@ -48,15 +49,15 @@ class BlogArticleDocumentRetriever(
         val vector = embeddingModel.embed(text).joinToString(",", "[", "]")
         val authorDocs = retrieveAuthorPosts(vector, text)
         if (authorDocs.isNotEmpty()) {
-            val supplementaryCandidates = retrieveExternalArticles(vector, text, EXTERNAL_TOP_K)
-            val supplementary = jinaRerankClient.rerank(text, supplementaryCandidates, SUPPLEMENTARY_ARTICLE_TOP_K)
+            val supplementaryCandidates = retrieveExternalCandidates(vector, text, EXTERNAL_RERANK_INPUT)
+            val supplementary = jinaRerankClient.rerank(text, supplementaryCandidates, SUPPLEMENTARY_FINAL_TOP_N)
             val combined = authorDocs + supplementary
             logRetrieval("author+supplementary", text, combined)
             return combined
         }
 
-        val externalCandidates = retrieveExternalArticles(vector, text, EXTERNAL_TOP_K)
-        val externalDocs = jinaRerankClient.rerank(text, externalCandidates, EXTERNAL_TOP_K)
+        val externalCandidates = retrieveExternalCandidates(vector, text, EXTERNAL_RERANK_INPUT)
+        val externalDocs = jinaRerankClient.rerank(text, externalCandidates, EXTERNAL_FINAL_TOP_N)
         logRetrieval("external-only", text, externalDocs)
         return externalDocs
     }
@@ -83,10 +84,10 @@ class BlogArticleDocumentRetriever(
             .take(AUTHOR_GROUP_LIMIT)
     }
 
-    private fun retrieveExternalArticles(
+    private fun retrieveExternalCandidates(
         vector: String,
         text: String,
-        topK: Int,
+        candidateLimit: Int,
     ): List<Document> {
         val hits =
             ragChunkRepository
@@ -102,7 +103,7 @@ class BlogArticleDocumentRetriever(
                 ).filter { it.similarity >= EXTERNAL_SIMILARITY_THRESHOLD }
         if (hits.isEmpty()) return emptyList()
 
-        return buildDocuments(hits).take(topK)
+        return buildDocuments(hits).take(candidateLimit)
     }
 
     private fun buildDocuments(hits: List<RagChunkHit>): List<Document> =
