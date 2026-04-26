@@ -52,19 +52,19 @@ write_env() {
 
 # --- Setup ---
 echo "=== Deploy: $SERVICE ($NEW_IMAGE) ==="
-mkdir -p "$RUNTIME_DIR/bin" "$ENV_DIR" "$RUNTIME_DIR/data/postgres" "$RUNTIME_DIR/data/alloy"
+mkdir -p "$RUNTIME_DIR/bin" "$ENV_DIR" "$RUNTIME_DIR/data/alloy"
 
 REGISTRY="${NEW_IMAGE%%/*}"
 aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$REGISTRY"
 
-DB_PASSWORD=$(ssm_get "$BLOG_AI_SSM/DB_PASSWORD")
-
 # --- blog-ai deploy ---
 write_env "$ENV_DIR/blog-ai.env" <<EOF
 SPRING_PROFILES_ACTIVE=prod
-DB_HOST=postgres
-DB_USERNAME=postgres
-DB_PASSWORD=$DB_PASSWORD
+DB_HOST=$(ssm_get "$BLOG_AI_SSM/DB_HOST")
+DB_PORT=$(ssm_get_or "$BLOG_AI_SSM/DB_PORT" 5432)
+DB_NAME=$(ssm_get_or "$BLOG_AI_SSM/DB_NAME" blog_ai)
+DB_USERNAME=$(ssm_get_or "$BLOG_AI_SSM/DB_USERNAME" postgres)
+DB_PASSWORD=$(ssm_get "$BLOG_AI_SSM/DB_PASSWORD")
 OPENAI_API_KEY=$(ssm_get "$BLOG_AI_SSM/OPENAI_API_KEY")
 CORS_ORIGINS=$(ssm_get_or "$BLOG_AI_SSM/CORS_ORIGINS" "")
 ADMIN_API_KEY=$(ssm_get "$BLOG_AI_SSM/ADMIN_API_KEY")
@@ -79,14 +79,10 @@ EOF
 
 write_env "$COMPOSE_ENV" <<EOF
 BLOG_AI_IMAGE=$NEW_IMAGE
-POSTGRES_PASSWORD=$DB_PASSWORD
 PROMETHEUS_REMOTE_WRITE_URL=$(ssm_get_or "$BLOG_AI_SSM/PROMETHEUS_REMOTE_WRITE_URL" "")
 PROMETHEUS_USERNAME=$(ssm_get_or "$BLOG_AI_SSM/PROMETHEUS_USERNAME" "")
 PROMETHEUS_PASSWORD=$(ssm_get_or "$BLOG_AI_SSM/PROMETHEUS_PASSWORD" "")
 EOF
-
-compose up -d postgres
-wait_healthy blog-ai-postgres || { fail_diagnostics blog-ai-postgres; exit 1; }
 
 compose up -d --no-deps --force-recreate blog-ai
 wait_healthy blog-ai || { fail_diagnostics blog-ai; exit 1; }

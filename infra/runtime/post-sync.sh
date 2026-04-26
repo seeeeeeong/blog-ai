@@ -3,7 +3,7 @@ set -euo pipefail
 
 echo "=== Post-sync (blog-ai) ==="
 
-mkdir -p /opt/services/{bin,env,data/postgres,data/alloy}
+mkdir -p /opt/services/{bin,env,data/alloy}
 
 mv -f /opt/services/deploy-service.sh /opt/services/bin/deploy-service.sh 2>/dev/null || true
 chmod +x /opt/services/bin/deploy-service.sh /opt/services/post-sync.sh 2>/dev/null || true

@@ -7,9 +7,6 @@ services:
       - "8081:8081"
     env_file:
       - /opt/services/env/blog-ai.env
-    depends_on:
-      postgres:
-        condition: service_healthy
     networks:
       - services
     mem_limit: 512m
@@ -19,26 +16,6 @@ services:
       timeout: 10s
       retries: 18
       start_period: 90s
-
-  postgres:
-    image: pgvector/pgvector:pg16
-    container_name: blog-ai-postgres
-    restart: always
-    environment:
-      POSTGRES_DB: blog_ai
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - /opt/services/data/postgres:/var/lib/postgresql/data
-    networks:
-      - services
-    mem_limit: 512m
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d blog_ai"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
 
   node-exporter:
     image: prom/node-exporter:v1.8.2
