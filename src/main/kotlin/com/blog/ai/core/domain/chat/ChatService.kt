@@ -75,7 +75,7 @@ class ChatService(
         if (plan.intent == ChatQueryPlanner.Intent.CLARIFY) {
             return clarifyResponse(sessionId, question, plan.clarificationQuestion)
         }
-        return streamChat(sessionId, question, plan.rewrittenQuery)
+        return streamChat(sessionId, question, plan.rewrittenQuery, plan.intent)
     }
 
     fun remainingMessages(sessionId: UUID): Int = chatRateLimiter.remainingMessages(sessionId)
@@ -156,6 +156,7 @@ class ChatService(
         sessionId: UUID,
         question: String,
         rewrittenQuery: String,
+        intent: ChatQueryPlanner.Intent,
     ): Flux<ServerSentEvent<String>> =
         chatClient
             .prompt()
@@ -163,6 +164,7 @@ class ChatService(
             .advisors { advisor ->
                 advisor.param("chat_memory_conversation_id", sessionId.toString())
                 advisor.param(REWRITTEN_QUERY_PARAM, rewrittenQuery)
+                advisor.param(BlogArticleDocumentRetriever.INTENT_PARAM, intent.name)
             }.stream()
             .content()
             .map { content -> ServerSentEvent.builder(content).build() }

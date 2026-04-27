@@ -25,14 +25,16 @@ class BlogArticleDocumentRetriever(
         private const val AUTHOR_CANDIDATE_POOL = 50
         private const val AUTHOR_TOP_K = 15
         private const val AUTHOR_GROUP_LIMIT = 3
-        private const val AUTHOR_SIMILARITY_THRESHOLD = 0.45
+        private const val AUTHOR_SIMILARITY_THRESHOLD = 0.55
         private const val EXTERNAL_CANDIDATE_POOL = 50
         private const val EXTERNAL_RERANK_INPUT = 30
         private const val EXTERNAL_FINAL_TOP_N = 5
         private const val SUPPLEMENTARY_FINAL_TOP_N = 3
         private const val CONTENT_SNIPPET_LENGTH = 1500
-        private const val EXTERNAL_SIMILARITY_THRESHOLD = 0.2
-        private const val EXTERNAL_RERANK_FLOOR = 0.3
+        private const val EXTERNAL_CANDIDATE_SIMILARITY = 0.3
+        private const val EXTERNAL_RERANK_ELIGIBILITY = 0.4
+        private const val EXTERNAL_RERANK_TOP_ABSTAIN = 0.5
+        const val INTENT_PARAM = "chat_intent"
     }
 
     override fun retrieve(query: Query): List<Document> {
@@ -44,6 +46,7 @@ class BlogArticleDocumentRetriever(
                 ?.trim()
                 ?.takeIf { it.isNotBlank() }
                 ?: originalText
+        val intent = (query.context()[INTENT_PARAM] as? String) ?: "UNKNOWN"
 
         val variants = chatQueryExpander.expand(rewritten)
         val embeddings = variants.map { v -> QueryEmbedding(v, embed(v)) }
@@ -51,22 +54,35 @@ class BlogArticleDocumentRetriever(
         val authorDocs = retrieveAuthorPosts(embeddings)
         if (authorDocs.isNotEmpty()) {
             val supplementary = retrieveExternalReranked(embeddings, rewritten, SUPPLEMENTARY_FINAL_TOP_N)
-            val combined = authorDocs + supplementary
-            logRetrieval("author+supplementary", rewritten, combined)
+            val combined = authorDocs + supplementary.docs
+            logRetrieval(
+                mode = "author+supplementary",
+                intent = intent,
+                query = rewritten,
+                topScore = supplementary.topScore,
+                eligibleCount = supplementary.docs.size,
+                authorEligibleCount = authorDocs.size,
+                abstained = supplementary.abstained,
+                documents = combined,
+            )
             return combined
         }
 
-        val externalDocs = retrieveExternalReranked(embeddings, rewritten, EXTERNAL_FINAL_TOP_N)
-        logRetrieval(if (externalDocs.isEmpty()) "external-empty" else "external-only", rewritten, externalDocs)
-        return externalDocs
+        val external = retrieveExternalReranked(embeddings, rewritten, EXTERNAL_FINAL_TOP_N)
+        logRetrieval(
+            mode = if (external.docs.isEmpty()) "external-empty" else "external-only",
+            intent = intent,
+            query = rewritten,
+            topScore = external.topScore,
+            eligibleCount = external.docs.size,
+            authorEligibleCount = 0,
+            abstained = external.abstained,
+            documents = external.docs,
+        )
+        return external.docs
     }
 
     private fun embed(text: String): String = embeddingModel.embed(text).joinToString(",", "[", "]")
-
-    private fun passesRerankFloor(doc: Document): Boolean {
-        val score = doc.metadata["rerankScore"] as? Double ?: return true
-        return score >= EXTERNAL_RERANK_FLOOR
-    }
 
     private fun retrieveAuthorPosts(queries: List<QueryEmbedding>): List<Document> {
         val unionHits =
@@ -92,7 +108,7 @@ class BlogArticleDocumentRetriever(
         queries: List<QueryEmbedding>,
         rerankQuery: String,
         finalTopN: Int,
-    ): List<Document> {
+    ): RerankedExternalResult {
         val unionHits =
             queries
                 .flatMap { qe ->
@@ -106,11 +122,22 @@ class BlogArticleDocumentRetriever(
                                 candidatePoolSize = EXTERNAL_CANDIDATE_POOL,
                                 limit = EXTERNAL_CANDIDATE_POOL,
                             ),
-                        ).filter { it.similarity >= EXTERNAL_SIMILARITY_THRESHOLD }
+                        ).filter { it.similarity >= EXTERNAL_CANDIDATE_SIMILARITY }
                 }.distinctBy { Triple(it.sourceType, it.sourceId, it.chunkIndex) }
-        if (unionHits.isEmpty()) return emptyList()
+        if (unionHits.isEmpty()) return RerankedExternalResult.empty()
         val candidates = buildDocuments(unionHits).take(EXTERNAL_RERANK_INPUT)
-        return jinaRerankClient.rerank(rerankQuery, candidates, finalTopN).filter(::passesRerankFloor)
+        val reranked = jinaRerankClient.rerank(rerankQuery, candidates, finalTopN)
+        val topScore = reranked.firstOrNull()?.metadata?.get("rerankScore") as? Double
+        if (topScore == null || topScore < EXTERNAL_RERANK_TOP_ABSTAIN) {
+            return RerankedExternalResult(docs = emptyList(), topScore = topScore, abstained = true)
+        }
+        val eligible = reranked.filter { passesRerankEligibility(it) }
+        return RerankedExternalResult(docs = eligible, topScore = topScore, abstained = false)
+    }
+
+    private fun passesRerankEligibility(doc: Document): Boolean {
+        val score = doc.metadata["rerankScore"] as? Double ?: return true
+        return score >= EXTERNAL_RERANK_ELIGIBILITY
     }
 
     private fun buildDocuments(hits: List<RagChunkHit>): List<Document> =
@@ -159,7 +186,12 @@ class BlogArticleDocumentRetriever(
 
     private fun logRetrieval(
         mode: String,
-        text: String,
+        intent: String,
+        query: String,
+        topScore: Double?,
+        eligibleCount: Int,
+        authorEligibleCount: Int,
+        abstained: Boolean,
         documents: List<Document>,
     ) {
         val labels =
@@ -174,6 +206,21 @@ class BlogArticleDocumentRetriever(
                 val tag = if (rerank != null) "r" else ""
                 if (s != null) "$type:$c/$t($tag${"%.3f".format(s)})" else "$type:$c/$t"
             }
-        log.info { "Chat retrieval mode=$mode query='${text.take(80)}' hits=${documents.size} [$labels]" }
+        val topScoreStr = topScore?.let { "%.3f".format(it) } ?: "n/a"
+        log.info {
+            "Chat retrieval mode=$mode intent=$intent query='${query.take(80)}' " +
+                "topScore=$topScoreStr eligibleCount=$eligibleCount " +
+                "authorEligibleCount=$authorEligibleCount abstained=$abstained [$labels]"
+        }
+    }
+}
+
+internal data class RerankedExternalResult(
+    val docs: List<Document>,
+    val topScore: Double?,
+    val abstained: Boolean,
+) {
+    companion object {
+        fun empty(): RerankedExternalResult = RerankedExternalResult(emptyList(), null, false)
     }
 }

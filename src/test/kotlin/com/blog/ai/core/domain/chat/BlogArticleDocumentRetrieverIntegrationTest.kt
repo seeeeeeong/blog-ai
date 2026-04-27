@@ -58,7 +58,13 @@ class BlogArticleDocumentRetrieverIntegrationTest
                 @Suppress("UNCHECKED_CAST")
                 val docs = inv.getArgument<List<org.springframework.ai.document.Document>>(1)
                 val topN = inv.getArgument<Int>(2)
-                docs.take(topN)
+                docs.take(topN).map { d ->
+                    org.springframework.ai.document.Document(
+                        d.id,
+                        d.text.orEmpty(),
+                        d.metadata + ("rerankScore" to 0.9),
+                    )
+                }
             }
         }
 
@@ -125,6 +131,34 @@ class BlogArticleDocumentRetrieverIntegrationTest
             )
 
             assertEquals(listOf("RAG 기반 관련 게시글 추천 시스템 설계"), capturedExpansionInputs)
+        }
+
+        @Test
+        fun `golden — abstains when top rerank score is below abstain threshold even if above eligibility`() {
+            val blog = seedBlog()
+            seedArticleWithChunk(
+                blog = blog,
+                title = "Marginally related article",
+                content = "marginal content",
+                chunkContent = "marginal content",
+                chunkVector = vector(0.1f),
+            )
+            Mockito.`when`(jinaRerankClient.rerank(anyString(), anyList(), anyInt())).thenAnswer { inv ->
+                @Suppress("UNCHECKED_CAST")
+                val docs = inv.getArgument<List<org.springframework.ai.document.Document>>(1)
+                val topN = inv.getArgument<Int>(2)
+                docs.take(topN).map { d ->
+                    org.springframework.ai.document.Document(
+                        d.id,
+                        d.text.orEmpty(),
+                        d.metadata + ("rerankScore" to 0.45),
+                    )
+                }
+            }
+
+            val docs = retriever.retrieve(Query.builder().text("RAG recommendation").build())
+
+            assertTrue(docs.isEmpty(), "top score 0.45 sits above eligibility 0.4 but below abstain 0.5")
         }
 
         @Test
