@@ -45,13 +45,15 @@ class CrawlService(
 
     @Transactional
     fun backfillMissingContent(batchSize: Int = DEFAULT_BACKFILL_BATCH_SIZE): Int {
-        val articles = articleRepository.findWithoutContent(batchSize)
+        val articles = articleRepository.findShortContent(MIN_TRUSTED_CONTENT_LENGTH, batchSize)
         var filled = 0
 
         for (article in articles) {
             val articleId = requireNotNull(article.id)
-            val content = webContentScraper.scrape(article.url) ?: continue
-            articleRepository.updateContent(articleId, content)
+            val newContent = webContentScraper.scrape(article.url) ?: continue
+            val existingLength = article.content?.length ?: 0
+            if (newContent.length <= existingLength) continue
+            articleRepository.updateContent(articleId, newContent)
             articleRepository.resetEmbeddingForArticle(articleId)
             ragChunkService.deleteExternalArticle(articleId)
             filled++

@@ -15,6 +15,8 @@ class RssFeedParserTest {
         }
     private val parser = RssFeedParser(contentCleaner, webContentScraper)
 
+    private fun trustedBody(): String = "lorem ipsum ".repeat(60)
+
     @Test
     fun `parses valid RSS feed and extracts entries`() {
         val xml = wrapFeed(entry("Hello", "https://example.com/a", "<p>Body</p>"))
@@ -49,6 +51,55 @@ class RssFeedParserTest {
     fun `returns empty list when fetch fails`() {
         val articles = parser.parse("file:///does/not/exist.xml")
         assertTrue(articles.isEmpty())
+    }
+
+    @Test
+    fun `uses trusted rss body without calling scraper when body is long enough`() {
+        val body = trustedBody()
+        val xml = wrapFeed(entry("Long", "https://example.com/long", body))
+        val scraper = Mockito.mock(WebContentScraper::class.java)
+        val parser = RssFeedParser(contentCleaner, scraper)
+
+        val temp = File.createTempFile("rss-test-", ".xml")
+        try {
+            temp.writeText(xml, Charsets.UTF_8)
+            val articles = parser.parse(temp.toURI().toString())
+            assertEquals(1, articles.size)
+            assertEquals(body.trim(), articles[0].content)
+            Mockito.verify(scraper, Mockito.never()).scrape(anyString())
+        } finally {
+            temp.delete()
+        }
+    }
+
+    @Test
+    fun `falls back to scraper when rss body is below threshold`() {
+        val scraped = "scraped article body ".repeat(40)
+        val scraper =
+            Mockito.mock(WebContentScraper::class.java).also {
+                Mockito.`when`(it.scrape(anyString())).thenReturn(scraped)
+            }
+        val parser = RssFeedParser(contentCleaner, scraper)
+        val xml = wrapFeed(entry("Short", "https://example.com/short", "<p>tiny</p>"))
+
+        val temp = File.createTempFile("rss-test-", ".xml")
+        try {
+            temp.writeText(xml, Charsets.UTF_8)
+            val articles = parser.parse(temp.toURI().toString())
+            assertEquals(1, articles.size)
+            assertEquals(scraped, articles[0].content)
+            Mockito.verify(scraper).scrape("https://example.com/short")
+        } finally {
+            temp.delete()
+        }
+    }
+
+    @Test
+    fun `keeps short rss body when scraper also fails`() {
+        val xml = wrapFeed(entry("Short", "https://example.com/short", "<p>tiny</p>"))
+        val articles = parseFromTempFile(xml)
+        assertEquals(1, articles.size)
+        assertEquals("tiny", articles[0].content)
     }
 
     private fun parseFromTempFile(xml: String): List<ParsedArticle> {

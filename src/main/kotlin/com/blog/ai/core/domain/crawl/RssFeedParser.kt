@@ -42,7 +42,8 @@ class RssFeedParser(
                     entry.contents?.firstOrNull()?.value
                         ?: entry.description?.value
                 val rssContent = contentCleaner.clean(rawContent)
-                val content = rssContent ?: webContentScraper.scrape(url.trim())
+                val trustedRssContent = rssContent?.takeIf { it.length >= MIN_TRUSTED_CONTENT_LENGTH }
+                val content = trustedRssContent ?: webContentScraper.scrape(url.trim()) ?: rssContent
                 ParsedArticle(
                     title = title.trim(),
                     url = url.trim(),

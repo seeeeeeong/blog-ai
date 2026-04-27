@@ -57,10 +57,18 @@ interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
     fun clearRetriableEmbedErrors(maxRetries: Int): Int
 
     @Query(
-        value = "SELECT * FROM articles WHERE content IS NULL ORDER BY id LIMIT :limit",
+        value = """
+            SELECT * FROM articles
+            WHERE content IS NULL OR LENGTH(content) < :minLength
+            ORDER BY id
+            LIMIT :limit
+        """,
         nativeQuery = true,
     )
-    fun findWithoutContent(limit: Int): List<ArticleEntity>
+    fun findShortContent(
+        minLength: Int,
+        limit: Int,
+    ): List<ArticleEntity>
 
     @Modifying
     @Query(

@@ -73,6 +73,7 @@ dependencies {
     // RSS + HTML
     implementation("com.rometools:rome:2.1.0")
     implementation("org.jsoup:jsoup:1.17.2")
+    implementation("net.dankito.readability4j:readability4j:1.0.8")
 
     // Tokenizer (OpenAI cl100k_base) for token-aware truncation
     implementation("com.knuddels:jtokkit:1.1.0")
