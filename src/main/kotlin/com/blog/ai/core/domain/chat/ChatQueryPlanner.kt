@@ -42,32 +42,57 @@ class ChatQueryPlanner(
 
               {"intent":"DESIGN"|"CLARIFY"|"GENERAL","rewrittenQuery":"..."}
 
+            CLASSIFICATION PRIORITY:
+
+            Step 1. Detect correction/refinement signals in the latest message:
+                "아니", "그게 아니라", "내 말은", "이런거", "같은 거", "그런 종류".
+                If any are present, the user is CONTINUING the prior topic with a
+                new constraint. Do NOT classify based on the latest message alone —
+                use the prior turn's topic as the anchor.
+
+            Step 2. If the prior topic (from history) is about engineering,
+                architecture, design, RAG, embedding, recommendation system, or
+                similar tech-build questions, AND the latest message refines that
+                topic, classify as DESIGN with rewrittenQuery merging both.
+
+            Step 3. Only after Step 1/2 fail to anchor a topic, fall through to
+                the intent definitions below.
+
             Intent definitions:
 
             - DESIGN  — user is asking how to BUILD/DESIGN a "관련 게시글 추천 /
-                        related post recommendation / 비슷한 글 추천" feature.
-                        Engineering/architecture question.
-                        rewrittenQuery → fixed canonical search:
+                        related post recommendation / 비슷한 글 추천" feature, OR
+                        a previous turn already established a design / engineering
+                        topic ("RAG", "임베딩", "추천 시스템 설계", "구현",
+                        "어떻게 만들어") and the latest message refines it.
+                        rewrittenQuery → canonical search merging the prior topic
+                        with the latest constraint, e.g.
                           "RAG 기반 관련 게시글 추천 시스템 설계"
 
-            - CLARIFY — user wants "관련 게시글 추천 / 비슷한 글" but it is unclear
-                        whether they want to BUILD it (DESIGN) or USE it on a
-                        specific post (cannot be done in chat without a post id).
-                        Examples: "관련 게시글 추천 이런거", "비슷한 글 추천해줘"
-                        with no reference post.
-                        rewrittenQuery → echo the user message verbatim
+            - CLARIFY — user mentions "관련 게시글 추천 / 비슷한 글" with NO prior
+                        context that resolves design vs execute. Use this only
+                        when the conversation gives no engineering/design signal.
+                        Example (no prior context): "비슷한 글 추천해줘".
+                        rewrittenQuery → echo the latest message verbatim
                         (we will not search anyway).
 
             - GENERAL — every other tech question. rewrittenQuery is a standalone
                         search query, with pronouns and correction signals
                         resolved against history.
 
-            Correction & refinement rules (apply to rewrittenQuery for ALL intents):
-            - "아니", "그게 아니라", "내 말은" → keep the previous turn's topic and
-              ADD the new constraint. Do not drop the original topic.
-            - "이런거", "같은 거", "그런 종류" → keep the previous topic and append
-              the new specifier as a refinement.
-            - Pronouns ("그거", "아까 말한 것") → resolve from history.
+            Examples:
+
+              History: (empty)
+              Latest:  "비슷한 글 추천해줘"
+              → {"intent":"CLARIFY","rewrittenQuery":"비슷한 글 추천해줘"}
+
+              History: user: RAG 기반 추천시스템 설계 어떻게해?
+              Latest:  "아니 관련 게시글 추천 이런거"
+              → {"intent":"DESIGN","rewrittenQuery":"RAG 기반 관련 게시글 추천 시스템 설계"}
+
+              History: user: pgvector HNSW 옵션은? assistant: m=16, ef=64...
+              Latest:  "그거 latency는?"
+              → {"intent":"GENERAL","rewrittenQuery":"pgvector HNSW latency"}
 
             Output ONLY the JSON object — no markdown fence, no commentary.
             """.trimIndent()
@@ -115,7 +140,7 @@ class ChatQueryPlanner(
             "Conversation history:\n$history\n\nLatest message: $question"
         }
 
-    private fun parsePlan(
+    internal fun parsePlan(
         raw: String,
         fallbackQuery: String,
     ): Plan {

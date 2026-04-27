@@ -29,6 +29,9 @@ class ChatServiceIntegrationTest
         @MockitoBean
         private lateinit var chatClient: ChatClient
 
+        @MockitoBean
+        private lateinit var chatQueryPlanner: ChatQueryPlanner
+
         private lateinit var requestSpec: ChatClient.ChatClientRequestSpec
         private lateinit var streamSpec: ChatClient.StreamResponseSpec
 
@@ -47,6 +50,13 @@ class ChatServiceIntegrationTest
                 .thenReturn(requestSpec)
             Mockito.`when`(requestSpec.stream()).thenReturn(streamSpec)
             Mockito.`when`(streamSpec.content()).thenReturn(Flux.just("안녕하세요"))
+
+            Mockito.`when`(chatQueryPlanner.plan(anyString(), anyString())).thenAnswer { inv ->
+                ChatQueryPlanner.Plan(
+                    intent = ChatQueryPlanner.Intent.GENERAL,
+                    rewrittenQuery = inv.getArgument<String>(1),
+                )
+            }
         }
 
         @Test
