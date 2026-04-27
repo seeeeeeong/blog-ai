@@ -111,20 +111,14 @@ class BlogArticleDocumentRetriever(
         val candidates = buildDocuments(unionHits).take(EXTERNAL_RERANK_INPUT)
         val reranked = jinaRerankClient.rerank(rerankQuery, candidates, finalTopN)
         val topScore = reranked.firstOrNull()?.metadata?.get("rerankScore") as? Double
-        val rerankUnavailable = reranked.isNotEmpty() && topScore == null
-        if (rerankUnavailable) {
-            return RerankedExternalResult(
-                docs = emptyList(),
-                topScore = null,
-                abstained = true,
-                rerankUnavailable = true,
-            )
+        if (topScore == null) {
+            return RerankedExternalResult(emptyList(), null, abstained = true, rerankUnavailable = true)
         }
-        if (topScore == null || topScore < EXTERNAL_RERANK_TOP_ABSTAIN) {
-            return RerankedExternalResult(docs = emptyList(), topScore = topScore, abstained = true)
+        if (topScore < EXTERNAL_RERANK_TOP_ABSTAIN) {
+            return RerankedExternalResult(emptyList(), topScore, abstained = true)
         }
         val eligible = reranked.filter { passesRerankEligibility(it) }
-        return RerankedExternalResult(docs = eligible, topScore = topScore, abstained = false)
+        return RerankedExternalResult(eligible, topScore, abstained = false)
     }
 
     private fun passesRerankEligibility(doc: Document): Boolean {

@@ -134,7 +134,7 @@ class BlogArticleDocumentRetrieverIntegrationTest
         }
 
         @Test
-        fun `golden — abstains when rerank is unavailable so the call is fail-closed`() {
+        fun `golden — abstains when rerank returns docs without scores (key missing fallback)`() {
             val blog = seedBlog()
             seedArticleWithChunk(
                 blog = blog,
@@ -153,6 +153,25 @@ class BlogArticleDocumentRetrieverIntegrationTest
             val docs = retriever.retrieve(Query.builder().text("anything").build())
 
             assertTrue(docs.isEmpty(), "rerank without scores must trigger fail-closed abstain, not fall through")
+        }
+
+        @Test
+        fun `golden — abstains when rerank returns an empty list (Jina anomaly)`() {
+            val blog = seedBlog()
+            seedArticleWithChunk(
+                blog = blog,
+                title = "Some article",
+                content = "some content",
+                chunkContent = "some content",
+                chunkVector = vector(0.1f),
+            )
+            Mockito
+                .`when`(jinaRerankClient.rerank(anyString(), anyList(), anyInt()))
+                .thenReturn(emptyList())
+
+            val docs = retriever.retrieve(Query.builder().text("anything").build())
+
+            assertTrue(docs.isEmpty(), "rerank returning empty list must also be treated as unavailable")
         }
 
         @Test
