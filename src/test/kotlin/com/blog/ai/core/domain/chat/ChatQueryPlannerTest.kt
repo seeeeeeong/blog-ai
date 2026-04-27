@@ -76,4 +76,58 @@ class ChatQueryPlannerTest {
         assertEquals(ChatQueryPlanner.Intent.DESIGN, plan.intent)
         assertEquals(fallback, plan.rewrittenQuery)
     }
+
+    @Test
+    fun `parses clarificationQuestion when CLARIFY`() {
+        val raw =
+            "{\"intent\":\"CLARIFY\"," +
+                "\"rewrittenQuery\":\"비슷한 글 추천해줘\"," +
+                "\"clarificationQuestion\":\"특정 글 기준인가요, 기능 설계인가요?\"}"
+
+        val plan = planner.parsePlan(raw, fallback)
+
+        assertEquals(ChatQueryPlanner.Intent.CLARIFY, plan.intent)
+        assertEquals("특정 글 기준인가요, 기능 설계인가요?", plan.clarificationQuestion)
+    }
+
+    @Test
+    fun `clarificationQuestion is null when omitted or null`() {
+        val rawNullField = "{\"intent\":\"GENERAL\",\"rewrittenQuery\":\"X\",\"clarificationQuestion\":null}"
+        val rawOmitted = "{\"intent\":\"GENERAL\",\"rewrittenQuery\":\"X\"}"
+
+        assertEquals(null, planner.parsePlan(rawNullField, fallback).clarificationQuestion)
+        assertEquals(null, planner.parsePlan(rawOmitted, fallback).clarificationQuestion)
+    }
+
+    @Test
+    fun `more results patterns match deterministic guard cases`() {
+        val cases =
+            listOf(
+                "저 두 기술 블로그 말고 다른 기술블로그는 없어? 챗봇 관련?",
+                "다른 자료 없어?",
+                "또 없어?",
+                "더 보여줘",
+                "더 알려줘",
+                "더 있어?",
+            )
+
+        cases.forEach { q ->
+            assertEquals(true, planner.matchesMoreResults(q), "should match: '$q'")
+        }
+    }
+
+    @Test
+    fun `more results patterns do not match unrelated questions`() {
+        val cases =
+            listOf(
+                "RAG 기반 추천 시스템 설계 어떻게 해?",
+                "비슷한 글 추천해줘",
+                "관련 게시글 추천 이런거",
+                "pgvector HNSW 옵션은?",
+            )
+
+        cases.forEach { q ->
+            assertEquals(false, planner.matchesMoreResults(q), "should NOT match: '$q'")
+        }
+    }
 }

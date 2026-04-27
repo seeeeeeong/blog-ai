@@ -29,7 +29,8 @@ class ChatService(
     companion object {
         private const val MESSAGE_HISTORY_LIMIT = 50
         const val REWRITTEN_QUERY_PARAM = "rewritten_query"
-        private const val CLARIFY_RESPONSE =
+        private const val MAX_CLARIFY_LENGTH = 80
+        private const val CLARIFY_FALLBACK =
             "관련 게시글 추천 기능을 설계하시려는 건가요, " +
                 "아니면 특정 글을 기준으로 비슷한 글을 추천받고 싶으신가요?"
     }
@@ -48,7 +49,7 @@ class ChatService(
         chatPreflight.consumeOrThrow(sessionId, clientIp)
         val plan = chatQueryPlanner.plan(sessionId.toString(), question)
         if (plan.intent == ChatQueryPlanner.Intent.CLARIFY) {
-            return clarifyResponse(sessionId, question)
+            return clarifyResponse(sessionId, question, plan.clarificationQuestion)
         }
         return streamChat(sessionId, question, plan.rewrittenQuery)
     }
@@ -58,15 +59,29 @@ class ChatService(
     private fun clarifyResponse(
         sessionId: UUID,
         question: String,
+        dynamicQuestion: String?,
     ): Flux<ServerSentEvent<String>> {
+        val response = sanitizeClarification(dynamicQuestion) ?: CLARIFY_FALLBACK
         chatMemory.add(
             sessionId.toString(),
-            listOf(UserMessage(question), AssistantMessage(CLARIFY_RESPONSE)),
+            listOf(UserMessage(question), AssistantMessage(response)),
         )
         return Flux.just(
-            ServerSentEvent.builder(CLARIFY_RESPONSE).build(),
+            ServerSentEvent.builder(response).build(),
             ServerSentEvent.builder<String>("[DONE]").build(),
         )
+    }
+
+    private fun sanitizeClarification(raw: String?): String? {
+        val trimmed = raw?.trim()?.takeIf { it.isNotBlank() } ?: return null
+        val firstLine =
+            trimmed
+                .lineSequence()
+                .firstOrNull()
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+                ?: return null
+        return firstLine.takeIf { it.length <= MAX_CLARIFY_LENGTH }
     }
 
     private fun streamChat(
