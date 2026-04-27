@@ -36,7 +36,7 @@ class JinaRerankClient(
         documents: List<Document>,
         topN: Int,
     ): List<Document> {
-        if (documents.size <= topN) return documents
+        if (documents.isEmpty()) return emptyList()
         if (jinaProperties.apiKey.isBlank()) {
             log.warn { "Jina rerank skipped: api-key not configured" }
             return documents.take(topN)

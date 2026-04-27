@@ -29,6 +29,10 @@ slack:
 cors:
   allowed-origins: http://localhost
 
+rag:
+  contextual:
+    enabled: false
+
 logging:
   level:
     com.blog.ai: INFO

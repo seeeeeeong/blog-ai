@@ -15,6 +15,7 @@ class ArticleEmbedService(
     private val articleRepository: ArticleRepository,
     private val embeddingModel: EmbeddingModel,
     private val articleEmbedCommitter: ArticleEmbedCommitter,
+    private val chunkContextEnricher: ChunkContextEnricher,
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
@@ -44,13 +45,22 @@ class ArticleEmbedService(
         val docTexts = snapshots.map { TokenTruncator.truncate("${it.title} ${it.content}", MAX_EMBED_TOKENS) }
         val docVectors = runBatch("doc", docTexts, snapshots) ?: return null
 
-        val chunkJobs = snapshots.map { if (it.content.isBlank()) emptyList() else TextSplitter.split(it.content) }
+        val chunkJobs = snapshots.map(::buildChunkJobs)
         val chunkTexts =
-            snapshots.zip(chunkJobs).flatMap { (snap, chunks) -> chunks.map { "${snap.title}\n\n$it" } }
+            snapshots.zip(chunkJobs).flatMap { (snap, jobs) -> jobs.map { it.embedText(snap.title) } }
         val chunkVectors =
             if (chunkTexts.isEmpty()) emptyList() else (runBatch("chunk", chunkTexts, snapshots) ?: return null)
 
         return ArticleEmbedBatch(docVectors, chunkJobs, chunkVectors)
+    }
+
+    private fun buildChunkJobs(snapshot: ArticleEmbedSnapshot): List<ChunkJob> {
+        if (snapshot.content.isBlank()) return emptyList()
+        val rawChunks = TextSplitter.split(snapshot.content)
+        return rawChunks.map { rawChunk ->
+            val context = chunkContextEnricher.enrich(snapshot.title, snapshot.content, rawChunk)
+            ChunkJob(rawChunk = rawChunk, context = context)
+        }
     }
 
     private fun commitAll(
@@ -94,15 +104,15 @@ class ArticleEmbedService(
 
     private fun buildChunkCommands(
         articleId: Long,
-        jobs: List<String>,
+        jobs: List<ChunkJob>,
         chunkVectors: List<FloatArray>,
         cursor: Int,
     ): List<SaveChunkCommand> =
-        jobs.mapIndexed { idx, chunk ->
+        jobs.mapIndexed { idx, job ->
             SaveChunkCommand(
                 articleId = articleId,
                 chunkIndex = idx,
-                content = chunk,
+                content = job.storedContent(),
                 embedding = EmbeddingBatcher.toVectorLiteral(chunkVectors[cursor + idx]),
             )
         }

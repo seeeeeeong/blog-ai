@@ -41,6 +41,9 @@ class BlogArticleDocumentRetrieverIntegrationTest
         private lateinit var chatQueryRewriter: ChatQueryRewriter
 
         @MockitoBean
+        private lateinit var chatQueryExpander: ChatQueryExpander
+
+        @MockitoBean
         private lateinit var jinaRerankClient: JinaRerankClient
 
         @BeforeEach
@@ -53,6 +56,9 @@ class BlogArticleDocumentRetrieverIntegrationTest
             Mockito.`when`(embeddingModel.embed(anyString())).thenReturn(FloatArray(1536) { 0.1f })
             Mockito.`when`(chatQueryRewriter.rewrite(anyString(), anyString())).thenAnswer { inv ->
                 inv.getArgument<String>(1)
+            }
+            Mockito.`when`(chatQueryExpander.expand(anyString())).thenAnswer { inv ->
+                listOf(inv.getArgument<String>(0))
             }
             Mockito.`when`(jinaRerankClient.rerank(anyString(), anyList(), anyInt())).thenAnswer { inv ->
                 @Suppress("UNCHECKED_CAST")
@@ -105,6 +111,80 @@ class BlogArticleDocumentRetrieverIntegrationTest
         fun `returns empty list when no articles or author posts seeded`() {
             val docs = retriever.retrieve(Query.builder().text("anything").build())
             assertTrue(docs.isEmpty())
+        }
+
+        @Test
+        fun `golden — rerank floor drops candidates whose relevance is below threshold`() {
+            val blog = seedBlog()
+            seedArticleWithChunk(
+                blog = blog,
+                title = "Off-topic article",
+                content = "completely unrelated content",
+                chunkContent = "completely unrelated content",
+                chunkVector = vector(0.1f),
+            )
+            Mockito.`when`(jinaRerankClient.rerank(anyString(), anyList(), anyInt())).thenAnswer { inv ->
+                @Suppress("UNCHECKED_CAST")
+                val docs = inv.getArgument<List<org.springframework.ai.document.Document>>(1)
+                val topN = inv.getArgument<Int>(2)
+                docs.take(topN).map { d ->
+                    org.springframework.ai.document.Document(
+                        d.id,
+                        d.text.orEmpty(),
+                        d.metadata + ("rerankScore" to 0.05),
+                    )
+                }
+            }
+
+            val docs = retriever.retrieve(Query.builder().text("RAG recommendation").build())
+
+            assertTrue(docs.isEmpty(), "all candidates below floor should yield empty result")
+        }
+
+        @Test
+        fun `golden — query expansion unions hits across variants and dedupes`() {
+            val blog = seedBlog()
+            seedArticleWithChunk(
+                blog = blog,
+                title = "DoorDash retrieval",
+                content = "DoorDash uses LLM-powered retrieval",
+                chunkContent = "DoorDash uses LLM-powered retrieval",
+                chunkVector = vector(0.1f),
+            )
+            Mockito
+                .`when`(chatQueryExpander.expand(anyString()))
+                .thenReturn(listOf("RAG 추천 시스템", "retrieval augmented recommendation"))
+
+            val docs = retriever.retrieve(Query.builder().text("RAG 추천 시스템").build())
+
+            assertEquals(1, docs.size, "duplicate hits across variants must be merged into one document")
+            assertEquals("DoorDash retrieval", docs.first().metadata["title"])
+        }
+
+        @Test
+        fun `golden — author posts retrieved alongside reranked supplementary externals`() {
+            seedAuthorPostWithChunk(
+                externalId = "author-mixed",
+                title = "How I built RAG",
+                url = "https://author.example/rag",
+                chunkContent = "I built a RAG pipeline",
+                chunkVector = vector(0.1f),
+            )
+            val blog = seedBlog()
+            seedArticleWithChunk(
+                blog = blog,
+                title = "Industry RAG patterns",
+                content = "patterns for production RAG",
+                chunkContent = "patterns for production RAG",
+                chunkVector = vector(0.1f),
+            )
+
+            val docs = retriever.retrieve(Query.builder().text("RAG").build())
+
+            val author = docs.firstOrNull { it.metadata["sourceType"] == "author" }
+            val external = docs.firstOrNull { it.metadata["sourceType"] == "external" }
+            assertNotNull(author, "author doc should be present when author chunks match")
+            assertNotNull(external, "external supplementary doc should be present")
         }
 
         private fun seedBlog(): BlogEntity =

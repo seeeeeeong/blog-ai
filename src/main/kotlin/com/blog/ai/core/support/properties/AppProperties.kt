@@ -23,3 +23,10 @@ data class JinaProperties(
     val rerankUrl: String = "https://api.jina.ai/v1/rerank",
     val rerankModel: String = "jina-reranker-v2-base-multilingual",
 )
+
+@ConfigurationProperties(prefix = "rag.contextual")
+data class RagContextualProperties(
+    val enabled: Boolean = true,
+    val minDocumentLength: Int = 1000,
+    val maxContextTokens: Int = 120,
+)

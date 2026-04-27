@@ -13,9 +13,19 @@ internal data class ArticleEmbedSnapshot(
 
 internal data class ArticleEmbedBatch(
     val docVectors: List<FloatArray>,
-    val chunkJobs: List<List<String>>,
+    val chunkJobs: List<List<ChunkJob>>,
     val chunkVectors: List<FloatArray>,
 )
+
+internal data class ChunkJob(
+    val rawChunk: String,
+    val context: String?,
+) {
+    fun storedContent(): String = if (context != null) "$context\n\n$rawChunk" else rawChunk
+
+    fun embedText(title: String): String =
+        if (context != null) "$title\n\n$context\n\n$rawChunk" else "$title\n\n$rawChunk"
+}
 
 data class ArticleEmbedCommitCommand(
     val articleId: Long,

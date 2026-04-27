@@ -19,6 +19,7 @@ class BlogArticleDocumentRetriever(
     private val embeddingModel: EmbeddingModel,
     private val ragChunkRepository: RagChunkRepository,
     private val chatQueryRewriter: ChatQueryRewriter,
+    private val chatQueryExpander: ChatQueryExpander,
     private val jinaRerankClient: JinaRerankClient,
 ) : DocumentRetriever {
     companion object {
@@ -32,6 +33,7 @@ class BlogArticleDocumentRetriever(
         private const val SUPPLEMENTARY_FINAL_TOP_N = 3
         private const val CONTENT_SNIPPET_LENGTH = 1500
         private const val EXTERNAL_SIMILARITY_THRESHOLD = 0.2
+        private const val EXTERNAL_RERANK_FLOOR = 0.3
     }
 
     override fun retrieve(query: Query): List<Document> {
@@ -39,71 +41,79 @@ class BlogArticleDocumentRetriever(
         if (originalText.isBlank()) return emptyList()
 
         val sessionId = query.context()["chat_memory_conversation_id"] as? String
-        val text =
+        val rewritten =
             if (sessionId != null) {
                 chatQueryRewriter.rewrite(sessionId, originalText)
             } else {
                 originalText
             }
 
-        val vector = embeddingModel.embed(text).joinToString(",", "[", "]")
-        val authorDocs = retrieveAuthorPosts(vector, text)
+        val variants = chatQueryExpander.expand(rewritten)
+        val embeddings = variants.map { v -> QueryEmbedding(v, embed(v)) }
+
+        val authorDocs = retrieveAuthorPosts(embeddings)
         if (authorDocs.isNotEmpty()) {
-            val supplementaryCandidates = retrieveExternalCandidates(vector, text, EXTERNAL_RERANK_INPUT)
-            val supplementary = jinaRerankClient.rerank(text, supplementaryCandidates, SUPPLEMENTARY_FINAL_TOP_N)
+            val supplementary = retrieveExternalReranked(embeddings, rewritten, SUPPLEMENTARY_FINAL_TOP_N)
             val combined = authorDocs + supplementary
-            logRetrieval("author+supplementary", text, combined)
+            logRetrieval("author+supplementary", rewritten, combined)
             return combined
         }
 
-        val externalCandidates = retrieveExternalCandidates(vector, text, EXTERNAL_RERANK_INPUT)
-        val externalDocs = jinaRerankClient.rerank(text, externalCandidates, EXTERNAL_FINAL_TOP_N)
-        logRetrieval("external-only", text, externalDocs)
+        val externalDocs = retrieveExternalReranked(embeddings, rewritten, EXTERNAL_FINAL_TOP_N)
+        logRetrieval(if (externalDocs.isEmpty()) "external-empty" else "external-only", rewritten, externalDocs)
         return externalDocs
     }
 
-    private fun retrieveAuthorPosts(
-        vector: String,
-        text: String,
-    ): List<Document> {
-        val hits =
-            ragChunkRepository
-                .searchHybrid(
-                    RagSearchQuery(
-                        sourceType = RagSourceType.AUTHOR_POST,
-                        granularity = RagChunkGranularity.CHUNK,
-                        queryVector = vector,
-                        queryText = text,
-                        candidatePoolSize = AUTHOR_CANDIDATE_POOL,
-                        limit = AUTHOR_TOP_K,
-                    ),
-                ).filter { it.similarity >= AUTHOR_SIMILARITY_THRESHOLD }
-        if (hits.isEmpty()) return emptyList()
+    private fun embed(text: String): String = embeddingModel.embed(text).joinToString(",", "[", "]")
 
-        return buildDocuments(hits)
-            .take(AUTHOR_GROUP_LIMIT)
+    private fun passesRerankFloor(doc: Document): Boolean {
+        val score = doc.metadata["rerankScore"] as? Double ?: return true
+        return score >= EXTERNAL_RERANK_FLOOR
     }
 
-    private fun retrieveExternalCandidates(
-        vector: String,
-        text: String,
-        candidateLimit: Int,
-    ): List<Document> {
-        val hits =
-            ragChunkRepository
-                .searchHybrid(
-                    RagSearchQuery(
-                        sourceType = RagSourceType.EXTERNAL_ARTICLE,
-                        granularity = RagChunkGranularity.CHUNK,
-                        queryVector = vector,
-                        queryText = text,
-                        candidatePoolSize = EXTERNAL_CANDIDATE_POOL,
-                        limit = EXTERNAL_CANDIDATE_POOL,
-                    ),
-                ).filter { it.similarity >= EXTERNAL_SIMILARITY_THRESHOLD }
-        if (hits.isEmpty()) return emptyList()
+    private fun retrieveAuthorPosts(queries: List<QueryEmbedding>): List<Document> {
+        val unionHits =
+            queries
+                .flatMap { qe ->
+                    ragChunkRepository
+                        .searchHybrid(
+                            RagSearchQuery(
+                                sourceType = RagSourceType.AUTHOR_POST,
+                                granularity = RagChunkGranularity.CHUNK,
+                                queryVector = qe.vector,
+                                queryText = qe.text,
+                                candidatePoolSize = AUTHOR_CANDIDATE_POOL,
+                                limit = AUTHOR_TOP_K,
+                            ),
+                        ).filter { it.similarity >= AUTHOR_SIMILARITY_THRESHOLD }
+                }.distinctBy { Triple(it.sourceType, it.sourceId, it.chunkIndex) }
+        if (unionHits.isEmpty()) return emptyList()
+        return buildDocuments(unionHits).take(AUTHOR_GROUP_LIMIT)
+    }
 
-        return buildDocuments(hits).take(candidateLimit)
+    private fun retrieveExternalReranked(
+        queries: List<QueryEmbedding>,
+        rerankQuery: String,
+        finalTopN: Int,
+    ): List<Document> {
+        val unionHits =
+            queries
+                .flatMap { qe ->
+                    ragChunkRepository
+                        .searchHybrid(
+                            RagSearchQuery(
+                                sourceType = RagSourceType.EXTERNAL_ARTICLE,
+                                granularity = RagChunkGranularity.CHUNK,
+                                queryVector = qe.vector,
+                                queryText = qe.text,
+                                candidatePoolSize = EXTERNAL_CANDIDATE_POOL,
+                                limit = EXTERNAL_CANDIDATE_POOL,
+                            ),
+                        ).filter { it.similarity >= EXTERNAL_SIMILARITY_THRESHOLD }
+                }.distinctBy { Triple(it.sourceType, it.sourceId, it.chunkIndex) }
+        if (unionHits.isEmpty()) return emptyList()
+        val candidates = buildDocuments(unionHits).take(EXTERNAL_RERANK_INPUT)
+        return jinaRerankClient.rerank(rerankQuery, candidates, finalTopN).filter(::passesRerankFloor)
     }
 
     private fun buildDocuments(hits: List<RagChunkHit>): List<Document> =
