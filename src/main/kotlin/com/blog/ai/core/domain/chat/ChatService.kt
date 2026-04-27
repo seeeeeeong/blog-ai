@@ -6,9 +6,12 @@ import com.blog.ai.storage.chat.ChatMessageRepository
 import com.blog.ai.storage.chat.ChatSessionEntity
 import com.blog.ai.storage.chat.ChatSessionRepository
 import com.blog.ai.storage.chat.toMessage
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.ai.chat.memory.ChatMemory
 import org.springframework.ai.chat.messages.AssistantMessage
+import org.springframework.ai.chat.messages.Message
+import org.springframework.ai.chat.messages.MessageType
 import org.springframework.ai.chat.messages.UserMessage
 import org.springframework.http.codec.ServerSentEvent
 import org.springframework.stereotype.Service
@@ -19,6 +22,7 @@ import java.util.UUID
 @Service
 class ChatService(
     private val chatClient: ChatClient,
+    private val chatClientBuilder: ChatClient.Builder,
     private val chatSessionRepository: ChatSessionRepository,
     private val chatMessageRepository: ChatMessageRepository,
     private val chatRateLimiter: ChatRateLimiter,
@@ -27,12 +31,31 @@ class ChatService(
     private val chatMemory: ChatMemory,
 ) {
     companion object {
+        private val log = KotlinLogging.logger {}
         private const val MESSAGE_HISTORY_LIMIT = 50
+        private const val CLARIFY_HISTORY_LIMIT = 6
+        private const val CLARIFY_HISTORY_SNIPPET = 200
         const val REWRITTEN_QUERY_PARAM = "rewritten_query"
-        private const val MAX_CLARIFY_LENGTH = 80
-        private const val CLARIFY_FALLBACK =
-            "관련 게시글 추천 기능을 설계하시려는 건가요, " +
-                "아니면 특정 글을 기준으로 비슷한 글을 추천받고 싶으신가요?"
+        private const val CLARIFY_EMERGENCY_FALLBACK =
+            "어떤 부분을 더 자세히 알고 싶으신가요?"
+
+        private val CLARIFY_SYSTEM_PROMPT =
+            """
+            You are a Korean tech-blog chatbot. The user's latest message is
+            ambiguous between two intents and the system needs to disambiguate
+            before searching:
+
+              (a) designing a "related post recommendation / 관련 게시글 추천"
+                  feature.
+              (b) asking the chatbot to surface posts similar to a specific
+                  article.
+
+            Write ONE short Korean clarifying question (max 1 sentence,
+            under ~120 chars). Reference the user's actual phrasing so it
+            feels natural — do NOT use a generic template. Do NOT answer the
+            question itself, do NOT search anything, do NOT add commentary.
+            Output the question only.
+            """.trimIndent()
     }
 
     @Transactional
@@ -49,39 +72,75 @@ class ChatService(
         chatPreflight.consumeOrThrow(sessionId, clientIp)
         val plan = chatQueryPlanner.plan(sessionId.toString(), question)
         if (plan.intent == ChatQueryPlanner.Intent.CLARIFY) {
-            return clarifyResponse(sessionId, question, plan.clarificationQuestion)
+            return streamClarify(sessionId, question, plan.clarificationQuestion)
         }
         return streamChat(sessionId, question, plan.rewrittenQuery)
     }
 
     fun remainingMessages(sessionId: UUID): Int = chatRateLimiter.remainingMessages(sessionId)
 
-    private fun clarifyResponse(
+    private fun streamClarify(
         sessionId: UUID,
         question: String,
-        dynamicQuestion: String?,
+        plannerHint: String?,
     ): Flux<ServerSentEvent<String>> {
-        val response = sanitizeClarification(dynamicQuestion) ?: CLARIFY_FALLBACK
+        val historyText = formatClarifyHistory(chatMemory.get(sessionId.toString()))
+        val accumulator = StringBuilder()
+        val sessionKey = sessionId.toString()
+
+        return chatClientBuilder
+            .build()
+            .prompt()
+            .system(CLARIFY_SYSTEM_PROMPT)
+            .user(buildClarifyUserPrompt(historyText, question, plannerHint))
+            .stream()
+            .content()
+            .doOnNext { accumulator.append(it) }
+            .map { content -> ServerSentEvent.builder(content).build() }
+            .concatWith(Flux.just(ServerSentEvent.builder<String>("[DONE]").build()))
+            .doOnComplete { persistClarify(sessionKey, question, accumulator.toString()) }
+            .onErrorResume { e ->
+                log.warn(e) { "Clarify streaming failed, emitting emergency fallback" }
+                persistClarify(sessionKey, question, CLARIFY_EMERGENCY_FALLBACK)
+                Flux.just(
+                    ServerSentEvent.builder(CLARIFY_EMERGENCY_FALLBACK).build(),
+                    ServerSentEvent.builder<String>("[DONE]").build(),
+                )
+            }
+    }
+
+    private fun persistClarify(
+        sessionKey: String,
+        question: String,
+        rawAnswer: String,
+    ) {
+        val answer = rawAnswer.trim()
+        if (answer.isBlank()) return
         chatMemory.add(
-            sessionId.toString(),
-            listOf(UserMessage(question), AssistantMessage(response)),
-        )
-        return Flux.just(
-            ServerSentEvent.builder(response).build(),
-            ServerSentEvent.builder<String>("[DONE]").build(),
+            sessionKey,
+            listOf(UserMessage(question), AssistantMessage(answer)),
         )
     }
 
-    private fun sanitizeClarification(raw: String?): String? {
-        val trimmed = raw?.trim()?.takeIf { it.isNotBlank() } ?: return null
-        val firstLine =
-            trimmed
-                .lineSequence()
-                .firstOrNull()
-                ?.trim()
-                ?.takeIf { it.isNotBlank() }
-                ?: return null
-        return firstLine.takeIf { it.length <= MAX_CLARIFY_LENGTH }
+    private fun formatClarifyHistory(history: List<Message>): String =
+        if (history.isEmpty()) {
+            ""
+        } else {
+            history
+                .takeLast(CLARIFY_HISTORY_LIMIT)
+                .filter { it.messageType == MessageType.USER || it.messageType == MessageType.ASSISTANT }
+                .joinToString("\n") { "${it.messageType.value}: ${it.text?.take(CLARIFY_HISTORY_SNIPPET)}" }
+        }
+
+    private fun buildClarifyUserPrompt(
+        historyText: String,
+        question: String,
+        plannerHint: String?,
+    ): String {
+        val hint = plannerHint?.takeIf { it.isNotBlank() }
+        val hintLine = if (hint == null) "" else "\nHint (do not echo verbatim): $hint"
+        val historyBlock = if (historyText.isBlank()) "" else "Conversation history:\n$historyText\n\n"
+        return "${historyBlock}Latest user message: $question$hintLine"
     }
 
     private fun streamChat(
