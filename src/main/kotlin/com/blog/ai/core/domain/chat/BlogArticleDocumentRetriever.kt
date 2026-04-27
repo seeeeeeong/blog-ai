@@ -55,30 +55,13 @@ class BlogArticleDocumentRetriever(
         if (authorDocs.isNotEmpty()) {
             val supplementary = retrieveExternalReranked(embeddings, rewritten, SUPPLEMENTARY_FINAL_TOP_N)
             val combined = authorDocs + supplementary.docs
-            logRetrieval(
-                mode = "author+supplementary",
-                intent = intent,
-                query = rewritten,
-                topScore = supplementary.topScore,
-                eligibleCount = supplementary.docs.size,
-                authorEligibleCount = authorDocs.size,
-                abstained = supplementary.abstained,
-                documents = combined,
-            )
+            logRetrieval("author+supplementary", intent, rewritten, supplementary, authorDocs.size, combined)
             return combined
         }
 
         val external = retrieveExternalReranked(embeddings, rewritten, EXTERNAL_FINAL_TOP_N)
-        logRetrieval(
-            mode = if (external.docs.isEmpty()) "external-empty" else "external-only",
-            intent = intent,
-            query = rewritten,
-            topScore = external.topScore,
-            eligibleCount = external.docs.size,
-            authorEligibleCount = 0,
-            abstained = external.abstained,
-            documents = external.docs,
-        )
+        val mode = if (external.docs.isEmpty()) "external-empty" else "external-only"
+        logRetrieval(mode, intent, rewritten, external, 0, external.docs)
         return external.docs
     }
 
@@ -128,6 +111,15 @@ class BlogArticleDocumentRetriever(
         val candidates = buildDocuments(unionHits).take(EXTERNAL_RERANK_INPUT)
         val reranked = jinaRerankClient.rerank(rerankQuery, candidates, finalTopN)
         val topScore = reranked.firstOrNull()?.metadata?.get("rerankScore") as? Double
+        val rerankUnavailable = reranked.isNotEmpty() && topScore == null
+        if (rerankUnavailable) {
+            return RerankedExternalResult(
+                docs = emptyList(),
+                topScore = null,
+                abstained = true,
+                rerankUnavailable = true,
+            )
+        }
         if (topScore == null || topScore < EXTERNAL_RERANK_TOP_ABSTAIN) {
             return RerankedExternalResult(docs = emptyList(), topScore = topScore, abstained = true)
         }
@@ -188,10 +180,8 @@ class BlogArticleDocumentRetriever(
         mode: String,
         intent: String,
         query: String,
-        topScore: Double?,
-        eligibleCount: Int,
+        external: RerankedExternalResult,
         authorEligibleCount: Int,
-        abstained: Boolean,
         documents: List<Document>,
     ) {
         val labels =
@@ -206,11 +196,12 @@ class BlogArticleDocumentRetriever(
                 val tag = if (rerank != null) "r" else ""
                 if (s != null) "$type:$c/$t($tag${"%.3f".format(s)})" else "$type:$c/$t"
             }
-        val topScoreStr = topScore?.let { "%.3f".format(it) } ?: "n/a"
+        val topScoreStr = external.topScore?.let { "%.3f".format(it) } ?: "n/a"
         log.info {
             "Chat retrieval mode=$mode intent=$intent query='${query.take(80)}' " +
-                "topScore=$topScoreStr eligibleCount=$eligibleCount " +
-                "authorEligibleCount=$authorEligibleCount abstained=$abstained [$labels]"
+                "topScore=$topScoreStr eligibleCount=${external.docs.size} " +
+                "authorEligibleCount=$authorEligibleCount abstained=${external.abstained} " +
+                "rerankUnavailable=${external.rerankUnavailable} [$labels]"
         }
     }
 }
@@ -219,6 +210,7 @@ internal data class RerankedExternalResult(
     val docs: List<Document>,
     val topScore: Double?,
     val abstained: Boolean,
+    val rerankUnavailable: Boolean = false,
 ) {
     companion object {
         fun empty(): RerankedExternalResult = RerankedExternalResult(emptyList(), null, false)

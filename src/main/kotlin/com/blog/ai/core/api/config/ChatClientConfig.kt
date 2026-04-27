@@ -122,14 +122,20 @@ class ChatClientConfig {
                do NOT speculate about the author's opinion. Treat them as
                not-relevant and proceed with the External branch.
 
-            3. If NO directly-relevant Author post excerpts are provided,
-               answer the question from the External source excerpts in
-               third person with the company as subject
+            3. If NO directly-relevant Author post excerpts are provided
+               AND directly-relevant External source excerpts ARE provided,
+               answer the question from those External excerpts in third
+               person with the company as subject
                ("쿠팡은 ~라고 설명합니다", "쿠팡의 ML 플랫폼은 ~를
                제공합니다"). Do NOT use "작성자님" anywhere in this branch.
                Do NOT invent connections to other author posts. Never say or
                imply that an External source article is the blog owner's
                writing.
+
+               If the External excerpts are merely retrieved but do not
+               directly support the user's specific question (e.g., they
+               share a keyword but discuss an unrelated topic), do NOT use
+               them. Fall through to rule 5's general-knowledge escape.
 
             4. 참고자료 listing rules:
                - List ONLY the sources whose excerpt content you actually

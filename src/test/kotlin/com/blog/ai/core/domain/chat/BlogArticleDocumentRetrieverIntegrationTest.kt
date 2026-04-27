@@ -134,6 +134,28 @@ class BlogArticleDocumentRetrieverIntegrationTest
         }
 
         @Test
+        fun `golden — abstains when rerank is unavailable so the call is fail-closed`() {
+            val blog = seedBlog()
+            seedArticleWithChunk(
+                blog = blog,
+                title = "Some article",
+                content = "some content",
+                chunkContent = "some content",
+                chunkVector = vector(0.1f),
+            )
+            Mockito.`when`(jinaRerankClient.rerank(anyString(), anyList(), anyInt())).thenAnswer { inv ->
+                @Suppress("UNCHECKED_CAST")
+                val docs = inv.getArgument<List<org.springframework.ai.document.Document>>(1)
+                val topN = inv.getArgument<Int>(2)
+                docs.take(topN)
+            }
+
+            val docs = retriever.retrieve(Query.builder().text("anything").build())
+
+            assertTrue(docs.isEmpty(), "rerank without scores must trigger fail-closed abstain, not fall through")
+        }
+
+        @Test
         fun `golden — abstains when top rerank score is below abstain threshold even if above eligibility`() {
             val blog = seedBlog()
             seedArticleWithChunk(
