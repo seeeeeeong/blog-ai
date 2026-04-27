@@ -35,6 +35,7 @@ class ChatService(
         private const val MESSAGE_HISTORY_LIMIT = 50
         private const val CLARIFY_HISTORY_LIMIT = 6
         private const val CLARIFY_HISTORY_SNIPPET = 200
+        private const val MAX_CLARIFY_LENGTH = 200
         const val REWRITTEN_QUERY_PARAM = "rewritten_query"
         private const val CLARIFY_EMERGENCY_FALLBACK =
             "어떤 부분을 더 자세히 알고 싶으신가요?"
@@ -50,11 +51,11 @@ class ChatService(
               (b) asking the chatbot to surface posts similar to a specific
                   article.
 
-            Write ONE short Korean clarifying question (max 1 sentence,
-            under ~120 chars). Reference the user's actual phrasing so it
-            feels natural — do NOT use a generic template. Do NOT answer the
-            question itself, do NOT search anything, do NOT add commentary.
-            Output the question only.
+            Write ONE short Korean clarifying question (single sentence, under
+            ~120 chars). Reference the user's actual phrasing so it feels
+            natural — do NOT use a generic template. Do NOT answer the question
+            itself, do NOT search anything, do NOT add commentary. Output the
+            question only.
             """.trimIndent()
     }
 
@@ -72,54 +73,62 @@ class ChatService(
         chatPreflight.consumeOrThrow(sessionId, clientIp)
         val plan = chatQueryPlanner.plan(sessionId.toString(), question)
         if (plan.intent == ChatQueryPlanner.Intent.CLARIFY) {
-            return streamClarify(sessionId, question, plan.clarificationQuestion)
+            return clarifyResponse(sessionId, question, plan.clarificationQuestion)
         }
         return streamChat(sessionId, question, plan.rewrittenQuery)
     }
 
     fun remainingMessages(sessionId: UUID): Int = chatRateLimiter.remainingMessages(sessionId)
 
-    private fun streamClarify(
+    private fun clarifyResponse(
         sessionId: UUID,
         question: String,
         plannerHint: String?,
     ): Flux<ServerSentEvent<String>> {
-        val historyText = formatClarifyHistory(chatMemory.get(sessionId.toString()))
-        val accumulator = StringBuilder()
         val sessionKey = sessionId.toString()
-
-        return chatClientBuilder
-            .build()
-            .prompt()
-            .system(CLARIFY_SYSTEM_PROMPT)
-            .user(buildClarifyUserPrompt(historyText, question, plannerHint))
-            .stream()
-            .content()
-            .doOnNext { accumulator.append(it) }
-            .map { content -> ServerSentEvent.builder(content).build() }
-            .concatWith(Flux.just(ServerSentEvent.builder<String>("[DONE]").build()))
-            .doOnComplete { persistClarify(sessionKey, question, accumulator.toString()) }
-            .onErrorResume { e ->
-                log.warn(e) { "Clarify streaming failed, emitting emergency fallback" }
-                persistClarify(sessionKey, question, CLARIFY_EMERGENCY_FALLBACK)
-                Flux.just(
-                    ServerSentEvent.builder(CLARIFY_EMERGENCY_FALLBACK).build(),
-                    ServerSentEvent.builder<String>("[DONE]").build(),
-                )
-            }
-    }
-
-    private fun persistClarify(
-        sessionKey: String,
-        question: String,
-        rawAnswer: String,
-    ) {
-        val answer = rawAnswer.trim()
-        if (answer.isBlank()) return
+        val response = generateClarification(sessionKey, question, plannerHint)
         chatMemory.add(
             sessionKey,
-            listOf(UserMessage(question), AssistantMessage(answer)),
+            listOf(UserMessage(question), AssistantMessage(response)),
         )
+        return Flux.just(
+            ServerSentEvent.builder(response).build(),
+            ServerSentEvent.builder<String>("[DONE]").build(),
+        )
+    }
+
+    private fun generateClarification(
+        sessionKey: String,
+        question: String,
+        plannerHint: String?,
+    ): String {
+        val historyText = formatClarifyHistory(chatMemory.get(sessionKey))
+        return try {
+            val raw =
+                chatClientBuilder
+                    .build()
+                    .prompt()
+                    .system(CLARIFY_SYSTEM_PROMPT)
+                    .user(buildClarifyUserPrompt(historyText, question, plannerHint))
+                    .call()
+                    .content()
+            sanitizeClarification(raw) ?: CLARIFY_EMERGENCY_FALLBACK
+        } catch (e: Exception) {
+            log.warn(e) { "Clarify generation failed, using emergency fallback" }
+            CLARIFY_EMERGENCY_FALLBACK
+        }
+    }
+
+    private fun sanitizeClarification(raw: String?): String? {
+        val trimmed = raw?.trim()?.takeIf { it.isNotBlank() } ?: return null
+        val firstLine =
+            trimmed
+                .lineSequence()
+                .firstOrNull()
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+                ?: return null
+        return firstLine.take(MAX_CLARIFY_LENGTH)
     }
 
     private fun formatClarifyHistory(history: List<Message>): String =
