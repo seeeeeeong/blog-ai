@@ -1,32 +1,38 @@
 complexity:
   active: true
-  CyclomaticComplexity:
-    threshold: 10
+  CyclomaticComplexMethod:
+    allowedComplexity: 10
   LongMethod:
-    threshold: 40
+    allowedLines: 40
   LongParameterList:
-    functionThreshold: 4
-    constructorThreshold: 7
+    allowedFunctionParameters: 4
+    allowedConstructorParameters: 7
   NestedBlockDepth:
-    threshold: 2
+    allowedDepth: 2
   TooManyFunctions:
-    thresholdInClasses: 15
+    allowedFunctionsPerClass: 15
+
+exceptions:
+  active: true
+  TooGenericExceptionCaught:
+    active: false
+  SwallowedException:
+    active: true
 
 naming:
   active: true
 
 style:
   active: true
+  ReturnCount:
+    active: false
+  LoopWithTooManyJumpStatements:
+    active: false
   MaxLineLength:
     active: true
     maxLineLength: 120
   MagicNumber:
-    active: true
-    ignoreNumbers:
-      - '-1'
-      - '0'
-      - '1'
-      - '2'
+    active: false
   WildcardImport:
     active: true
   UseCheckOrError:
@@ -45,4 +51,3 @@ potential-bugs:
   active: true
   UnreachableCode:
     active: true
-

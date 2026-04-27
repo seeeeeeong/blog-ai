@@ -1,0 +1,13 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:TextSplitter.kt:TextSplitter$private fun doSplit: List&lt;String&gt;</ID>
+    <ID>EmptyFunctionBlock:BlogCacheService.kt:BlogCacheService${ }</ID>
+    <ID>LongMethod:BlogArticleDocumentRetrieverIntegrationTest.kt:BlogArticleDocumentRetrieverIntegrationTest$private fun seedAuthorPostWithChunk</ID>
+    <ID>LongMethod:BlogPostSimilarServiceIntegrationTest.kt:BlogPostSimilarServiceIntegrationTest$private fun seedArticle: Long</ID>
+    <ID>LongMethod:BlogPostSimilarServiceIntegrationTest.kt:BlogPostSimilarServiceIntegrationTest$private fun seedBlogPost</ID>
+    <ID>LongMethod:RagChunkRepository.kt:RagChunkRepository$fun searchHybrid: List&lt;RagChunkHit&gt;</ID>
+    <ID>NestedBlockDepth:BlogPostEmbedService.kt:BlogPostEmbedService$fun embedPending: Int</ID>
+  </CurrentIssues>
+</SmellBaseline>

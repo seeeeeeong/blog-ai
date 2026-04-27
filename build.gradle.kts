@@ -2,13 +2,13 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 plugins {
-    kotlin("jvm") version "2.3.0"
-    kotlin("plugin.spring") version "2.3.0"
-    kotlin("plugin.jpa") version "2.3.0"
+    kotlin("jvm") version "2.3.21"
+    kotlin("plugin.spring") version "2.3.21"
+    kotlin("plugin.jpa") version "2.3.21"
     id("org.springframework.boot") version "3.5.9"
     id("io.spring.dependency-management") version "1.1.7"
     id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
-    id("io.gitlab.arturbosch.detekt") version "1.23.8"
+    id("dev.detekt") version "2.0.0-alpha.3"
 }
 
 group = "com.blog"
@@ -89,8 +89,6 @@ dependencies {
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-
-    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.8")
 }
 
 tasks.withType<KotlinCompile>().configureEach {
@@ -110,16 +108,8 @@ ktlint {
 
 detekt {
     config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
+    baseline = file("$rootDir/detekt-baseline.xml")
     buildUponDefaultConfig = true
-}
-
-// Disable detekt tasks until detekt 2.0 stable supports Kotlin 2.3
-// (verified 2026-04-23: detekt 1.23.8 refuses to run on Kotlin 2.3.0 and no 2.x is on Gradle Plugin Portal)
-tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
-    enabled = false
-}
-tasks.withType<io.gitlab.arturbosch.detekt.DetektCreateBaselineTask>().configureEach {
-    enabled = false
 }
 
 tasks.named<BootJar>("bootJar") {
@@ -131,5 +121,5 @@ tasks.named<Jar>("jar") {
 }
 
 tasks.named("check") {
-    dependsOn("ktlintCheck")
+    dependsOn("ktlintCheck", "detekt")
 }

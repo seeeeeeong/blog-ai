@@ -31,7 +31,9 @@ class RssFeedParser(
                 try {
                     SyndFeedInput().build(XmlReader(ByteArrayInputStream(raw)))
                 } catch (e: com.rometools.rome.io.ParsingFeedException) {
-                    log.info { "Retrying RSS parse after sanitizing invalid XML chars: url=$rssUrl" }
+                    log.info {
+                        "Retrying RSS parse after sanitizing invalid XML chars: url=$rssUrl, reason=${e.message}"
+                    }
                     val sanitized = sanitizeXml(String(raw, Charsets.UTF_8))
                     SyndFeedInput().build(StringReader(sanitized))
                 }
