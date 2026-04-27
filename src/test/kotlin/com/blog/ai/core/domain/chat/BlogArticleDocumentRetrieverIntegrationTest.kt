@@ -38,9 +38,6 @@ class BlogArticleDocumentRetrieverIntegrationTest
         private lateinit var embeddingModel: EmbeddingModel
 
         @MockitoBean
-        private lateinit var chatQueryRewriter: ChatQueryRewriter
-
-        @MockitoBean
         private lateinit var chatQueryExpander: ChatQueryExpander
 
         @MockitoBean
@@ -54,9 +51,6 @@ class BlogArticleDocumentRetrieverIntegrationTest
             jdbcTemplate.update("TRUNCATE TABLE blog_posts RESTART IDENTITY CASCADE")
 
             Mockito.`when`(embeddingModel.embed(anyString())).thenReturn(FloatArray(1536) { 0.1f })
-            Mockito.`when`(chatQueryRewriter.rewrite(anyString(), anyString())).thenAnswer { inv ->
-                inv.getArgument<String>(1)
-            }
             Mockito.`when`(chatQueryExpander.expand(anyString())).thenAnswer { inv ->
                 listOf(inv.getArgument<String>(0))
             }
@@ -111,6 +105,26 @@ class BlogArticleDocumentRetrieverIntegrationTest
         fun `returns empty list when no articles or author posts seeded`() {
             val docs = retriever.retrieve(Query.builder().text("anything").build())
             assertTrue(docs.isEmpty())
+        }
+
+        @Test
+        fun `uses rewritten query from advisor context when provided`() {
+            val capturedExpansionInputs = mutableListOf<String>()
+            Mockito.`when`(chatQueryExpander.expand(anyString())).thenAnswer { inv ->
+                val q = inv.getArgument<String>(0)
+                capturedExpansionInputs += q
+                listOf(q)
+            }
+
+            retriever.retrieve(
+                Query
+                    .builder()
+                    .text("아니 관련 게시글 추천 이런거")
+                    .context(mapOf(ChatService.REWRITTEN_QUERY_PARAM to "RAG 기반 관련 게시글 추천 시스템 설계"))
+                    .build(),
+            )
+
+            assertEquals(listOf("RAG 기반 관련 게시글 추천 시스템 설계"), capturedExpansionInputs)
         }
 
         @Test

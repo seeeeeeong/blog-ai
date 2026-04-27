@@ -18,7 +18,6 @@ private val log = KotlinLogging.logger {}
 class BlogArticleDocumentRetriever(
     private val embeddingModel: EmbeddingModel,
     private val ragChunkRepository: RagChunkRepository,
-    private val chatQueryRewriter: ChatQueryRewriter,
     private val chatQueryExpander: ChatQueryExpander,
     private val jinaRerankClient: JinaRerankClient,
 ) : DocumentRetriever {
@@ -40,13 +39,11 @@ class BlogArticleDocumentRetriever(
         val originalText = query.text().trim()
         if (originalText.isBlank()) return emptyList()
 
-        val sessionId = query.context()["chat_memory_conversation_id"] as? String
         val rewritten =
-            if (sessionId != null) {
-                chatQueryRewriter.rewrite(sessionId, originalText)
-            } else {
-                originalText
-            }
+            (query.context()[ChatService.REWRITTEN_QUERY_PARAM] as? String)
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+                ?: originalText
 
         val variants = chatQueryExpander.expand(rewritten)
         val embeddings = variants.map { v -> QueryEmbedding(v, embed(v)) }
