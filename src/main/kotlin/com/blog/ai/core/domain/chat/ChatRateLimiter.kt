@@ -1,7 +1,7 @@
 package com.blog.ai.core.domain.chat
 
-import com.blog.ai.core.support.error.CoreException
-import com.blog.ai.core.support.error.ErrorType
+import com.blog.ai.global.error.AppException
+import com.blog.ai.global.error.ErrorCode
 import com.blog.ai.storage.chat.ChatRateLimitRepository
 import com.blog.ai.storage.chat.RateLimitOutcome
 import com.blog.ai.storage.chat.RateLimitRequest
@@ -35,7 +35,7 @@ class ChatRateLimiter(
                     ipTtl = IP_TTL,
                 ),
             )
-        if (outcome != RateLimitOutcome.OK) throw CoreException(ErrorType.CHAT_RATE_LIMITED)
+        if (outcome != RateLimitOutcome.OK) throw AppException(ErrorCode.CHAT_RATE_LIMITED)
     }
 
     fun remainingMessages(sessionId: UUID): Int {

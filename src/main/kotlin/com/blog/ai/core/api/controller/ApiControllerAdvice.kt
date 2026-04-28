@@ -1,8 +1,8 @@
 package com.blog.ai.core.api.controller
 
-import com.blog.ai.core.support.error.CoreException
-import com.blog.ai.core.support.error.ErrorType
-import com.blog.ai.core.support.response.ApiResponse
+import com.blog.ai.global.error.AppException
+import com.blog.ai.global.error.ErrorCode
+import com.blog.ai.global.response.ApiResponse
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.ConstraintViolationException
 import org.springframework.boot.logging.LogLevel
@@ -21,12 +21,12 @@ class ApiControllerAdvice {
         private val log = KotlinLogging.logger {}
     }
 
-    @ExceptionHandler(CoreException::class)
-    fun handleCoreException(e: CoreException): ResponseEntity<ApiResponse<Any>> {
+    @ExceptionHandler(AppException::class)
+    fun handleCoreException(e: AppException): ResponseEntity<ApiResponse<Any>> {
         when (e.errorType.logLevel) {
-            LogLevel.ERROR -> log.error(e) { "CoreException: ${e.message}" }
-            LogLevel.WARN -> log.warn { "CoreException: ${e.message}" }
-            else -> log.info { "CoreException: ${e.message}" }
+            LogLevel.ERROR -> log.error(e) { "AppException: ${e.message}" }
+            LogLevel.WARN -> log.warn { "AppException: ${e.message}" }
+            else -> log.info { "AppException: ${e.message}" }
         }
         return ResponseEntity(ApiResponse.error(e.errorType, e.data, e.message), e.errorType.status)
     }
@@ -42,12 +42,12 @@ class ApiControllerAdvice {
     )
     fun handleBadRequestException(e: Exception): ResponseEntity<ApiResponse<Any>> {
         log.info { "Bad request: ${e.message}" }
-        return ResponseEntity(ApiResponse.error(ErrorType.INVALID_INPUT), ErrorType.INVALID_INPUT.status)
+        return ResponseEntity(ApiResponse.error(ErrorCode.INVALID_INPUT), ErrorCode.INVALID_INPUT.status)
     }
 
     @ExceptionHandler(Exception::class)
     fun handleException(e: Exception): ResponseEntity<ApiResponse<Any>> {
         log.error(e) { "Unexpected exception occurred" }
-        return ResponseEntity(ApiResponse.error(ErrorType.DEFAULT_ERROR), ErrorType.DEFAULT_ERROR.status)
+        return ResponseEntity(ApiResponse.error(ErrorCode.DEFAULT_ERROR), ErrorCode.DEFAULT_ERROR.status)
     }
 }

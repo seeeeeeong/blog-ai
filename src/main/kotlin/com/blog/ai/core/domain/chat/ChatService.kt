@@ -1,7 +1,7 @@
 package com.blog.ai.core.domain.chat
 
-import com.blog.ai.core.support.error.CoreException
-import com.blog.ai.core.support.error.ErrorType
+import com.blog.ai.global.error.AppException
+import com.blog.ai.global.error.ErrorCode
 import com.blog.ai.storage.chat.ChatMessageRepository
 import com.blog.ai.storage.chat.ChatSessionEntity
 import com.blog.ai.storage.chat.ChatSessionRepository
@@ -179,6 +179,6 @@ class ChatService(
                 .filter { it.role in listOf("user", "assistant") }
                 .map { it.toMessage() }
         }
-        throw CoreException(ErrorType.SESSION_NOT_FOUND)
+        throw AppException(ErrorCode.SESSION_NOT_FOUND)
     }
 }

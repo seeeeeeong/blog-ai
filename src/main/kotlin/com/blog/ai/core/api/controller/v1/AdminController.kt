@@ -4,11 +4,11 @@ import com.blog.ai.core.domain.article.ArticleAdminService
 import com.blog.ai.core.domain.article.ArticleEmbedService
 import com.blog.ai.core.domain.crawl.CrawlAsyncService
 import com.blog.ai.core.domain.post.BlogPostEmbedService
-import com.blog.ai.core.support.error.CoreException
-import com.blog.ai.core.support.error.ErrorType
-import com.blog.ai.core.support.properties.AdminProperties
-import com.blog.ai.core.support.properties.InternalProperties
-import com.blog.ai.core.support.response.ApiResponse
+import com.blog.ai.global.error.AppException
+import com.blog.ai.global.error.ErrorCode
+import com.blog.ai.global.properties.AdminProperties
+import com.blog.ai.global.properties.InternalProperties
+import com.blog.ai.global.response.ApiResponse
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
@@ -64,6 +64,6 @@ class AdminController(
     private fun requireAdminKey(key: String) {
         if (key == adminProperties.apiKey) return
         if (key == internalProperties.apiKey) return
-        throw CoreException(ErrorType.UNAUTHORIZED)
+        throw AppException(ErrorCode.UNAUTHORIZED)
     }
 }

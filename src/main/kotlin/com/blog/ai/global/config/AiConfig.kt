@@ -1,4 +1,4 @@
-package com.blog.ai.core.api.config
+package com.blog.ai.global.config
 
 import com.blog.ai.core.domain.chat.BlogArticleDocumentRetriever
 import org.springframework.ai.chat.client.ChatClient
@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration
-class ChatClientConfig {
+class AiConfig {
     @Bean
     fun chatClient(
         chatClientBuilder: ChatClient.Builder,

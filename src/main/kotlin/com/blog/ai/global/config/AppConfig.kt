@@ -1,4 +1,4 @@
-package com.blog.ai.core.api.config
+package com.blog.ai.global.config
 
 import com.fasterxml.jackson.module.kotlin.KotlinFeature
 import com.fasterxml.jackson.module.kotlin.KotlinModule

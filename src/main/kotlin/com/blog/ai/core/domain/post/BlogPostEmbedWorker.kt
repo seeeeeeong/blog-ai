@@ -1,8 +1,8 @@
 package com.blog.ai.core.domain.post
 
-import com.blog.ai.core.support.text.EmbeddingBatcher
-import com.blog.ai.core.support.text.TextSplitter
-import com.blog.ai.core.support.text.TokenTruncator
+import com.blog.ai.global.text.EmbeddingBatcher
+import com.blog.ai.global.text.TextSplitter
+import com.blog.ai.global.text.TokenTruncator
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.embedding.EmbeddingModel
 import org.springframework.stereotype.Service

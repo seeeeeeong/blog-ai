@@ -1,4 +1,4 @@
-package com.blog.ai.core.api.config
+package com.blog.ai.global.config
 
 import net.javacrumbs.shedlock.core.LockProvider
 import net.javacrumbs.shedlock.provider.jdbctemplate.JdbcTemplateLockProvider
@@ -9,7 +9,7 @@ import org.springframework.jdbc.core.JdbcTemplate
 
 @Configuration
 @EnableSchedulerLock(defaultLockAtMostFor = "PT30M")
-class ShedLockConfig {
+class SchedulerLockConfig {
     @Bean
     fun lockProvider(jdbcTemplate: JdbcTemplate): LockProvider =
         JdbcTemplateLockProvider(

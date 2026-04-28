@@ -1,6 +1,6 @@
 package com.blog.ai.core.domain.chat
 
-import com.blog.ai.core.support.properties.JinaProperties
+import com.blog.ai.global.properties.JinaProperties
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.document.Document
 import org.springframework.http.HttpHeaders

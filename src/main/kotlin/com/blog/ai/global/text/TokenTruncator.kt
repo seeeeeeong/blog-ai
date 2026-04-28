@@ -1,4 +1,4 @@
-package com.blog.ai.core.support.text
+package com.blog.ai.global.text
 
 import com.knuddels.jtokkit.Encodings
 import com.knuddels.jtokkit.api.EncodingType

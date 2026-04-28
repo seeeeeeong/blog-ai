@@ -1,7 +1,7 @@
 package com.blog.ai.core.domain.article
 
-import com.blog.ai.core.support.properties.RagContextualProperties
-import com.blog.ai.core.support.text.TokenTruncator
+import com.blog.ai.global.properties.RagContextualProperties
+import com.blog.ai.global.text.TokenTruncator
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.stereotype.Component

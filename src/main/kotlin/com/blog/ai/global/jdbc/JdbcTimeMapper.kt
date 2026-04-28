@@ -1,11 +1,11 @@
-package com.blog.ai.core.support.jdbc
+package com.blog.ai.global.jdbc
 
 import java.sql.Timestamp
 import java.time.Instant
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 
-object JdbcTimestamps {
+object JdbcTimeMapper {
     fun toOffsetDateTime(value: Any?): OffsetDateTime? =
         when (value) {
             null -> null

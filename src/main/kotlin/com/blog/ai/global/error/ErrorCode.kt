@@ -1,9 +1,9 @@
-package com.blog.ai.core.support.error
+package com.blog.ai.global.error
 
 import org.springframework.boot.logging.LogLevel
 import org.springframework.http.HttpStatus
 
-enum class ErrorType(
+enum class ErrorCode(
     val status: HttpStatus,
     val code: String,
     val message: String,

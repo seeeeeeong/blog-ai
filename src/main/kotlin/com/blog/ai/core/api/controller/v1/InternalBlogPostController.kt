@@ -5,10 +5,10 @@ import com.blog.ai.core.api.controller.v1.response.SyncBlogPostResponse
 import com.blog.ai.core.domain.post.BlogPostSyncService
 import com.blog.ai.core.domain.post.EventType
 import com.blog.ai.core.domain.post.SyncResult
-import com.blog.ai.core.support.error.CoreException
-import com.blog.ai.core.support.error.ErrorType
-import com.blog.ai.core.support.properties.InternalProperties
-import com.blog.ai.core.support.response.ApiResponse
+import com.blog.ai.global.error.AppException
+import com.blog.ai.global.error.ErrorCode
+import com.blog.ai.global.properties.InternalProperties
+import com.blog.ai.global.response.ApiResponse
 import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -51,13 +51,13 @@ class InternalBlogPostController(
     private fun requireUpsertTitle(request: SyncBlogPostRequest): String {
         val title = request.title
         if (title.isNullOrBlank()) {
-            throw CoreException(ErrorType.BLOG_POST_INVALID_PAYLOAD)
+            throw AppException(ErrorCode.BLOG_POST_INVALID_PAYLOAD)
         }
         return title
     }
 
     private fun requireInternalKey(key: String) {
         if (key == internalProperties.apiKey) return
-        throw CoreException(ErrorType.UNAUTHORIZED)
+        throw AppException(ErrorCode.UNAUTHORIZED)
     }
 }

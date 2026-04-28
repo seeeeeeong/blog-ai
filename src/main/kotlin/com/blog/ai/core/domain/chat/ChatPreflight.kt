@@ -1,7 +1,7 @@
 package com.blog.ai.core.domain.chat
 
-import com.blog.ai.core.support.error.CoreException
-import com.blog.ai.core.support.error.ErrorType
+import com.blog.ai.global.error.AppException
+import com.blog.ai.global.error.ErrorCode
 import com.blog.ai.storage.chat.ChatSessionRepository
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -22,6 +22,6 @@ class ChatPreflight(
             chatRateLimiter.checkAndIncrement(sessionId, clientIp)
             return
         }
-        throw CoreException(ErrorType.SESSION_NOT_FOUND)
+        throw AppException(ErrorCode.SESSION_NOT_FOUND)
     }
 }

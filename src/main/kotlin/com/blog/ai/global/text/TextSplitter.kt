@@ -1,4 +1,4 @@
-package com.blog.ai.core.support.text
+package com.blog.ai.global.text
 
 object TextSplitter {
     private const val CHUNK_SIZE = 1200

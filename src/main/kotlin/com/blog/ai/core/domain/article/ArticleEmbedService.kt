@@ -1,9 +1,9 @@
 package com.blog.ai.core.domain.article
 
-import com.blog.ai.core.support.jdbc.JdbcTimestamps
-import com.blog.ai.core.support.text.EmbeddingBatcher
-import com.blog.ai.core.support.text.TextSplitter
-import com.blog.ai.core.support.text.TokenTruncator
+import com.blog.ai.global.jdbc.JdbcTimeMapper
+import com.blog.ai.global.text.EmbeddingBatcher
+import com.blog.ai.global.text.TextSplitter
+import com.blog.ai.global.text.TokenTruncator
 import com.blog.ai.storage.article.ArticleRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.embedding.EmbeddingModel
@@ -136,7 +136,7 @@ class ArticleEmbedService(
             title = row[1] as String,
             content = (row[2] as String?) ?: "",
             url = row[3] as String,
-            publishedAt = JdbcTimestamps.toOffsetDateTime(row[4]),
+            publishedAt = JdbcTimeMapper.toOffsetDateTime(row[4]),
             company = row[5] as String,
         )
 }

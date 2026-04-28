@@ -1,7 +1,7 @@
 package com.blog.ai.core.domain.crawl
 
-import com.blog.ai.core.support.error.CoreException
-import com.blog.ai.core.support.error.ErrorType
+import com.blog.ai.global.error.AppException
+import com.blog.ai.global.error.ErrorCode
 import com.blog.ai.storage.article.ArticleEntity
 import com.blog.ai.storage.article.ArticleRepository
 import com.blog.ai.storage.blog.BlogRepository
@@ -28,7 +28,7 @@ class ArticleSaveService(
         val blog =
             blogRepository
                 .findById(blogId)
-                .orElseThrow { CoreException(ErrorType.BLOG_NOT_FOUND) }
+                .orElseThrow { AppException(ErrorCode.BLOG_NOT_FOUND) }
 
         var saved = 0
 
