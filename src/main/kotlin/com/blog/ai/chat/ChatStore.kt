@@ -90,7 +90,7 @@ interface ChatMessageRepository : JpaRepository<ChatMessageEntity, Long> {
 }
 
 @Repository
-class ChatRateLimitRepository(
+class RateLimitStore(
     private val jdbcTemplate: JdbcTemplate,
 ) {
     companion object {

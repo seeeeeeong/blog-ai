@@ -38,8 +38,8 @@ class PostEmbeddingService(
     fun clearRetriableErrors(maxRetries: Int = MAX_EMBED_RETRIES): Int =
         postRepository.clearRetriableEmbedErrors(maxRetries)
 
-    private fun toSnapshot(entity: PostEntity): PostEmbedSnapshot =
-        PostEmbedSnapshot(
+    private fun toSnapshot(entity: PostEntity): PostEmbeddingSnapshot =
+        PostEmbeddingSnapshot(
             postId = requireNotNull(entity.id) { "PostEntity.id must not be null after load" },
             externalId = entity.externalId,
             title = entity.title,
@@ -49,7 +49,7 @@ class PostEmbeddingService(
         )
 }
 
-data class PostEmbedSnapshot(
+data class PostEmbeddingSnapshot(
     val postId: Long,
     val externalId: String,
     val title: String,
@@ -58,17 +58,17 @@ data class PostEmbedSnapshot(
     val contentHash: String?,
 )
 
-data class PostEmbedCommitCommand(
+data class PostEmbeddingResult(
     val postId: Long,
     val title: String,
     val url: String?,
     val content: String,
     val snapshotHash: String?,
     val docVector: String,
-    val chunks: List<SavePostChunkCommand>,
+    val chunks: List<PostChunkEmbedding>,
 )
 
-data class SavePostChunkCommand(
+data class PostChunkEmbedding(
     val postId: Long,
     val chunkIndex: Int,
     val content: String,

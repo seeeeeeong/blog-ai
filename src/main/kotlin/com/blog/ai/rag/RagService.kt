@@ -1,8 +1,8 @@
 package com.blog.ai.rag
 
-import com.blog.ai.article.SaveChunkCommand
-import com.blog.ai.post.SavePostChunkCommand
-import com.blog.ai.rag.RagChunkCommand
+import com.blog.ai.article.ArticleChunkEmbedding
+import com.blog.ai.post.PostChunkEmbedding
+import com.blog.ai.rag.RagChunkWrite
 import com.blog.ai.rag.RagChunkGranularity
 import com.blog.ai.rag.RagChunkRepository
 import com.blog.ai.rag.RagSourceType
@@ -20,13 +20,13 @@ class RagService(
         url: String?,
         content: String,
         docVector: String,
-        chunks: List<SavePostChunkCommand>,
+        chunks: List<PostChunkEmbedding>,
     ) {
         val commands =
             buildList {
                 if (content.isNotBlank()) {
                     add(
-                        RagChunkCommand(
+                        RagChunkWrite(
                             sourceType = RagSourceType.AUTHOR_POST,
                             sourceId = postId,
                             granularity = RagChunkGranularity.DOCUMENT,
@@ -41,7 +41,7 @@ class RagService(
                 }
                 chunks.forEach { chunk ->
                     add(
-                        RagChunkCommand(
+                        RagChunkWrite(
                             sourceType = RagSourceType.AUTHOR_POST,
                             sourceId = postId,
                             granularity = RagChunkGranularity.CHUNK,
@@ -66,13 +66,13 @@ class RagService(
         company: String,
         content: String,
         docVector: String,
-        chunks: List<SaveChunkCommand>,
+        chunks: List<ArticleChunkEmbedding>,
     ) {
         val commands =
             buildList {
                 if (content.isNotBlank()) {
                     add(
-                        RagChunkCommand(
+                        RagChunkWrite(
                             sourceType = RagSourceType.EXTERNAL_ARTICLE,
                             sourceId = articleId,
                             granularity = RagChunkGranularity.DOCUMENT,
@@ -87,7 +87,7 @@ class RagService(
                 }
                 chunks.forEach { chunk ->
                     add(
-                        RagChunkCommand(
+                        RagChunkWrite(
                             sourceType = RagSourceType.EXTERNAL_ARTICLE,
                             sourceId = articleId,
                             granularity = RagChunkGranularity.CHUNK,

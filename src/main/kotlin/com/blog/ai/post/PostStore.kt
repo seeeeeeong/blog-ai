@@ -83,7 +83,7 @@ class PostEntity(
         protected set
 
     companion object {
-        fun create(command: CreatePostCommand): PostEntity {
+        fun create(command: CreatePost): PostEntity {
             require(command.externalId.isNotBlank()) { "Post externalId must not be blank" }
             require(command.title.isNotBlank()) { "Post title must not be blank" }
             return PostEntity(
@@ -247,7 +247,7 @@ interface PostRepository : JpaRepository<PostEntity, Long> {
     fun countActive(): Long
 }
 
-data class CreatePostCommand(
+data class CreatePost(
     val externalId: String,
     val title: String,
     val content: String?,

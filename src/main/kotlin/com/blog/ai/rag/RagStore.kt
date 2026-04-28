@@ -10,7 +10,7 @@ class RagChunkRepository(
     fun replaceSource(
         sourceType: RagSourceType,
         sourceId: Long,
-        chunks: List<RagChunkCommand>,
+        chunks: List<RagChunkWrite>,
     ) {
         jdbcTemplate.update(
             "DELETE FROM rag_chunks WHERE source_type = ? AND source_id = ?",
@@ -35,7 +35,7 @@ class RagChunkRepository(
         jdbcTemplate.update("DELETE FROM rag_chunks WHERE source_type = ?", sourceType.name)
     }
 
-    private fun save(command: RagChunkCommand) {
+    private fun save(command: RagChunkWrite) {
         jdbcTemplate.update(
             """
             INSERT INTO rag_chunks (
@@ -179,7 +179,7 @@ data class RagSearchQuery(
     val limit: Int,
 )
 
-data class RagChunkCommand(
+data class RagChunkWrite(
     val sourceType: RagSourceType,
     val sourceId: Long,
     val granularity: RagChunkGranularity,

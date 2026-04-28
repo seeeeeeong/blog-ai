@@ -1,6 +1,6 @@
 package com.blog.ai.chat
 
-import com.blog.ai.chat.ChatRateLimitRepository
+import com.blog.ai.chat.RateLimitStore
 import com.blog.ai.chat.RateLimitOutcome
 import com.blog.ai.chat.RateLimitRequest
 import com.blog.ai.global.error.AppException
@@ -11,7 +11,7 @@ import java.util.UUID
 
 @Component("chatRateLimiter")
 class RateLimiter(
-    private val chatRateLimitRepository: ChatRateLimitRepository,
+    private val rateLimitStore: RateLimitStore,
 ) {
     companion object {
         private const val MAX_MESSAGES_PER_SESSION = 30
@@ -25,7 +25,7 @@ class RateLimiter(
         clientIp: String,
     ) {
         val outcome =
-            chatRateLimitRepository.tryConsume(
+            rateLimitStore.tryConsume(
                 RateLimitRequest(
                     sessionKey = sessionId.toString(),
                     ipKey = clientIp,
@@ -39,9 +39,9 @@ class RateLimiter(
     }
 
     fun remainingMessages(sessionId: UUID): Int {
-        val used = chatRateLimitRepository.getActiveCount(ChatRateLimitRepository.SCOPE_SESSION, sessionId.toString())
+        val used = rateLimitStore.getActiveCount(RateLimitStore.SCOPE_SESSION, sessionId.toString())
         return (MAX_MESSAGES_PER_SESSION - used).coerceAtLeast(0)
     }
 
-    fun cleanupExpired(): Int = chatRateLimitRepository.deleteExpired()
+    fun cleanupExpired(): Int = rateLimitStore.deleteExpired()
 }

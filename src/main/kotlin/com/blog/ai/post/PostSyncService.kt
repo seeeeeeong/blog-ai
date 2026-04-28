@@ -18,7 +18,7 @@ class PostSyncService(
     }
 
     @Transactional
-    fun upsert(command: SyncPostCommand): SyncResult {
+    fun upsert(command: SyncPost): SyncResult {
         val contentHash = hashContent(command.title, command.content)
         val affected =
             postRepository.upsert(
@@ -73,7 +73,7 @@ class PostSyncService(
     }
 }
 
-data class SyncPostCommand(
+data class SyncPost(
     val externalId: String,
     val title: String,
     val content: String?,

@@ -147,7 +147,7 @@ class PostSyncEmbedIntegrationTest
             content: String?,
             sourceUpdatedAt: OffsetDateTime,
             eventId: String?,
-        ) = SyncPostCommand(
+        ) = SyncPost(
             externalId = externalId,
             title = title,
             content = content,

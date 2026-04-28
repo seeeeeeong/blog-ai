@@ -1,6 +1,6 @@
 package com.blog.ai.chat
 
-import com.blog.ai.chat.ChatRateLimitRepository
+import com.blog.ai.chat.RateLimitStore
 import com.blog.ai.support.PostgresTestContainer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -23,7 +23,7 @@ class ChatServiceIntegrationTest
     @Autowired
     constructor(
         private val chatService: ChatService,
-        private val chatRateLimitRepository: ChatRateLimitRepository,
+        private val rateLimitStore: RateLimitStore,
         private val jdbcTemplate: JdbcTemplate,
     ) {
         @MockitoBean
@@ -68,8 +68,8 @@ class ChatServiceIntegrationTest
             assertEquals(listOf("안녕하세요", "[DONE]"), events?.map { it.data() })
             assertEquals(
                 1,
-                chatRateLimitRepository.getActiveCount(ChatRateLimitRepository.SCOPE_SESSION, sessionId.toString()),
+                rateLimitStore.getActiveCount(RateLimitStore.SCOPE_SESSION, sessionId.toString()),
             )
-            assertEquals(1, chatRateLimitRepository.getActiveCount(ChatRateLimitRepository.SCOPE_IP_HOUR, "127.0.0.1"))
+            assertEquals(1, rateLimitStore.getActiveCount(RateLimitStore.SCOPE_IP_HOUR, "127.0.0.1"))
         }
     }

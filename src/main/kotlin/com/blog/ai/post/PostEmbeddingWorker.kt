@@ -10,14 +10,14 @@ import org.springframework.stereotype.Service
 @Service
 class PostEmbeddingWorker(
     private val embeddingModel: EmbeddingModel,
-    private val postEmbeddingCommitter: PostEmbeddingCommitter,
+    private val postEmbeddingWriter: PostEmbeddingWriter,
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
         private const val MAX_EMBED_TOKENS = 7500
     }
 
-    fun embedOne(snapshot: PostEmbedSnapshot): Boolean {
+    fun embedOne(snapshot: PostEmbeddingSnapshot): Boolean {
         val title = snapshot.title
         val content = snapshot.content ?: ""
 
@@ -29,7 +29,7 @@ class PostEmbeddingWorker(
         val docVector = EmbeddingBatcher.toVectorLiteral(vectors[0])
         val chunkCommands =
             chunks.mapIndexed { index, chunk ->
-                SavePostChunkCommand(
+                PostChunkEmbedding(
                     postId = snapshot.postId,
                     chunkIndex = index,
                     content = chunk,
@@ -38,7 +38,7 @@ class PostEmbeddingWorker(
             }
 
         val command =
-            PostEmbedCommitCommand(
+            PostEmbeddingResult(
                 postId = snapshot.postId,
                 title = title,
                 url = snapshot.url,
@@ -47,7 +47,7 @@ class PostEmbeddingWorker(
                 docVector = docVector,
                 chunks = chunkCommands,
             )
-        val committed = postEmbeddingCommitter.commit(command)
+        val committed = postEmbeddingWriter.commit(command)
         if (committed) {
             log.debug { "BlogPost embedding completed: id=${snapshot.postId}, externalId=${snapshot.externalId}" }
         }
@@ -59,6 +59,6 @@ class PostEmbeddingWorker(
         snapshotHash: String?,
         message: String,
     ) {
-        postEmbeddingCommitter.recordError(postId, snapshotHash, message)
+        postEmbeddingWriter.recordError(postId, snapshotHash, message)
     }
 }

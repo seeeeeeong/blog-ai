@@ -15,7 +15,7 @@ import java.time.Duration
 class ChatRateLimitRepositoryIntegrationTest
     @Autowired
     constructor(
-        private val repository: ChatRateLimitRepository,
+        private val repository: RateLimitStore,
         private val jdbcTemplate: JdbcTemplate,
     ) {
         @BeforeEach
@@ -28,8 +28,8 @@ class ChatRateLimitRepositoryIntegrationTest
             val outcome = repository.tryConsume(request("s1", "ip1", sessionMax = 3, ipMax = 3))
 
             assertEquals(RateLimitOutcome.OK, outcome)
-            assertEquals(1, repository.getActiveCount(ChatRateLimitRepository.SCOPE_SESSION, "s1"))
-            assertEquals(1, repository.getActiveCount(ChatRateLimitRepository.SCOPE_IP_HOUR, "ip1"))
+            assertEquals(1, repository.getActiveCount(RateLimitStore.SCOPE_SESSION, "s1"))
+            assertEquals(1, repository.getActiveCount(RateLimitStore.SCOPE_IP_HOUR, "ip1"))
         }
 
         @Test
@@ -39,8 +39,8 @@ class ChatRateLimitRepositoryIntegrationTest
             val outcome = repository.tryConsume(request("s1", "ip1", sessionMax = 3, ipMax = 10))
 
             assertEquals(RateLimitOutcome.SESSION_LIMITED, outcome)
-            assertEquals(3, repository.getActiveCount(ChatRateLimitRepository.SCOPE_SESSION, "s1"))
-            assertEquals(3, repository.getActiveCount(ChatRateLimitRepository.SCOPE_IP_HOUR, "ip1"))
+            assertEquals(3, repository.getActiveCount(RateLimitStore.SCOPE_SESSION, "s1"))
+            assertEquals(3, repository.getActiveCount(RateLimitStore.SCOPE_IP_HOUR, "ip1"))
         }
 
         @Test
@@ -50,8 +50,8 @@ class ChatRateLimitRepositoryIntegrationTest
             val outcome = repository.tryConsume(request("sB", "ip1", sessionMax = 10, ipMax = 3))
 
             assertEquals(RateLimitOutcome.IP_LIMITED, outcome)
-            assertEquals(0, repository.getActiveCount(ChatRateLimitRepository.SCOPE_SESSION, "sB"))
-            assertEquals(3, repository.getActiveCount(ChatRateLimitRepository.SCOPE_IP_HOUR, "ip1"))
+            assertEquals(0, repository.getActiveCount(RateLimitStore.SCOPE_SESSION, "sB"))
+            assertEquals(3, repository.getActiveCount(RateLimitStore.SCOPE_IP_HOUR, "ip1"))
         }
 
         @Test
@@ -62,7 +62,7 @@ class ChatRateLimitRepositoryIntegrationTest
             val outcome = repository.tryConsume(request("s1", "ip1", sessionMax = 3, ipMax = 3))
 
             assertEquals(RateLimitOutcome.OK, outcome)
-            assertEquals(1, repository.getActiveCount(ChatRateLimitRepository.SCOPE_SESSION, "s1"))
+            assertEquals(1, repository.getActiveCount(RateLimitStore.SCOPE_SESSION, "s1"))
         }
 
         @Test
@@ -80,7 +80,7 @@ class ChatRateLimitRepositoryIntegrationTest
             val deleted = repository.deleteExpired()
 
             assertEquals(2, deleted)
-            assertEquals(1, repository.getActiveCount(ChatRateLimitRepository.SCOPE_SESSION, "sActive"))
+            assertEquals(1, repository.getActiveCount(RateLimitStore.SCOPE_SESSION, "sActive"))
         }
 
         private fun request(

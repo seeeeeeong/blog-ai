@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-class ArticleEmbeddingCommitter(
+class ArticleEmbeddingWriter(
     private val articleRepository: ArticleRepository,
     private val ragService: RagService,
 ) {
@@ -16,7 +16,7 @@ class ArticleEmbeddingCommitter(
     }
 
     @Transactional
-    fun commit(command: ArticleEmbedCommitCommand) {
+    fun commit(command: ArticleEmbeddingResult) {
         articleRepository.markEmbedded(command.articleId)
         ragService.replaceExternalArticle(
             articleId = command.articleId,

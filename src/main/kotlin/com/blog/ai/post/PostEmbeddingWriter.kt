@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-class PostEmbeddingCommitter(
+class PostEmbeddingWriter(
     private val postRepository: PostRepository,
     private val ragService: RagService,
 ) {
@@ -16,7 +16,7 @@ class PostEmbeddingCommitter(
     }
 
     @Transactional
-    fun commit(command: PostEmbedCommitCommand): Boolean {
+    fun commit(command: PostEmbeddingResult): Boolean {
         val updated = postRepository.markEmbedded(command.postId, command.snapshotHash)
         if (updated == 0) {
             log.info { "BlogPost embedding skipped (stale snapshot): id=${command.postId}" }

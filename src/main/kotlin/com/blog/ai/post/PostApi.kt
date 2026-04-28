@@ -95,8 +95,8 @@ data class SyncPostRequest(
     val author: String? = null,
     val publishedAt: OffsetDateTime? = null,
 ) {
-    fun toCommand(title: String): SyncPostCommand =
-        SyncPostCommand(
+    fun toCommand(title: String): SyncPost =
+        SyncPost(
             externalId = externalId,
             title = title,
             content = content,
