@@ -1,4 +1,4 @@
-package com.blog.ai.storage.rag
+package com.blog.ai.rag
 
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Repository

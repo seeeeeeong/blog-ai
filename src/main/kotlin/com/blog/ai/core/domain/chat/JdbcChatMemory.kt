@@ -1,7 +1,7 @@
 package com.blog.ai.core.domain.chat
 
-import com.blog.ai.storage.chat.ChatMessageEntity
-import com.blog.ai.storage.chat.ChatMessageRepository
+import com.blog.ai.chat.ChatMessageEntity
+import com.blog.ai.chat.ChatMessageRepository
 import org.springframework.ai.chat.memory.ChatMemory
 import org.springframework.ai.chat.messages.AssistantMessage
 import org.springframework.ai.chat.messages.Message

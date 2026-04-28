@@ -1,12 +1,14 @@
-package com.blog.ai.storage.blog
+package com.blog.ai.blog
 
-import com.blog.ai.storage.common.BaseTimeEntity
+import com.blog.ai.core.domain.blog.Blog
+import com.blog.ai.global.jpa.BaseTimeEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import org.springframework.data.jpa.repository.JpaRepository
 
 @Entity
 @Table(name = "blogs")
@@ -54,3 +56,17 @@ class BlogEntity(
         }
     }
 }
+
+interface BlogRepository : JpaRepository<BlogEntity, Long> {
+    fun findAllByActiveTrue(): List<BlogEntity>
+}
+
+fun BlogEntity.toBlog() =
+    Blog(
+        id = requireNotNull(id) { "BlogEntity.id must not be null after persistence" },
+        name = name,
+        company = company,
+        rssUrl = rssUrl,
+        homeUrl = homeUrl,
+        active = active,
+    )

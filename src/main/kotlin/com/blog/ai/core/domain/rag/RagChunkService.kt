@@ -2,10 +2,10 @@ package com.blog.ai.core.domain.rag
 
 import com.blog.ai.core.domain.article.SaveChunkCommand
 import com.blog.ai.core.domain.post.SaveBlogPostChunkCommand
-import com.blog.ai.storage.rag.RagChunkCommand
-import com.blog.ai.storage.rag.RagChunkGranularity
-import com.blog.ai.storage.rag.RagChunkRepository
-import com.blog.ai.storage.rag.RagSourceType
+import com.blog.ai.rag.RagChunkCommand
+import com.blog.ai.rag.RagChunkGranularity
+import com.blog.ai.rag.RagChunkRepository
+import com.blog.ai.rag.RagSourceType
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 

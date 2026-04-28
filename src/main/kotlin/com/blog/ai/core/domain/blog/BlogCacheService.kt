@@ -1,7 +1,7 @@
 package com.blog.ai.core.domain.blog
 
-import com.blog.ai.storage.blog.BlogRepository
-import com.blog.ai.storage.blog.toBlog
+import com.blog.ai.blog.BlogRepository
+import com.blog.ai.blog.toBlog
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service

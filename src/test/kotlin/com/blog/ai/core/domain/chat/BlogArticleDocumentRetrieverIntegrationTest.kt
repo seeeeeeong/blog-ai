@@ -1,9 +1,9 @@
 package com.blog.ai.core.domain.chat
 
-import com.blog.ai.storage.article.ArticleEntity
-import com.blog.ai.storage.article.ArticleRepository
-import com.blog.ai.storage.blog.BlogEntity
-import com.blog.ai.storage.blog.BlogRepository
+import com.blog.ai.article.ArticleEntity
+import com.blog.ai.article.ArticleRepository
+import com.blog.ai.blog.BlogEntity
+import com.blog.ai.blog.BlogRepository
 import com.blog.ai.support.PostgresTestContainer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull

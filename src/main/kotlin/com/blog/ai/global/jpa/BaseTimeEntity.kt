@@ -1,4 +1,4 @@
-package com.blog.ai.storage.common
+package com.blog.ai.global.jpa
 
 import jakarta.persistence.Column
 import jakarta.persistence.EntityListeners

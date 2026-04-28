@@ -1,14 +1,14 @@
 package com.blog.ai.core.domain.post
 
-import com.blog.ai.storage.post.BlogPostEntity
-import com.blog.ai.storage.post.BlogPostRepository
+import com.blog.ai.post.PostEntity
+import com.blog.ai.post.PostRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 class BlogPostEmbedService(
-    private val blogPostRepository: BlogPostRepository,
+    private val blogPostRepository: PostRepository,
     private val blogPostEmbedWorker: BlogPostEmbedWorker,
 ) {
     companion object {
@@ -40,9 +40,9 @@ class BlogPostEmbedService(
     fun clearRetriableErrors(maxRetries: Int = MAX_EMBED_RETRIES): Int =
         blogPostRepository.clearRetriableEmbedErrors(maxRetries)
 
-    private fun toSnapshot(entity: BlogPostEntity): BlogPostEmbedSnapshot =
+    private fun toSnapshot(entity: PostEntity): BlogPostEmbedSnapshot =
         BlogPostEmbedSnapshot(
-            postId = requireNotNull(entity.id) { "BlogPostEntity.id must not be null after load" },
+            postId = requireNotNull(entity.id) { "PostEntity.id must not be null after load" },
             externalId = entity.externalId,
             title = entity.title,
             url = entity.url,

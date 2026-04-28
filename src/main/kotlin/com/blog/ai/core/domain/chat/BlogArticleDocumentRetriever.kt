@@ -1,10 +1,10 @@
 package com.blog.ai.core.domain.chat
 
-import com.blog.ai.storage.rag.RagChunkGranularity
-import com.blog.ai.storage.rag.RagChunkHit
-import com.blog.ai.storage.rag.RagChunkRepository
-import com.blog.ai.storage.rag.RagSearchQuery
-import com.blog.ai.storage.rag.RagSourceType
+import com.blog.ai.rag.RagChunkGranularity
+import com.blog.ai.rag.RagChunkHit
+import com.blog.ai.rag.RagChunkRepository
+import com.blog.ai.rag.RagSearchQuery
+import com.blog.ai.rag.RagSourceType
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.document.Document
 import org.springframework.ai.embedding.EmbeddingModel

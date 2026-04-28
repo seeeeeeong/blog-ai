@@ -1,4 +1,4 @@
-package com.blog.ai.storage.chat
+package com.blog.ai.chat
 
 import com.blog.ai.support.PostgresTestContainer
 import org.junit.jupiter.api.Assertions.assertEquals

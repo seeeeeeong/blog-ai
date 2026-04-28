@@ -1,6 +1,6 @@
 package com.blog.ai.core.domain.post
 
-import com.blog.ai.storage.post.BlogPostRepository
+import com.blog.ai.post.PostRepository
 import com.blog.ai.support.PostgresTestContainer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -29,7 +29,7 @@ class BlogPostSyncEmbedIntegrationTest
     constructor(
         private val syncService: BlogPostSyncService,
         private val embedService: BlogPostEmbedService,
-        private val repository: BlogPostRepository,
+        private val repository: PostRepository,
         private val jdbcTemplate: JdbcTemplate,
         private val transactionTemplate: TransactionTemplate,
     ) {

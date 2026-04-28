@@ -2,7 +2,7 @@ package com.blog.ai.core.domain.crawl
 
 import com.blog.ai.core.domain.blog.BlogCacheService
 import com.blog.ai.core.domain.rag.RagChunkService
-import com.blog.ai.storage.article.ArticleRepository
+import com.blog.ai.article.ArticleRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

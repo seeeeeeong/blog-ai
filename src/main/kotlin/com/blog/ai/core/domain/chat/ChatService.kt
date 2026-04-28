@@ -2,10 +2,10 @@ package com.blog.ai.core.domain.chat
 
 import com.blog.ai.global.error.AppException
 import com.blog.ai.global.error.ErrorCode
-import com.blog.ai.storage.chat.ChatMessageRepository
-import com.blog.ai.storage.chat.ChatSessionEntity
-import com.blog.ai.storage.chat.ChatSessionRepository
-import com.blog.ai.storage.chat.toMessage
+import com.blog.ai.chat.ChatMessageRepository
+import com.blog.ai.chat.ChatSessionEntity
+import com.blog.ai.chat.ChatSessionRepository
+import com.blog.ai.chat.toMessage
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.ai.chat.memory.ChatMemory

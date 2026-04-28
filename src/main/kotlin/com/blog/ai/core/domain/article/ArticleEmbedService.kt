@@ -4,7 +4,7 @@ import com.blog.ai.global.jdbc.JdbcTimeMapper
 import com.blog.ai.global.text.EmbeddingBatcher
 import com.blog.ai.global.text.TextSplitter
 import com.blog.ai.global.text.TokenTruncator
-import com.blog.ai.storage.article.ArticleRepository
+import com.blog.ai.article.ArticleRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.embedding.EmbeddingModel
 import org.springframework.stereotype.Service

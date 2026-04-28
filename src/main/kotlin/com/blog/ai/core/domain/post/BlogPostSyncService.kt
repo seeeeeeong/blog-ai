@@ -1,7 +1,7 @@
 package com.blog.ai.core.domain.post
 
 import com.blog.ai.core.domain.rag.RagChunkService
-import com.blog.ai.storage.post.BlogPostRepository
+import com.blog.ai.post.PostRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -11,7 +11,7 @@ import java.time.OffsetDateTime
 @Service
 @Transactional(readOnly = true)
 class BlogPostSyncService(
-    private val blogPostRepository: BlogPostRepository,
+    private val blogPostRepository: PostRepository,
     private val ragChunkService: RagChunkService,
 ) {
     companion object {
