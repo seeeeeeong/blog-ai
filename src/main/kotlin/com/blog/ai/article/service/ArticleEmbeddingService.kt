@@ -1,15 +1,20 @@
-package com.blog.ai.article
+package com.blog.ai.article.service
 
+import com.blog.ai.article.model.ArticleChunkEmbedding
+import com.blog.ai.article.model.ArticleChunkJob
+import com.blog.ai.article.model.ArticleEmbeddingBatch
+import com.blog.ai.article.model.ArticleEmbeddingResult
+import com.blog.ai.article.model.ArticleEmbeddingSnapshot
+import com.blog.ai.article.repository.ArticleRepository
 import com.blog.ai.global.jdbc.JdbcTimeMapper
 import com.blog.ai.global.text.EmbeddingBatcher
 import com.blog.ai.global.text.TextSplitter
 import com.blog.ai.global.text.TokenTruncator
-import com.blog.ai.rag.ChunkEnricher
+import com.blog.ai.rag.service.ChunkEnricher
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.embedding.EmbeddingModel
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.OffsetDateTime
 
 @Service
 class ArticleEmbeddingService(
@@ -141,45 +146,3 @@ class ArticleEmbeddingService(
             company = row[5] as String,
         )
 }
-
-internal data class ArticleEmbeddingSnapshot(
-    val articleId: Long,
-    val title: String,
-    val content: String,
-    val url: String,
-    val publishedAt: OffsetDateTime?,
-    val company: String,
-)
-
-internal data class ArticleEmbeddingBatch(
-    val docVectors: List<FloatArray>,
-    val chunkJobs: List<List<ArticleChunkJob>>,
-    val chunkVectors: List<FloatArray>,
-)
-
-internal data class ArticleChunkJob(
-    val rawChunk: String,
-    val context: String?,
-) {
-    fun storedContent(): String = if (context != null) "$context\n\n$rawChunk" else rawChunk
-
-    fun embedText(title: String): String =
-        if (context != null) "$title\n\n$context\n\n$rawChunk" else "$title\n\n$rawChunk"
-}
-
-data class ArticleEmbeddingResult(
-    val articleId: Long,
-    val title: String,
-    val url: String,
-    val company: String,
-    val content: String,
-    val docVector: String,
-    val chunks: List<ArticleChunkEmbedding>,
-)
-
-data class ArticleChunkEmbedding(
-    val articleId: Long,
-    val chunkIndex: Int,
-    val content: String,
-    val embedding: String,
-)

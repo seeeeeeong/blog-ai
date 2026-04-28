@@ -1,7 +1,8 @@
-package com.blog.ai.blog
+package com.blog.ai.blog.service
 
-import com.blog.ai.blog.BlogRepository
-import com.blog.ai.blog.toBlog
+import com.blog.ai.blog.mapper.toBlog
+import com.blog.ai.blog.model.Blog
+import com.blog.ai.blog.repository.BlogRepository
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service

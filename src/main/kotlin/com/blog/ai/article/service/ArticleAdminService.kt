@@ -1,8 +1,8 @@
-package com.blog.ai.article
+package com.blog.ai.article.service
 
-import com.blog.ai.article.ArticleRepository
-import com.blog.ai.rag.RagChunkRepository
-import com.blog.ai.rag.RagSourceType
+import com.blog.ai.article.repository.ArticleRepository
+import com.blog.ai.rag.repository.RagChunkRepository
+import com.blog.ai.rag.model.RagSourceType
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional

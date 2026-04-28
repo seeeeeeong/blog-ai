@@ -1,10 +1,10 @@
 package com.blog.ai.post
 
-import com.blog.ai.rag.RagChunkGranularity
-import com.blog.ai.rag.RagChunkHit
-import com.blog.ai.rag.RagChunkRepository
-import com.blog.ai.rag.RagSearchQuery
-import com.blog.ai.rag.RagSourceType
+import com.blog.ai.rag.model.RagChunkGranularity
+import com.blog.ai.rag.model.RagChunkHit
+import com.blog.ai.rag.repository.RagChunkRepository
+import com.blog.ai.rag.model.RagSearchQuery
+import com.blog.ai.rag.model.RagSourceType
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

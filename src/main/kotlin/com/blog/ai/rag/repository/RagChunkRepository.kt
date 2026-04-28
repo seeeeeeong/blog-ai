@@ -1,5 +1,10 @@
-package com.blog.ai.rag
+package com.blog.ai.rag.repository
 
+import com.blog.ai.rag.model.RagChunkGranularity
+import com.blog.ai.rag.model.RagChunkHit
+import com.blog.ai.rag.model.RagChunkWrite
+import com.blog.ai.rag.model.RagSearchQuery
+import com.blog.ai.rag.model.RagSourceType
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Repository
 
@@ -159,48 +164,3 @@ class RagChunkRepository(
         return rows.firstOrNull()
     }
 }
-
-enum class RagSourceType {
-    AUTHOR_POST,
-    EXTERNAL_ARTICLE,
-}
-
-enum class RagChunkGranularity {
-    DOCUMENT,
-    CHUNK,
-}
-
-data class RagSearchQuery(
-    val sourceType: RagSourceType,
-    val granularity: RagChunkGranularity,
-    val queryVector: String,
-    val queryText: String,
-    val candidatePoolSize: Int,
-    val limit: Int,
-)
-
-data class RagChunkWrite(
-    val sourceType: RagSourceType,
-    val sourceId: Long,
-    val granularity: RagChunkGranularity,
-    val chunkIndex: Int,
-    val title: String,
-    val url: String?,
-    val company: String?,
-    val content: String,
-    val embedding: String,
-    val metadataJson: String = "{}",
-)
-
-data class RagChunkHit(
-    val sourceType: RagSourceType,
-    val sourceId: Long,
-    val granularity: RagChunkGranularity,
-    val chunkIndex: Int,
-    val title: String,
-    val url: String?,
-    val company: String?,
-    val content: String,
-    val similarity: Double,
-    val score: Double,
-)

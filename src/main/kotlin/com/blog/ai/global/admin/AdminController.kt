@@ -1,7 +1,7 @@
 package com.blog.ai.global.admin
 
-import com.blog.ai.article.ArticleAdminService
-import com.blog.ai.article.ArticleEmbeddingService
+import com.blog.ai.article.service.ArticleAdminService
+import com.blog.ai.article.service.ArticleEmbeddingService
 import com.blog.ai.crawl.CrawlAsyncService
 import com.blog.ai.global.error.AppException
 import com.blog.ai.global.error.ErrorCode

@@ -1,9 +1,9 @@
-package com.blog.ai.article
+package com.blog.ai.article.service
 
-import com.blog.ai.article.ArticleEntity
-import com.blog.ai.article.ArticleRepository
-import com.blog.ai.blog.BlogEntity
-import com.blog.ai.blog.BlogRepository
+import com.blog.ai.article.entity.ArticleEntity
+import com.blog.ai.article.repository.ArticleRepository
+import com.blog.ai.blog.entity.BlogEntity
+import com.blog.ai.blog.repository.BlogRepository
 import com.blog.ai.support.PostgresTestContainer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull

@@ -1,4 +1,4 @@
-package com.blog.ai.blog
+package com.blog.ai.blog.model
 
 data class Blog(
     val id: Long,

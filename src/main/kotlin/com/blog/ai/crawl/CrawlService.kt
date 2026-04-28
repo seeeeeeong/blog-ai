@@ -1,8 +1,8 @@
 package com.blog.ai.crawl
 
-import com.blog.ai.article.ArticleRepository
-import com.blog.ai.blog.BlogCacheService
-import com.blog.ai.rag.RagService
+import com.blog.ai.article.repository.ArticleRepository
+import com.blog.ai.blog.service.BlogCacheService
+import com.blog.ai.rag.service.RagService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

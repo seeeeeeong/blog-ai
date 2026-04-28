@@ -1,4 +1,4 @@
-package com.blog.ai.rag
+package com.blog.ai.rag.service
 
 import com.blog.ai.global.properties.RagContextualProperties
 import com.blog.ai.global.text.TokenTruncator
