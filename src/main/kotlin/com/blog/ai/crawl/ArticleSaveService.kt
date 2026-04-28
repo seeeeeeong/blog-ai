@@ -1,10 +1,10 @@
 package com.blog.ai.crawl
 
-import com.blog.ai.global.error.AppException
-import com.blog.ai.global.error.ErrorCode
 import com.blog.ai.article.ArticleEntity
 import com.blog.ai.article.ArticleRepository
 import com.blog.ai.blog.BlogRepository
+import com.blog.ai.global.error.AppException
+import com.blog.ai.global.error.ErrorCode
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

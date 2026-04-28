@@ -1,7 +1,7 @@
 package com.blog.ai.post
 
-import com.blog.ai.rag.RagService
 import com.blog.ai.post.PostRepository
+import com.blog.ai.rag.RagService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

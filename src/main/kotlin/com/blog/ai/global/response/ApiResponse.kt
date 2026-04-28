@@ -1,7 +1,7 @@
 package com.blog.ai.global.response
 
-import com.blog.ai.global.error.ErrorMessage
 import com.blog.ai.global.error.ErrorCode
+import com.blog.ai.global.error.ErrorMessage
 
 data class ApiResponse<T>(
     val result: ResultStatus,
