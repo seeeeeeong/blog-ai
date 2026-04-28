@@ -5,23 +5,23 @@ import com.blog.ai.rag.model.RagChunkHit
 import com.blog.ai.rag.model.RagChunkWrite
 import com.blog.ai.rag.model.RagSearchQuery
 import com.blog.ai.rag.model.RagSourceType
-import org.springframework.jdbc.core.JdbcTemplate
+import org.jooq.DSLContext
+import org.jooq.Field
+import org.jooq.Record
+import org.jooq.Table
+import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
 
 @Repository
 class RagChunkRepository(
-    private val jdbcTemplate: JdbcTemplate,
+    private val dsl: DSLContext,
 ) {
     fun replaceSource(
         sourceType: RagSourceType,
         sourceId: Long,
         chunks: List<RagChunkWrite>,
     ) {
-        jdbcTemplate.update(
-            "DELETE FROM rag_chunks WHERE source_type = ? AND source_id = ?",
-            sourceType.name,
-            sourceId,
-        )
+        deleteSource(sourceType, sourceId)
         chunks.forEach(::save)
     }
 
@@ -29,138 +29,143 @@ class RagChunkRepository(
         sourceType: RagSourceType,
         sourceId: Long,
     ) {
-        jdbcTemplate.update(
-            "DELETE FROM rag_chunks WHERE source_type = ? AND source_id = ?",
-            sourceType.name,
-            sourceId,
-        )
+        dsl
+            .deleteFrom(RAG_CHUNKS)
+            .where(SOURCE_TYPE.eq(sourceType.name))
+            .and(SOURCE_ID.eq(sourceId))
+            .execute()
     }
 
     fun deleteAllBySourceType(sourceType: RagSourceType) {
-        jdbcTemplate.update("DELETE FROM rag_chunks WHERE source_type = ?", sourceType.name)
+        dsl.deleteFrom(RAG_CHUNKS).where(SOURCE_TYPE.eq(sourceType.name)).execute()
     }
 
     private fun save(command: RagChunkWrite) {
-        jdbcTemplate.update(
-            """
-            INSERT INTO rag_chunks (
-                source_type, source_id, granularity, chunk_index,
-                title, url, company, content, embedding, search_vector, metadata
-            )
-            VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS vector),
-                setweight(to_tsvector('simple', korean_bigrams(?)), 'A') ||
-                    setweight(to_tsvector('simple', korean_bigrams(?)), 'B'),
-                CAST(? AS jsonb)
-            )
-            """.trimIndent(),
-            command.sourceType.name,
-            command.sourceId,
-            command.granularity.name,
-            command.chunkIndex,
-            command.title,
-            command.url,
-            command.company,
-            command.content,
-            command.embedding,
-            command.title,
-            command.content,
-            command.metadataJson,
-        )
+        dsl
+            .query(
+                """
+                INSERT INTO rag_chunks (
+                    source_type, source_id, granularity, chunk_index,
+                    title, url, company, content, embedding, search_vector, metadata
+                )
+                VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS vector),
+                    setweight(to_tsvector('simple', korean_bigrams(?)), 'A') ||
+                        setweight(to_tsvector('simple', korean_bigrams(?)), 'B'),
+                    CAST(? AS jsonb)
+                )
+                """.trimIndent(),
+                command.sourceType.name,
+                command.sourceId,
+                command.granularity.name,
+                command.chunkIndex,
+                command.title,
+                command.url,
+                command.company,
+                command.content,
+                command.embedding,
+                command.title,
+                command.content,
+                command.metadataJson,
+            ).execute()
     }
 
     fun searchHybrid(query: RagSearchQuery): List<RagChunkHit> =
-        jdbcTemplate.query(
-            """
-            WITH q AS (
-                SELECT CAST(? AS vector) AS v,
-                       korean_bigram_tsquery(?) AS ts
-            ),
-            vec AS (
-                SELECT r.id,
-                       ROW_NUMBER() OVER (ORDER BY r.embedding <=> (SELECT v FROM q)) AS rnk
-                FROM rag_chunks r
-                WHERE r.source_type = ?
-                  AND r.granularity = ?
-                ORDER BY r.embedding <=> (SELECT v FROM q)
-                LIMIT ?
-            ),
-            bm25 AS (
-                SELECT r.id,
-                       ROW_NUMBER() OVER (
-                           ORDER BY ts_rank_cd(r.search_vector, (SELECT ts FROM q)) DESC
-                       ) AS rnk
-                FROM rag_chunks r
-                WHERE r.source_type = ?
-                  AND r.granularity = ?
-                  AND r.search_vector @@ (SELECT ts FROM q)
-                ORDER BY ts_rank_cd(r.search_vector, (SELECT ts FROM q)) DESC
-                LIMIT ?
-            ),
-            fused AS (
-                SELECT COALESCE(vec.id, bm25.id) AS id,
-                       COALESCE(1.0 / (60 + vec.rnk), 0) +
-                       COALESCE(1.0 / (60 + bm25.rnk), 0) AS score
-                FROM vec
-                FULL OUTER JOIN bm25 ON vec.id = bm25.id
-            )
-            SELECT
-                r.source_type,
-                r.source_id,
-                r.granularity,
-                r.chunk_index,
-                r.title,
-                r.url,
-                r.company,
-                r.content,
-                1 - (r.embedding <=> (SELECT v FROM q)) AS similarity,
-                f.score
-            FROM fused f
-            JOIN rag_chunks r ON r.id = f.id
-            ORDER BY f.score DESC, r.embedding <=> (SELECT v FROM q)
-            LIMIT ?
-            """.trimIndent(),
-            { rs, _ ->
-                RagChunkHit(
-                    sourceType = RagSourceType.valueOf(rs.getString("source_type")),
-                    sourceId = rs.getLong("source_id"),
-                    granularity = RagChunkGranularity.valueOf(rs.getString("granularity")),
-                    chunkIndex = rs.getInt("chunk_index"),
-                    title = rs.getString("title"),
-                    url = rs.getString("url"),
-                    company = rs.getString("company"),
-                    content = rs.getString("content"),
-                    similarity = rs.getDouble("similarity"),
-                    score = rs.getDouble("score"),
+        dsl
+            .resultQuery(
+                """
+                WITH q AS (
+                    SELECT CAST(? AS vector) AS v,
+                           korean_bigram_tsquery(?) AS ts
+                ),
+                vec AS (
+                    SELECT r.id,
+                           ROW_NUMBER() OVER (ORDER BY r.embedding <=> (SELECT v FROM q)) AS rnk
+                    FROM rag_chunks r
+                    WHERE r.source_type = ?
+                      AND r.granularity = ?
+                    ORDER BY r.embedding <=> (SELECT v FROM q)
+                    LIMIT ?
+                ),
+                bm25 AS (
+                    SELECT r.id,
+                           ROW_NUMBER() OVER (
+                               ORDER BY ts_rank_cd(r.search_vector, (SELECT ts FROM q)) DESC
+                           ) AS rnk
+                    FROM rag_chunks r
+                    WHERE r.source_type = ?
+                      AND r.granularity = ?
+                      AND r.search_vector @@ (SELECT ts FROM q)
+                    ORDER BY ts_rank_cd(r.search_vector, (SELECT ts FROM q)) DESC
+                    LIMIT ?
+                ),
+                fused AS (
+                    SELECT COALESCE(vec.id, bm25.id) AS id,
+                           COALESCE(1.0 / (60 + vec.rnk), 0) +
+                           COALESCE(1.0 / (60 + bm25.rnk), 0) AS score
+                    FROM vec
+                    FULL OUTER JOIN bm25 ON vec.id = bm25.id
                 )
-            },
-            query.queryVector,
-            query.queryText,
-            query.sourceType.name,
-            query.granularity.name,
-            query.candidatePoolSize,
-            query.sourceType.name,
-            query.granularity.name,
-            query.candidatePoolSize,
-            query.limit,
-        )
+                SELECT
+                    r.source_type,
+                    r.source_id,
+                    r.granularity,
+                    r.chunk_index,
+                    r.title,
+                    r.url,
+                    r.company,
+                    r.content,
+                    1 - (r.embedding <=> (SELECT v FROM q)) AS similarity,
+                    f.score
+                FROM fused f
+                JOIN rag_chunks r ON r.id = f.id
+                ORDER BY f.score DESC, r.embedding <=> (SELECT v FROM q)
+                LIMIT ?
+                """.trimIndent(),
+                query.queryVector,
+                query.queryText,
+                query.sourceType.name,
+                query.granularity.name,
+                query.candidatePoolSize,
+                query.sourceType.name,
+                query.granularity.name,
+                query.candidatePoolSize,
+                query.limit,
+            ).fetch(::toHit)
 
     fun findDocumentVector(
         sourceType: RagSourceType,
         sourceId: Long,
-    ): String? {
-        val rows =
-            jdbcTemplate.query(
-                """
-                SELECT embedding::text AS embedding
-                FROM rag_chunks
-                WHERE source_type = ? AND source_id = ? AND granularity = 'DOCUMENT'
-                LIMIT 1
-                """.trimIndent(),
-                { rs, _ -> rs.getString("embedding") },
-                sourceType.name,
-                sourceId,
-            )
-        return rows.firstOrNull()
+    ): String? =
+        dsl
+            .select(DSL.field("embedding::text", String::class.java))
+            .from(RAG_CHUNKS)
+            .where(SOURCE_TYPE.eq(sourceType.name))
+            .and(SOURCE_ID.eq(sourceId))
+            .and(GRANULARITY.eq(RagChunkGranularity.DOCUMENT.name))
+            .limit(1)
+            .fetchOne(0, String::class.java)
+
+    private fun toHit(record: Record): RagChunkHit =
+        RagChunkHit(
+            sourceType = RagSourceType.valueOf(record.get("source_type", String::class.java)),
+            sourceId = record.get("source_id", Long::class.java),
+            granularity = RagChunkGranularity.valueOf(record.get("granularity", String::class.java)),
+            chunkIndex = record.get("chunk_index", Int::class.java),
+            title = record.get("title", String::class.java),
+            url = record.get("url", String::class.java),
+            company = record.get("company", String::class.java),
+            content = record.get("content", String::class.java),
+            similarity = record.get("similarity", Double::class.java),
+            score = record.get("score", Double::class.java),
+        )
+
+    companion object {
+        private val RAG_CHUNKS: Table<*> = DSL.table(DSL.name("rag_chunks"))
+        private val SOURCE_TYPE = field<String>("source_type")
+        private val SOURCE_ID = field<Long>("source_id")
+        private val GRANULARITY = field<String>("granularity")
+
+        private inline fun <reified T> field(name: String): Field<T> = DSL.field(DSL.name(name), T::class.java)
     }
 }
