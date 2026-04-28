@@ -3,7 +3,7 @@ package com.blog.ai.post.service
 import com.blog.ai.post.model.SyncPost
 import com.blog.ai.post.model.SyncResult
 import com.blog.ai.post.repository.PostRepository
-import com.blog.ai.rag.service.RagService
+import com.blog.ai.rag.service.RagWriteService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -14,7 +14,7 @@ import java.time.OffsetDateTime
 @Transactional(readOnly = true)
 class PostSyncService(
     private val postRepository: PostRepository,
-    private val ragService: RagService,
+    private val ragWriteService: RagWriteService,
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
@@ -60,7 +60,7 @@ class PostSyncService(
             log.info { "Delete ignored (stale): externalId=$externalId" }
             SyncResult.STALE_IGNORED
         } else {
-            postRepository.findByExternalId(externalId)?.id?.let(ragService::deleteAuthorPost)
+            postRepository.findByExternalId(externalId)?.id?.let(ragWriteService::deleteAuthorPost)
             log.info { "Delete tombstoned: externalId=$externalId" }
             SyncResult.TOMBSTONED
         }

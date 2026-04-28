@@ -28,9 +28,8 @@ class ArticleEmbeddingService(
         if (snapshots.isEmpty()) return 0
 
         val embeddings =
-            embeddingPipeline.embedBatch(
+            embeddingPipeline.embedBatchWithChunkEnrichment(
                 documents = snapshots.map { it.toDocument() },
-                enrichChunks = true,
                 onError = { document, message -> articleEmbeddingWriter.recordError(document.id, message) },
             ) ?: return 0
         val embedded = commitAll(snapshots, embeddings)
