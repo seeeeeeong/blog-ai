@@ -1,6 +1,6 @@
 package com.blog.ai.core.api.controller.v1.response
 
-import com.blog.ai.core.domain.chat.ChatMessage
+import com.blog.ai.chat.ChatMessage
 
 data class ChatMessageResponse(
     val role: String,

@@ -1,4 +1,4 @@
-package com.blog.ai.core.domain.chat
+package com.blog.ai.chat
 
 import com.blog.ai.chat.ChatMessageEntity
 import com.blog.ai.chat.ChatMessageRepository
@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 @Component
-class JdbcChatMemory(
+class ChatMemoryStore(
     private val chatMessageRepository: ChatMessageRepository,
 ) : ChatMemory {
     companion object {

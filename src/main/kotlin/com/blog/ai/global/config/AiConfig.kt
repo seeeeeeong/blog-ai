@@ -1,6 +1,6 @@
 package com.blog.ai.global.config
 
-import com.blog.ai.core.domain.chat.BlogArticleDocumentRetriever
+import com.blog.ai.chat.ArticleRetriever
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor
 import org.springframework.ai.chat.memory.ChatMemory
@@ -15,7 +15,7 @@ class AiConfig {
     @Bean
     fun chatClient(
         chatClientBuilder: ChatClient.Builder,
-        retriever: BlogArticleDocumentRetriever,
+        retriever: ArticleRetriever,
         chatMemory: ChatMemory,
     ): ChatClient {
         val ragAdvisor =

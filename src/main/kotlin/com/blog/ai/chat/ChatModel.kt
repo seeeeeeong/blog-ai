@@ -1,4 +1,4 @@
-package com.blog.ai.core.domain.chat
+package com.blog.ai.chat
 
 data class ChatMessage(
     val role: String,

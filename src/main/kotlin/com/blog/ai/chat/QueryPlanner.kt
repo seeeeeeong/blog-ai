@@ -1,4 +1,4 @@
-package com.blog.ai.core.domain.chat
+package com.blog.ai.chat
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -9,7 +9,7 @@ import org.springframework.ai.chat.messages.MessageType
 import org.springframework.stereotype.Component
 
 @Component
-class ChatQueryPlanner(
+class QueryPlanner(
     private val chatClientBuilder: ChatClient.Builder,
     private val chatMemory: ChatMemory,
     private val objectMapper: ObjectMapper,

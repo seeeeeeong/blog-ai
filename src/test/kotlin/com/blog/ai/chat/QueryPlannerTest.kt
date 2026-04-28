@@ -1,4 +1,4 @@
-package com.blog.ai.core.domain.chat
+package com.blog.ai.chat
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -7,9 +7,9 @@ import org.mockito.Mockito
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.ai.chat.memory.ChatMemory
 
-class ChatQueryPlannerTest {
+class QueryPlannerTest {
     private val planner =
-        ChatQueryPlanner(
+        QueryPlanner(
             chatClientBuilder = Mockito.mock(ChatClient.Builder::class.java),
             chatMemory = Mockito.mock(ChatMemory::class.java),
             objectMapper = ObjectMapper(),
@@ -23,7 +23,7 @@ class ChatQueryPlannerTest {
 
         val plan = planner.parsePlan(raw, fallback)
 
-        assertEquals(ChatQueryPlanner.Intent.DESIGN, plan.intent)
+        assertEquals(QueryPlanner.Intent.DESIGN, plan.intent)
         assertEquals("RAG 기반 관련 게시글 추천 시스템 설계", plan.rewrittenQuery)
     }
 
@@ -33,7 +33,7 @@ class ChatQueryPlannerTest {
 
         val plan = planner.parsePlan(raw, fallback)
 
-        assertEquals(ChatQueryPlanner.Intent.CLARIFY, plan.intent)
+        assertEquals(QueryPlanner.Intent.CLARIFY, plan.intent)
         assertEquals("비슷한 글 추천해줘", plan.rewrittenQuery)
     }
 
@@ -43,7 +43,7 @@ class ChatQueryPlannerTest {
 
         val plan = planner.parsePlan(raw, fallback)
 
-        assertEquals(ChatQueryPlanner.Intent.GENERAL, plan.intent)
+        assertEquals(QueryPlanner.Intent.GENERAL, plan.intent)
         assertEquals("pgvector HNSW latency", plan.rewrittenQuery)
     }
 
@@ -53,7 +53,7 @@ class ChatQueryPlannerTest {
 
         val plan = planner.parsePlan(raw, fallback)
 
-        assertEquals(ChatQueryPlanner.Intent.DESIGN, plan.intent)
+        assertEquals(QueryPlanner.Intent.DESIGN, plan.intent)
         assertEquals("X", plan.rewrittenQuery)
     }
 
@@ -63,7 +63,7 @@ class ChatQueryPlannerTest {
 
         val plan = planner.parsePlan(raw, fallback)
 
-        assertEquals(ChatQueryPlanner.Intent.GENERAL, plan.intent)
+        assertEquals(QueryPlanner.Intent.GENERAL, plan.intent)
         assertEquals(fallback, plan.rewrittenQuery)
     }
 
@@ -73,7 +73,7 @@ class ChatQueryPlannerTest {
 
         val plan = planner.parsePlan(raw, fallback)
 
-        assertEquals(ChatQueryPlanner.Intent.DESIGN, plan.intent)
+        assertEquals(QueryPlanner.Intent.DESIGN, plan.intent)
         assertEquals(fallback, plan.rewrittenQuery)
     }
 
@@ -86,7 +86,7 @@ class ChatQueryPlannerTest {
 
         val plan = planner.parsePlan(raw, fallback)
 
-        assertEquals(ChatQueryPlanner.Intent.CLARIFY, plan.intent)
+        assertEquals(QueryPlanner.Intent.CLARIFY, plan.intent)
         assertEquals("특정 글 기준인가요, 기능 설계인가요?", plan.clarificationQuestion)
     }
 

@@ -1,11 +1,11 @@
-package com.blog.ai.core.domain.chat
+package com.blog.ai.chat
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.stereotype.Component
 
 @Component
-class ChatQueryExpander(
+class QueryExpander(
     private val chatClientBuilder: ChatClient.Builder,
 ) {
     companion object {
@@ -66,3 +66,8 @@ class ChatQueryExpander(
         }
     }
 }
+
+internal data class QueryEmbedding(
+    val text: String,
+    val vector: String,
+)

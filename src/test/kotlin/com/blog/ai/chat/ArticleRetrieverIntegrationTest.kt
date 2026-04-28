@@ -1,4 +1,4 @@
-package com.blog.ai.core.domain.chat
+package com.blog.ai.chat
 
 import com.blog.ai.article.ArticleEntity
 import com.blog.ai.article.ArticleRepository
@@ -26,10 +26,10 @@ import java.time.ZoneOffset
 
 @SpringBootTest
 @Import(PostgresTestContainer::class)
-class BlogArticleDocumentRetrieverIntegrationTest
+class ArticleRetrieverIntegrationTest
     @Autowired
     constructor(
-        private val retriever: BlogArticleDocumentRetriever,
+        private val retriever: ArticleRetriever,
         private val articleRepository: ArticleRepository,
         private val blogRepository: BlogRepository,
         private val jdbcTemplate: JdbcTemplate,
@@ -38,10 +38,10 @@ class BlogArticleDocumentRetrieverIntegrationTest
         private lateinit var embeddingModel: EmbeddingModel
 
         @MockitoBean
-        private lateinit var chatQueryExpander: ChatQueryExpander
+        private lateinit var chatQueryExpander: QueryExpander
 
         @MockitoBean
-        private lateinit var jinaRerankClient: JinaRerankClient
+        private lateinit var chatRerankClient: RerankClient
 
         @BeforeEach
         fun reset() {
@@ -54,7 +54,7 @@ class BlogArticleDocumentRetrieverIntegrationTest
             Mockito.`when`(chatQueryExpander.expand(anyString())).thenAnswer { inv ->
                 listOf(inv.getArgument<String>(0))
             }
-            Mockito.`when`(jinaRerankClient.rerank(anyString(), anyList(), anyInt())).thenAnswer { inv ->
+            Mockito.`when`(chatRerankClient.rerank(anyString(), anyList(), anyInt())).thenAnswer { inv ->
                 @Suppress("UNCHECKED_CAST")
                 val docs = inv.getArgument<List<org.springframework.ai.document.Document>>(1)
                 val topN = inv.getArgument<Int>(2)
@@ -143,7 +143,7 @@ class BlogArticleDocumentRetrieverIntegrationTest
                 chunkContent = "some content",
                 chunkVector = vector(0.1f),
             )
-            Mockito.`when`(jinaRerankClient.rerank(anyString(), anyList(), anyInt())).thenAnswer { inv ->
+            Mockito.`when`(chatRerankClient.rerank(anyString(), anyList(), anyInt())).thenAnswer { inv ->
                 @Suppress("UNCHECKED_CAST")
                 val docs = inv.getArgument<List<org.springframework.ai.document.Document>>(1)
                 val topN = inv.getArgument<Int>(2)
@@ -166,7 +166,7 @@ class BlogArticleDocumentRetrieverIntegrationTest
                 chunkVector = vector(0.1f),
             )
             Mockito
-                .`when`(jinaRerankClient.rerank(anyString(), anyList(), anyInt()))
+                .`when`(chatRerankClient.rerank(anyString(), anyList(), anyInt()))
                 .thenReturn(emptyList())
 
             val docs = retriever.retrieve(Query.builder().text("anything").build())
@@ -184,7 +184,7 @@ class BlogArticleDocumentRetrieverIntegrationTest
                 chunkContent = "marginal content",
                 chunkVector = vector(0.1f),
             )
-            Mockito.`when`(jinaRerankClient.rerank(anyString(), anyList(), anyInt())).thenAnswer { inv ->
+            Mockito.`when`(chatRerankClient.rerank(anyString(), anyList(), anyInt())).thenAnswer { inv ->
                 @Suppress("UNCHECKED_CAST")
                 val docs = inv.getArgument<List<org.springframework.ai.document.Document>>(1)
                 val topN = inv.getArgument<Int>(2)
@@ -212,7 +212,7 @@ class BlogArticleDocumentRetrieverIntegrationTest
                 chunkContent = "completely unrelated content",
                 chunkVector = vector(0.1f),
             )
-            Mockito.`when`(jinaRerankClient.rerank(anyString(), anyList(), anyInt())).thenAnswer { inv ->
+            Mockito.`when`(chatRerankClient.rerank(anyString(), anyList(), anyInt())).thenAnswer { inv ->
                 @Suppress("UNCHECKED_CAST")
                 val docs = inv.getArgument<List<org.springframework.ai.document.Document>>(1)
                 val topN = inv.getArgument<Int>(2)

@@ -1,4 +1,4 @@
-package com.blog.ai.core.domain.chat
+package com.blog.ai.chat
 
 import com.blog.ai.chat.ChatRateLimitRepository
 import com.blog.ai.support.PostgresTestContainer
@@ -30,7 +30,7 @@ class ChatServiceIntegrationTest
         private lateinit var chatClient: ChatClient
 
         @MockitoBean
-        private lateinit var chatQueryPlanner: ChatQueryPlanner
+        private lateinit var chatQueryPlanner: QueryPlanner
 
         private lateinit var requestSpec: ChatClient.ChatClientRequestSpec
         private lateinit var streamSpec: ChatClient.StreamResponseSpec
@@ -52,8 +52,8 @@ class ChatServiceIntegrationTest
             Mockito.`when`(streamSpec.content()).thenReturn(Flux.just("안녕하세요"))
 
             Mockito.`when`(chatQueryPlanner.plan(anyString(), anyString())).thenAnswer { inv ->
-                ChatQueryPlanner.Plan(
-                    intent = ChatQueryPlanner.Intent.GENERAL,
+                QueryPlanner.Plan(
+                    intent = QueryPlanner.Intent.GENERAL,
                     rewrittenQuery = inv.getArgument<String>(1),
                 )
             }

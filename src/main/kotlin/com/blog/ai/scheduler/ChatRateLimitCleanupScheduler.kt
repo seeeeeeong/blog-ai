@@ -1,6 +1,6 @@
 package com.blog.ai.scheduler
 
-import com.blog.ai.core.domain.chat.ChatRateLimiter
+import com.blog.ai.chat.RateLimiter
 import io.github.oshai.kotlinlogging.KotlinLogging
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.scheduling.annotation.Scheduled
@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class ChatRateLimitCleanupScheduler(
-    private val chatRateLimiter: ChatRateLimiter,
+    private val chatRateLimiter: RateLimiter,
 ) {
     companion object {
         private val log = KotlinLogging.logger {}

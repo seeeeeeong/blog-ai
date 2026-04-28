@@ -1,4 +1,4 @@
-package com.blog.ai.core.domain.chat
+package com.blog.ai.chat
 
 import com.blog.ai.global.error.AppException
 import com.blog.ai.global.error.ErrorCode
@@ -25,9 +25,9 @@ class ChatService(
     private val chatClientBuilder: ChatClient.Builder,
     private val chatSessionRepository: ChatSessionRepository,
     private val chatMessageRepository: ChatMessageRepository,
-    private val chatRateLimiter: ChatRateLimiter,
+    private val chatRateLimiter: RateLimiter,
     private val chatPreflight: ChatPreflight,
-    private val chatQueryPlanner: ChatQueryPlanner,
+    private val chatQueryPlanner: QueryPlanner,
     private val chatMemory: ChatMemory,
 ) {
     companion object {
@@ -72,7 +72,7 @@ class ChatService(
     ): Flux<ServerSentEvent<String>> {
         chatPreflight.consumeOrThrow(sessionId, clientIp)
         val plan = chatQueryPlanner.plan(sessionId.toString(), question)
-        if (plan.intent == ChatQueryPlanner.Intent.CLARIFY) {
+        if (plan.intent == QueryPlanner.Intent.CLARIFY) {
             return clarifyResponse(sessionId, question, plan.clarificationQuestion)
         }
         return streamChat(sessionId, question, plan.rewrittenQuery, plan.intent)
@@ -156,7 +156,7 @@ class ChatService(
         sessionId: UUID,
         question: String,
         rewrittenQuery: String,
-        intent: ChatQueryPlanner.Intent,
+        intent: QueryPlanner.Intent,
     ): Flux<ServerSentEvent<String>> =
         chatClient
             .prompt()
@@ -164,7 +164,7 @@ class ChatService(
             .advisors { advisor ->
                 advisor.param("chat_memory_conversation_id", sessionId.toString())
                 advisor.param(REWRITTEN_QUERY_PARAM, rewrittenQuery)
-                advisor.param(BlogArticleDocumentRetriever.INTENT_PARAM, intent.name)
+                advisor.param(ArticleRetriever.INTENT_PARAM, intent.name)
             }.stream()
             .content()
             .map { content -> ServerSentEvent.builder(content).build() }

@@ -1,4 +1,4 @@
-package com.blog.ai.core.domain.chat
+package com.blog.ai.chat
 
 import com.blog.ai.global.error.AppException
 import com.blog.ai.global.error.ErrorCode
@@ -10,7 +10,7 @@ import java.time.Duration
 import java.util.UUID
 
 @Component
-class ChatRateLimiter(
+class RateLimiter(
     private val chatRateLimitRepository: ChatRateLimitRepository,
 ) {
     companion object {

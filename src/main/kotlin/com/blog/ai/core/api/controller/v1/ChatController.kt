@@ -3,7 +3,7 @@ package com.blog.ai.core.api.controller.v1
 import com.blog.ai.core.api.controller.v1.request.ChatRequest
 import com.blog.ai.core.api.controller.v1.response.ChatMessageResponse
 import com.blog.ai.core.api.controller.v1.response.ChatSessionResponse
-import com.blog.ai.core.domain.chat.ChatService
+import com.blog.ai.chat.ChatService
 import com.blog.ai.global.response.ApiResponse
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid

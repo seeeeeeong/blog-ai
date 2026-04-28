@@ -1,4 +1,4 @@
-package com.blog.ai.core.domain.chat
+package com.blog.ai.chat
 
 import com.blog.ai.rag.RagChunkGranularity
 import com.blog.ai.rag.RagChunkHit
@@ -15,11 +15,11 @@ import org.springframework.stereotype.Component
 private val log = KotlinLogging.logger {}
 
 @Component
-class BlogArticleDocumentRetriever(
+class ArticleRetriever(
     private val embeddingModel: EmbeddingModel,
     private val ragChunkRepository: RagChunkRepository,
-    private val chatQueryExpander: ChatQueryExpander,
-    private val jinaRerankClient: JinaRerankClient,
+    private val chatQueryExpander: QueryExpander,
+    private val chatRerankClient: RerankClient,
 ) : DocumentRetriever {
     companion object {
         private const val AUTHOR_CANDIDATE_POOL = 50
@@ -109,7 +109,7 @@ class BlogArticleDocumentRetriever(
                 }.distinctBy { Triple(it.sourceType, it.sourceId, it.chunkIndex) }
         if (unionHits.isEmpty()) return RerankedExternalResult.empty()
         val candidates = buildDocuments(unionHits).take(EXTERNAL_RERANK_INPUT)
-        val reranked = jinaRerankClient.rerank(rerankQuery, candidates, finalTopN)
+        val reranked = chatRerankClient.rerank(rerankQuery, candidates, finalTopN)
         val topScore = reranked.firstOrNull()?.metadata?.get("rerankScore") as? Double
         if (topScore == null) {
             return RerankedExternalResult(emptyList(), null, abstained = true, rerankUnavailable = true)

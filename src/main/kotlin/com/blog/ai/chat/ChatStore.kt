@@ -1,6 +1,6 @@
 package com.blog.ai.chat
 
-import com.blog.ai.core.domain.chat.ChatMessage
+import com.blog.ai.chat.ChatMessage
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
