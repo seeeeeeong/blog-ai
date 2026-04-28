@@ -145,7 +145,4 @@ interface PostRepository : JpaRepository<PostEntity, Long> {
         nativeQuery = true,
     )
     fun clearRetriableEmbedErrors(maxRetries: Int): Int
-
-    @Query(value = "SELECT COUNT(*) FROM blog_posts WHERE is_deleted = false", nativeQuery = true)
-    fun countActive(): Long
 }

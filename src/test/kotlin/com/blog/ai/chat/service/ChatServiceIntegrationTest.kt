@@ -23,6 +23,7 @@ class ChatServiceIntegrationTest
     @Autowired
     constructor(
         private val chatService: ChatService,
+        private val chatSessionService: ChatSessionService,
         private val rateLimitStore: RateLimitStore,
         private val jdbcTemplate: JdbcTemplate,
     ) {
@@ -61,7 +62,7 @@ class ChatServiceIntegrationTest
 
         @Test
         fun `chat consumes rate limit in writable transaction`() {
-            val sessionId = chatService.createSession()
+            val sessionId = chatSessionService.createSession()
 
             val events = chatService.chat(sessionId, "안녕", "127.0.0.1").collectList().block()
 

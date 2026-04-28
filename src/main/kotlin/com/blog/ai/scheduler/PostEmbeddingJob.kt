@@ -21,15 +21,15 @@ class PostEmbeddingJob(
         try {
             val cleared = postEmbeddingService.clearRetriableErrors()
             if (cleared > 0) {
-                log.info { "BlogPost cleared $cleared retriable embed errors" }
+                log.info { "Post cleared $cleared retriable embed errors" }
             }
 
             val embedded = postEmbeddingService.embedPending()
             if (embedded > 0) {
-                log.info { "BlogPost embedding batch completed: $embedded posts" }
+                log.info { "Post embedding batch completed: $embedded posts" }
             }
         } catch (e: Exception) {
-            log.error(e) { "BlogPost embedding scheduler failed" }
+            log.error(e) { "Post embedding scheduler failed" }
         }
     }
 }

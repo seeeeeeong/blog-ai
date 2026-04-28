@@ -44,15 +44,6 @@ class ArticleEntity(
     var embedRetryCount: Int = embedRetryCount
         protected set
 
-    fun markEmbedError(error: String) {
-        this.embedError = error
-        this.embedRetryCount++
-    }
-
-    fun clearEmbedError() {
-        this.embedError = null
-    }
-
     companion object {
         fun create(
             blog: BlogEntity,

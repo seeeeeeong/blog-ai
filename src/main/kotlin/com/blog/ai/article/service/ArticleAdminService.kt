@@ -1,8 +1,7 @@
 package com.blog.ai.article.service
 
 import com.blog.ai.article.repository.ArticleRepository
-import com.blog.ai.rag.model.RagSourceType
-import com.blog.ai.rag.repository.RagChunkRepository
+import com.blog.ai.rag.service.RagWriteService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
@@ -11,11 +10,11 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional(readOnly = true)
 class ArticleAdminService(
     private val articleRepository: ArticleRepository,
-    private val ragChunkRepository: RagChunkRepository,
+    private val ragWriteService: RagWriteService,
 ) {
     @Transactional(propagation = Propagation.REQUIRED)
     fun markAllForReembed(): Int {
-        ragChunkRepository.deleteAllBySourceType(RagSourceType.EXTERNAL_ARTICLE)
+        ragWriteService.deleteAllExternalArticles()
         return articleRepository.resetAllEmbeddingsForReprocess()
     }
 }

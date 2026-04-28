@@ -5,7 +5,7 @@ import com.blog.ai.article.repository.ArticleRepository
 import com.blog.ai.blog.entity.BlogEntity
 import com.blog.ai.blog.repository.BlogRepository
 import com.blog.ai.chat.client.RerankClient
-import com.blog.ai.chat.service.ChatService
+import com.blog.ai.chat.model.ChatAdvisorParams
 import com.blog.ai.chat.service.QueryExpander
 import com.blog.ai.support.PostgresTestContainer
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -129,7 +129,7 @@ class ArticleRetrieverIntegrationTest
                 Query
                     .builder()
                     .text("아니 관련 게시글 추천 이런거")
-                    .context(mapOf(ChatService.REWRITTEN_QUERY_PARAM to "RAG 기반 관련 게시글 추천 시스템 설계"))
+                    .context(mapOf(ChatAdvisorParams.REWRITTEN_QUERY to "RAG 기반 관련 게시글 추천 시스템 설계"))
                     .build(),
             )
 

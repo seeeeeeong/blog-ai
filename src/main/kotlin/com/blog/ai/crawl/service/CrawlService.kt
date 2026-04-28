@@ -5,7 +5,7 @@ import com.blog.ai.blog.service.BlogCacheService
 import com.blog.ai.crawl.client.WebContentScraper
 import com.blog.ai.crawl.parser.RssFeedParser
 import com.blog.ai.crawl.support.MIN_TRUSTED_CONTENT_LENGTH
-import com.blog.ai.rag.service.RagService
+import com.blog.ai.rag.service.RagWriteService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -17,7 +17,7 @@ class CrawlService(
     private val articleSaveService: ArticleSaveService,
     private val articleRepository: ArticleRepository,
     private val webContentScraper: WebContentScraper,
-    private val ragService: RagService,
+    private val ragWriteService: RagWriteService,
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
@@ -58,7 +58,7 @@ class CrawlService(
             if (newContent.length <= existingLength) continue
             articleRepository.updateContent(articleId, newContent)
             articleRepository.resetEmbeddingForArticle(articleId)
-            ragService.deleteExternalArticle(articleId)
+            ragWriteService.deleteExternalArticle(articleId)
             filled++
             log.debug { "Content backfilled: id=$articleId, title=${article.title}" }
         }

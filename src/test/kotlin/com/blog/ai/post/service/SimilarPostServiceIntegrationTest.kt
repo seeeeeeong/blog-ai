@@ -45,7 +45,7 @@ class SimilarPostServiceIntegrationTest
 
         @Test
         fun `returns DELETED when post is tombstoned`() {
-            seedBlogPost(externalId = "post-deleted", isDeleted = true, embedding = vector(0.1f))
+            seedPost(externalId = "post-deleted", isDeleted = true, embedding = vector(0.1f))
 
             val result = similarService.findSimilar("post-deleted")
             assertEquals(SimilarStatus.DELETED, result.status)
@@ -53,7 +53,7 @@ class SimilarPostServiceIntegrationTest
 
         @Test
         fun `returns PENDING when post has no embedding yet`() {
-            seedBlogPost(externalId = "post-pending", embedding = null)
+            seedPost(externalId = "post-pending", embedding = null)
 
             val result = similarService.findSimilar("post-pending")
             assertEquals(SimilarStatus.PENDING, result.status)
@@ -76,7 +76,7 @@ class SimilarPostServiceIntegrationTest
                     content = "How to bake bread",
                     embedding = vector(0.9f),
                 )
-            seedBlogPost(
+            seedPost(
                 externalId = "post-ready",
                 title = "Kotlin coroutines",
                 content = "About coroutines and structured concurrency",
@@ -154,7 +154,7 @@ class SimilarPostServiceIntegrationTest
             return id
         }
 
-        private fun seedBlogPost(
+        private fun seedPost(
             externalId: String,
             title: String = "Title",
             content: String? = "content",
@@ -162,6 +162,19 @@ class SimilarPostServiceIntegrationTest
             isDeleted: Boolean = false,
         ) {
             val embeddedAtSql = if (embedding == null) "NULL" else "NOW()"
+            insertPost(externalId, title, content, isDeleted, embeddedAtSql)
+            if (embedding != null) {
+                insertPostEmbedding(externalId, title, content, embedding)
+            }
+        }
+
+        private fun insertPost(
+            externalId: String,
+            title: String,
+            content: String?,
+            isDeleted: Boolean,
+            embeddedAtSql: String,
+        ) {
             jdbcTemplate.update(
                 """
                 INSERT INTO blog_posts (
@@ -175,34 +188,40 @@ class SimilarPostServiceIntegrationTest
                 isDeleted,
                 "hash-$externalId",
             )
-            if (embedding != null) {
-                val postId =
-                    jdbcTemplate.queryForObject(
-                        "SELECT id FROM blog_posts WHERE external_id = ?",
-                        Long::class.java,
-                        externalId,
-                    )
-                jdbcTemplate.update(
-                    """
-                    INSERT INTO rag_chunks (
-                        source_type, source_id, granularity, chunk_index,
-                        title, url, company, content, embedding, search_vector
-                    )
-                    VALUES (
-                        'AUTHOR_POST', ?, 'DOCUMENT', -1, ?, NULL, NULL,
-                        ?, CAST(? AS vector),
-                        setweight(to_tsvector('simple', korean_bigrams(?)), 'A') ||
-                            setweight(to_tsvector('simple', korean_bigrams(?)), 'B')
-                    )
-                    """.trimIndent(),
-                    postId,
-                    title,
-                    content ?: "",
-                    embedding,
-                    title,
-                    content ?: "",
+        }
+
+        private fun insertPostEmbedding(
+            externalId: String,
+            title: String,
+            content: String?,
+            embedding: String,
+        ) {
+            val postId =
+                jdbcTemplate.queryForObject(
+                    "SELECT id FROM blog_posts WHERE external_id = ?",
+                    Long::class.java,
+                    externalId,
                 )
-            }
+            jdbcTemplate.update(
+                """
+                INSERT INTO rag_chunks (
+                    source_type, source_id, granularity, chunk_index,
+                    title, url, company, content, embedding, search_vector
+                )
+                VALUES (
+                    'AUTHOR_POST', ?, 'DOCUMENT', -1, ?, NULL, NULL,
+                    ?, CAST(? AS vector),
+                    setweight(to_tsvector('simple', korean_bigrams(?)), 'A') ||
+                        setweight(to_tsvector('simple', korean_bigrams(?)), 'B')
+                )
+                """.trimIndent(),
+                postId,
+                title,
+                content ?: "",
+                embedding,
+                title,
+                content ?: "",
+            )
         }
 
         private fun vector(value: Float): String = FloatArray(1536) { value }.joinToString(",", "[", "]")

@@ -22,9 +22,8 @@ class EmbeddingPipeline(
         private const val MAX_EMBED_TOKENS = 7500
     }
 
-    fun embedBatch(
+    fun embedBatchWithChunkEnrichment(
         documents: List<EmbeddingDocument>,
-        enrichChunks: Boolean,
         onError: (EmbeddingDocument, String) -> Unit,
     ): List<DocumentEmbedding>? {
         if (documents.isEmpty()) return emptyList()
@@ -32,7 +31,7 @@ class EmbeddingPipeline(
         val docTexts = documents.map(::documentText)
         val docVectors = runBatch("doc", docTexts, documents, onError) ?: return null
 
-        val chunkJobs = documents.map { buildChunkJobs(it, enrichChunks) }
+        val chunkJobs = documents.map(::buildEnrichedChunkJobs)
         val chunkTexts =
             documents.zip(chunkJobs).flatMap { (document, jobs) ->
                 jobs.map { it.embedText(document.title) }
@@ -47,11 +46,8 @@ class EmbeddingPipeline(
         return buildEmbeddings(documents, docVectors, chunkJobs, chunkVectors)
     }
 
-    fun embedOne(
-        document: EmbeddingDocument,
-        enrichChunks: Boolean,
-    ): DocumentEmbedding {
-        val jobs = buildChunkJobs(document, enrichChunks)
+    fun embedOne(document: EmbeddingDocument): DocumentEmbedding {
+        val jobs = buildPlainChunkJobs(document)
         val vectors =
             EmbeddingBatcher.embed(
                 embeddingModel,
@@ -66,19 +62,21 @@ class EmbeddingPipeline(
     private fun documentText(document: EmbeddingDocument): String =
         TokenTruncator.truncate("${document.title} ${document.content}", MAX_EMBED_TOKENS)
 
+    private fun buildPlainChunkJobs(document: EmbeddingDocument): List<ChunkEmbeddingJob> =
+        buildChunkJobs(document) { null }
+
+    private fun buildEnrichedChunkJobs(document: EmbeddingDocument): List<ChunkEmbeddingJob> =
+        buildChunkJobs(document) { rawChunk ->
+            chunkEnricher.enrich(document.title, document.content, rawChunk)
+        }
+
     private fun buildChunkJobs(
         document: EmbeddingDocument,
-        enrichChunks: Boolean,
+        contextProvider: (String) -> String?,
     ): List<ChunkEmbeddingJob> {
         if (document.content.isBlank()) return emptyList()
         return TextSplitter.split(document.content).map { rawChunk ->
-            val context =
-                if (enrichChunks) {
-                    chunkEnricher.enrich(document.title, document.content, rawChunk)
-                } else {
-                    null
-                }
-            ChunkEmbeddingJob(rawChunk = rawChunk, context = context)
+            ChunkEmbeddingJob(rawChunk = rawChunk, context = contextProvider(rawChunk))
         }
     }
 

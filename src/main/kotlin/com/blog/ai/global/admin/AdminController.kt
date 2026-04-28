@@ -43,7 +43,7 @@ class AdminController(
     }
 
     @PostMapping("/blog-posts/embed")
-    fun triggerBlogPostEmbed(
+    fun triggerPostEmbed(
         @RequestHeader("X-Admin-Key") adminKey: String,
     ): ApiResponse<Int> {
         requireAdminKey(adminKey)

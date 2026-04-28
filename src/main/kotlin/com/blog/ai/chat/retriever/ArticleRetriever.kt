@@ -1,14 +1,15 @@
 package com.blog.ai.chat.retriever
 
 import com.blog.ai.chat.client.RerankClient
+import com.blog.ai.chat.model.ChatAdvisorParams
 import com.blog.ai.chat.model.QueryEmbedding
-import com.blog.ai.chat.service.ChatService
+import com.blog.ai.chat.model.RerankedExternalResult
 import com.blog.ai.chat.service.QueryExpander
 import com.blog.ai.rag.model.RagChunkGranularity
 import com.blog.ai.rag.model.RagChunkHit
 import com.blog.ai.rag.model.RagSearchQuery
 import com.blog.ai.rag.model.RagSourceType
-import com.blog.ai.rag.repository.RagChunkRepository
+import com.blog.ai.rag.service.RagSearchService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.document.Document
 import org.springframework.ai.embedding.EmbeddingModel
@@ -21,7 +22,7 @@ private val log = KotlinLogging.logger {}
 @Component("chatArticleRetriever")
 class ArticleRetriever(
     private val embeddingModel: EmbeddingModel,
-    private val ragChunkRepository: RagChunkRepository,
+    private val ragSearchService: RagSearchService,
     private val chatQueryExpander: QueryExpander,
     private val chatRerankClient: RerankClient,
 ) : DocumentRetriever {
@@ -38,7 +39,7 @@ class ArticleRetriever(
         private const val EXTERNAL_CANDIDATE_SIMILARITY = 0.3
         private const val EXTERNAL_RERANK_ELIGIBILITY = 0.4
         private const val EXTERNAL_RERANK_TOP_ABSTAIN = 0.5
-        const val INTENT_PARAM = "chat_intent"
+        const val INTENT_PARAM = ChatAdvisorParams.INTENT
     }
 
     override fun retrieve(query: Query): List<Document> {
@@ -46,7 +47,7 @@ class ArticleRetriever(
         if (originalText.isBlank()) return emptyList()
 
         val rewritten =
-            (query.context()[ChatService.REWRITTEN_QUERY_PARAM] as? String)
+            (query.context()[ChatAdvisorParams.REWRITTEN_QUERY] as? String)
                 ?.trim()
                 ?.takeIf { it.isNotBlank() }
                 ?: originalText
@@ -75,8 +76,8 @@ class ArticleRetriever(
         val unionHits =
             queries
                 .flatMap { qe ->
-                    ragChunkRepository
-                        .searchHybrid(
+                    ragSearchService
+                        .search(
                             RagSearchQuery(
                                 sourceType = RagSourceType.AUTHOR_POST,
                                 granularity = RagChunkGranularity.CHUNK,
@@ -99,8 +100,8 @@ class ArticleRetriever(
         val unionHits =
             queries
                 .flatMap { qe ->
-                    ragChunkRepository
-                        .searchHybrid(
+                    ragSearchService
+                        .search(
                             RagSearchQuery(
                                 sourceType = RagSourceType.EXTERNAL_ARTICLE,
                                 granularity = RagChunkGranularity.CHUNK,
@@ -201,16 +202,5 @@ class ArticleRetriever(
                 "authorEligibleCount=$authorEligibleCount abstained=${external.abstained} " +
                 "rerankUnavailable=${external.rerankUnavailable} [$labels]"
         }
-    }
-}
-
-internal data class RerankedExternalResult(
-    val docs: List<Document>,
-    val topScore: Double?,
-    val abstained: Boolean,
-    val rerankUnavailable: Boolean = false,
-) {
-    companion object {
-        fun empty(): RerankedExternalResult = RerankedExternalResult(emptyList(), null, false)
     }
 }

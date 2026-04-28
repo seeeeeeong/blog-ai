@@ -27,15 +27,14 @@ com.blog.ai
 │   ├── jdbc                        # JdbcTimeMapper
 │   ├── jpa                         # BaseTimeEntity (@MappedSuperclass)
 │   ├── properties                  # @ConfigurationProperties holders
-│   ├── response                    # ApiResponse<T>, PageResponse, ResultStatus
+│   ├── response                    # ApiResponse<T>, ResultStatus
 │   └── text                        # TextSplitter, TokenTruncator, EmbeddingBatcher
 │
 ├── article
 │   ├── service                     # ArticleAdminService, ArticleEmbeddingService, ArticleEmbeddingWriter
 │   ├── entity                      # ArticleEntity (@Entity)
 │   ├── repository                  # ArticleRepository
-│   └── model                       # ArticleEmbeddingSnapshot, ArticleEmbeddingBatch, ArticleChunkJob,
-│                                   #   ArticleEmbeddingResult, ArticleChunkEmbedding
+│   └── model                       # ArticleEmbeddingSnapshot, ArticleEmbeddingResult
 │
 ├── blog
 │   ├── service                     # BlogCacheService
@@ -55,13 +54,15 @@ com.blog.ai
 │   ├── controller                  # ChatController
 │   ├── request                     # ChatRequest
 │   ├── response                    # ChatMessageResponse, ChatSessionResponse
-│   ├── service                     # ChatService, ChatPreflight, QueryExpander, QueryPlanner, RateLimiter
+│   ├── service                     # ChatService, ChatSessionService, ClarificationService,
+│   │                               #   ChatPreflight, QueryExpander, QueryPlanner, RateLimiter
 │   ├── retriever                   # ArticleRetriever (Spring AI DocumentRetriever)
 │   ├── client                      # RerankClient (Jina API)
 │   ├── memory                      # ChatMemoryStore
 │   ├── entity                      # ChatSessionEntity, ChatMessageEntity
 │   ├── repository                  # ChatSessionRepository, ChatMessageRepository, RateLimitStore
-│   ├── model                       # ChatMessage, JinaRerankResponse, QueryEmbedding,
+│   ├── model                       # ChatMessage, ChatAdvisorParams, JinaRerankResponse,
+│   │                               #   QueryEmbedding, RerankedExternalResult,
 │   │                               #   RateLimitRequest, RateLimitOutcome
 │   └── mapper                      # ChatMessageEntity.toMessage()
 │
@@ -69,16 +70,17 @@ com.blog.ai
 │   ├── controller                  # InternalPostController, SimilarPostController
 │   ├── request                     # SyncPostRequest
 │   ├── response                    # SyncPostResponse, SimilarResponse, SimilarItem
-│   ├── service                     # PostSyncService, PostEmbeddingService, PostEmbeddingWorker,
+│   ├── service                     # PostSyncService, PostEmbeddingService,
 │   │                               #   PostEmbeddingWriter, SimilarPostService
 │   ├── entity                      # PostEntity
 │   ├── repository                  # PostRepository
-│   └── model                       # CreatePost, SyncPost, SyncResult, EventType,
-│                                   #   PostEmbeddingSnapshot, PostEmbeddingResult, PostChunkEmbedding,
+│   └── model                       # SyncPost, SyncResult, EventType,
+│                                   #   PostEmbeddingSnapshot, PostEmbeddingResult,
 │                                   #   SimilarArticle, SimilarResult, SimilarStatus
 │
 ├── rag
-│   ├── service                     # ChunkEnricher, RagService
+│   ├── service                     # ChunkEnricher, RagSearchService, RagWriteService
+│   ├── embedding                   # source-agnostic embedding pipeline
 │   ├── repository                  # RagChunkRepository (JdbcTemplate)
 │   └── model                       # RagSourceType, RagChunkGranularity, RagSearchQuery,
 │                                   #   RagChunkWrite, RagChunkHit
@@ -141,7 +143,7 @@ External-API + DB write boundaries are preserved as **separate Spring beans**, n
 | Repository query | Spring Data naming or `@Query` | `findUnembedded`, `existsByUrlHash` |
 | Validation private method | `require{Condition}` | `requireAdminKey` |
 | Entity factory method | `create()` | `ArticleEntity.create(...)` |
-| Service input/output model | `{Concept}` (no `Command` suffix) | `CreatePost`, `SyncPost`, `ArticleEmbeddingResult`, `ArticleChunkEmbedding` |
+| Service input/output model | `{Concept}` (no `Command` suffix) | `SyncPost`, `ArticleEmbeddingResult`, `DocumentEmbedding` |
 | Post-call DB writer | `{Feature}Writer` | `ArticleEmbeddingWriter`, `PostEmbeddingWriter` |
 | Pre-call DB preflight | `{Feature}Preflight` | `ChatPreflight` |
 | Scheduler | `{Feature}Job` | `CrawlJob`, `ArticleEmbeddingJob` |
