@@ -14,34 +14,47 @@ Crawls Korean/international tech blogs, embeds content, and provides similarity 
 
 ## Package Structure (Non-Negotiable)
 
+> **Status:** This section reflects the **target** structure after PR1 lands. Current code still uses the legacy shape (`core/api`, `core/domain`, `core/support`, `storage/`). PR0 (this document update) only fixes conventions; PR1 performs the move + rename in one mechanical pass; PR2 unifies the embed pipelines.
+
+Target tree:
+
 ```
 com.blog.ai
-├── core
-│   ├── api
-│   │   ├── config          # AppConfig, CacheConfig, ChatClientConfig, WebConfig
-│   │   └── controller/v1
-│   │       ├── request      # Request DTOs (data class, validation)
-│   │       └── response     # Response DTOs (companion of())
-│   ├── domain
-│   │   └── {context}        # Service, Command, Domain model
-│   │       ├── article      # ArticleAdminService, ArticleChunkService, ArticleEmbedService
-│   │       ├── blog         # BlogCacheService
-│   │       ├── chat         # ChatService
-│   │       ├── crawl        # CrawlService, CrawlAsyncService, ArticleSaveService, RssFeedParser
-│   │       └── similar      # SimilarService
-│   └── support
-│       ├── error            # CoreException, ErrorType, ErrorMessage
-│       ├── properties       # @ConfigurationProperties
-│       └── response         # ApiResponse<T>, PageResponse, ResultType
-├── scheduler                # CrawlScheduler, EmbeddingRetryScheduler
-└── storage
-    └── {context}            # Entity, Repository, Extensions
+├── BlogAiApplication.kt
+├── global                  # cross-cutting infra (formerly core/api/config + core/support)
+│   ├── config              # AppConfig, AiConfig, CacheConfig, SchedulerLockConfig, WebConfig
+│   ├── error               # AppException, ErrorCode, ErrorMessage
+│   ├── response            # ApiResponse<T>, PageResponse, ResultStatus
+│   ├── properties          # AppProperties
+│   ├── text                # TextSplitter, TokenTruncator, EmbeddingBatcher
+│   └── jdbc                # JdbcTimeMapper
+│
+├── article                 # RSS-crawled articles + embedding orchestration + admin
+├── blog                    # Blog source registry + cache
+├── crawl                   # RSS/HTML ingestion (parser, scraper, cleaner)
+├── chat                    # Chat session + RAG retrieval (retriever, planner, expander, rerank)
+├── post                    # External blog-post sync + similarity
+├── rag                     # Shared rag_chunks store + ChunkEnricher (source-agnostic)
+└── scheduler               # XxxJob.kt — thin @Scheduled orchestrators
 ```
 
+Each feature package owns 2–5 files using these suffixes:
+
+| File | Holds |
+|---|---|
+| `{Feature}Service.kt` | use-case service + private data classes (Snapshot, Batch, scoped Command) |
+| `{Feature}Api.kt` | `@RestController`(s) for the feature + their Request/Response DTOs |
+| `{Feature}Store.kt` | `@Entity` + `Repository` + persistence Commands + entity extension functions |
+| `{Feature}Client.kt` | external HTTP/SDK client + its response DTOs |
+| `{Feature}Preflight.kt` | DB read/write that must run *before* an external call (LLM/rerank/scrape) so the txn does not span the network round-trip |
+
+`scheduler/{Feature}Job.kt` for `@Scheduled` orchestrators (one top-level package, separate from feature packages).
+
 **Never do:**
-- Add top-level packages outside `core`, `scheduler`, and `storage`
-- Access `storage` directly from `controller` (always go through `domain` services)
-- Access `storage` directly from `scheduler` (always go through `domain` services)
+- Reintroduce a top-level `core/` or `storage/` package
+- Access another feature's `XxxStore` from outside that feature (e.g., `chat` controllers may not import `post.PostStore`)
+- Access any `XxxStore` from a controller or scheduler — always go through a domain service
+- Cross-feature imports for anything except `global/*` and `rag/*` shared types
 - Expose JPA entities in controller responses or domain service parameters
 - Pass Entity objects between domain services (use domain models or IDs)
 
@@ -71,41 +84,21 @@ com.blog.ai
 - Functions must stay under 40 lines
 - Log in English using KotlinLogging
 - Max line length: 120 characters
-- Split files by *public coupling*, not by "one type per file." A type lives in its own file when it is part of a **public contract** — Request/Response DTOs (Controller↔Service boundary), domain models, types accepted from or returned to another bounded context, Commands consumed by multiple services or schedulers, Hits/Results visible across layers. **Internal implementation data types** of a single feature flow — Snapshots, Batches, intermediate aggregates, Commands consumed only by helpers of one service — go in a sibling **`{Feature}Internals.kt`** file next to the owner service in the same package. **Helper services / Spring components** (Committer, Worker, etc.) always live in their own `.kt` file even when they're scoped to one flow — never colocate `@Service` / `@Component` classes with data classes in `Internals.kt`, and never put data classes inside the same file as a service class. The aim is "follow one feature in two or three files (use-case service + Internals.kt + helper service if any)," not "one type per file regardless." If a type acquires a caller outside its origin feature, promote it to its own file.
+- File grouping follows **reason to change**, not type. A feature's full flow lives in 2–5 files inside one package — `XxxService.kt`, `XxxApi.kt`, `XxxStore.kt`, optional `XxxClient.kt` / `XxxPreflight.kt`. `XxxService.kt` may co-locate its private data classes (Snapshot/Batch/scoped Command). `XxxStore.kt` may co-locate `@Entity` / `Repository` / persistence Command / entity extension. Promote a type to its own file only when a second feature imports it. Domain models (`Article`, `Blog`, `Post`) and cross-package contract types (`RagChunkHit`, `RagSourceType`) own their file.
 
 ```kotlin
-// Bad — every internal step in its own file, fan-out across 5 files for one flow
-// ArticleEmbedService.kt, ArticleEmbedCommitter.kt, ArticleEmbedSnapshot.kt,
-// ArticleEmbedBatch.kt, ArticleEmbedCommitCommand.kt
+// Bad — fan-out across 6 files for one feature flow
+// PostEmbedService.kt, PostEmbedCommitter.kt, PostEmbedWorker.kt,
+// PostEmbedInternals.kt, PostEmbedSnapshot.kt, SavePostChunkCommand.kt
 
-// Bad — service mixed with its data classes in the same file
-// ArticleEmbedInternals.kt
-data class ArticleEmbedCommitCommand(...)
-@Service
-class ArticleEmbedCommitter(...) { ... }   // service does not belong in Internals.kt
-
-// Good — service files hold only services; Internals.kt holds only data classes
-// ArticleEmbedService.kt          → use-case service only
-class ArticleEmbedService(
-    private val articleEmbedCommitter: ArticleEmbedCommitter,
-    ...
-) { ... }
-
-// ArticleEmbedCommitter.kt        → helper service only
-@Service
-class ArticleEmbedCommitter(...) { ... }
-
-// ArticleEmbedInternals.kt        → sibling file, data classes only
-internal data class ArticleEmbedSnapshot(...)
-internal data class ArticleEmbedBatch(...)
-data class ArticleEmbedCommitCommand(...)
-data class SaveChunkCommand(...)
-
-// Public Request/Response/domain model — still own file
-// ArticleResponse.kt, Article.kt, SimilarRequest.kt
+// Good — one feature in 2–4 files
+// PostApi.kt           → controllers + DTOs
+// PostEmbedService.kt  → service + private Snapshot/Batch/Command data classes
+// PostStore.kt         → BlogPostEntity + BlogPostRepository + extensions
+// scheduler/PostJob.kt → @Scheduled trigger
 ```
 
-  Prefer `internal` visibility for co-located data types — it documents the single-owner intent and stops cross-package callers from forming. Treat it as a recommendation, not a hard rule: Spring DI (a `public` service cannot accept an `internal` constructor parameter — Kotlin's `EXPOSED_PARAMETER_TYPE`), public method signatures that include the type, Jackson serialization, or test access may legitimately require broader visibility. Drop `internal` when one of those constraints actually bites; don't add it just to satisfy a checklist.
+  If `XxxService.kt` grows past ~400 lines, split by **use case** (`XxxAdminService.kt`, `XxxSyncService.kt`), not by extracting a `Committer`/`Worker` helper. Use `internal` visibility on co-located data classes when the consumer is private to the file; drop it whenever Kotlin's `EXPOSED_PARAMETER_TYPE`, Jackson, or test access requires public.
 - Keep `if` conditions plain. Avoid `!`, avoid safe-call chains (`x?.foo() == true`), avoid null comparisons buried in compound conditions. Flatten the value first — with `?: return`, `?: continue`, `takeIf { ... }`, or a named boolean — so the `if` itself reads as a domain concept on a non-nullable receiver. Prefer a positive condition with early return, then handle the failure case after; the happy path reads forward instead of as "not the bad thing." Prefer the positive form of negated extension calls (`isNotBlank()` over `!isNullOrBlank()`, `isNotEmpty()` over `!isEmpty()`, `result.isTruncated` over `!result.isTruncated` with branches swapped).
 
 ```kotlin
@@ -291,8 +284,31 @@ After any code change:
 
 ---
 
+## Rename Migration (Planned for PR1)
+
+PR0 leaves all code untouched. PR1 performs these renames mechanically; PR2 unifies the embedding pipelines.
+
+| Legacy | Canonical (PR1+) |
+|---|---|
+| `CoreException` | `AppException` |
+| `ErrorType` | `ErrorCode` |
+| `ResultType` | `ResultStatus` |
+| `JdbcTimestamps` | `JdbcTimeMapper` |
+| `ChatClientConfig` | `AiConfig` |
+| `ShedLockConfig` | `SchedulerLockConfig` |
+| `*Scheduler.kt` (5 files) | `*Job.kt` |
+| `BlogPost*` inside `post/` | `Post*` (package context) |
+| Separate `*Repository.kt` + `*Entity.kt` | `XxxStore.kt` (consolidated) |
+| `controller/v1/{request,response}/*` | `{feature}/XxxApi.kt` (co-located with controller) |
+
+Until PR1 ships, code references in this document and in error/log strings still use the legacy names (`CoreException`, `ErrorType`, etc.). The convention rules above describe the post-PR1 shape.
+
+---
+
 ## What NOT To Do
 
+- Reintroduce a top-level `core/` or `storage/` package
+- Access another feature's `XxxStore` from outside that feature
 - Return entities directly as responses
 - Call repositories from controllers or schedulers
 - Pass Entity objects as domain service parameters
@@ -301,4 +317,5 @@ After any code change:
 - Use `@Async` on self-calls (extract to separate @Service)
 - Swallow errors with `runCatching { }.getOrDefault()`
 - Declare work complete without running `./gradlew check`
+- Mix a structure-move PR with a behavior-change PR
 - Introduce new patterns without discussion

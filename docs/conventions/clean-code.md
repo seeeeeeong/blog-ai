@@ -12,33 +12,44 @@ The priority order is:
 
 ## Structure Standard
 
-Both `blog-api` and `blog-ai` follow the same repository shape:
+> **Status:** Target shape, post-PR1. Legacy code in both repos still uses `core/api`, `core/domain`, `core/support`, `storage/`. PR0 updates these conventions only; PR1 performs the move.
+
+Both `blog-api` and `blog-ai` follow the same feature-first shape:
 
 ```text
 src/main/kotlin/com/blog/{api|ai}
-├── core
-│   ├── api
-│   │   ├── config
-│   │   └── controller/v1
-│   │       ├── request
-│   │       └── response
-│   ├── domain
-│   │   └── {bounded-context}
-│   └── support
-│       ├── error
-│       ├── properties
-│       └── response
-├── scheduler            # optional
-└── storage
-    └── {bounded-context}
+├── {Application}.kt
+├── global
+│   ├── config
+│   ├── error
+│   ├── response
+│   ├── properties
+│   ├── text             # ai-only: text/embedding utilities
+│   └── jdbc
+├── {feature}/           # one package per feature: article, blog, crawl, chat, post, rag, ...
+│   ├── XxxService.kt    # use-case service (+ private data classes)
+│   ├── XxxApi.kt        # @RestController(s) + Request/Response DTOs
+│   ├── XxxStore.kt      # @Entity + Repository + persistence Commands + extensions
+│   ├── XxxClient.kt     # optional — external HTTP/SDK client
+│   └── XxxPreflight.kt  # optional — DB work guarding an external call
+└── scheduler
+    └── XxxJob.kt        # @Scheduled orchestrators (thin)
 
 src/test/kotlin/com/blog/{api|ai}
 config/detekt/detekt.yml
 docs/conventions/clean-code.md
 ```
 
-Project-specific packages such as `support/security`, `support/auth`, `support/web`, or AI-only scheduler packages are allowed.
-Add them under the same branch rather than inventing a parallel top-level package.
+Top-level `core/` and `storage/` packages are forbidden — persistence belongs inside the owning feature as `XxxStore.kt`. Project-specific cross-cutting concerns (security, auth, web filters) live as sub-packages of `global/`. AI-only packages (`rag/`, `chat/retriever/...`) live as feature packages, never under a parallel top-level wrapper.
+
+### File grouping rules
+
+- A feature flow lives in 2–5 files. Promote a type to its own file only when a second feature imports it.
+- `XxxService.kt` may co-locate private Snapshot/Batch/scoped Command data classes.
+- `XxxStore.kt` may co-locate multiple `@Entity` and `Repository` declarations belonging to the feature, plus persistence Commands and entity extensions.
+- `XxxApi.kt` may hold more than one `@RestController` if their routes belong to the same feature surface (e.g., `post/PostApi.kt` holds both `InternalPostController` and `SimilarPostController`).
+- Domain models (`Article`, `Blog`, `Post`) and cross-package contract types (`RagChunkHit`, `RagSourceType`) own their file.
+- If `XxxService.kt` grows past ~400 lines, split by **use case** (`XxxAdminService.kt`, `XxxSyncService.kt`), not by extracting a `Committer`/`Worker`.
 
 ## Design Rules
 
@@ -49,7 +60,7 @@ Add them under the same branch rather than inventing a parallel top-level packag
 - Entities and value objects protect invariants.
 - Repositories hide persistence details.
 
-If a type depends on Spring MVC or servlet APIs, it stays in `core/api` or `core/support/web`.
+If a type depends on Spring MVC or servlet APIs, it stays in a feature's `XxxApi.kt` or under `global/web`.
 
 ### Prefer intention over cleverness
 
@@ -95,7 +106,9 @@ These are strong review rules, not absolute dogma:
 - Request/response DTOs leaking into services
 - Stringly typed status, role, or event identifiers
 - Repeated mapping code with no single owner
-- Top-level packages that bypass `core`, `storage`, or `scheduler`
+- Top-level packages outside `global/`, the per-feature packages, or `scheduler/`
+- Cross-feature imports of another feature's `XxxStore`
+- Mixing structure moves with behavior changes in one PR
 
 When breaking one of these rules improves clarity, document the reason in the PR or commit message.
 
