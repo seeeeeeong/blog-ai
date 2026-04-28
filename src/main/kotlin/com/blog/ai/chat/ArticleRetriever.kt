@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component
 
 private val log = KotlinLogging.logger {}
 
-@Component
+@Component("chatArticleRetriever")
 class ArticleRetriever(
     private val embeddingModel: EmbeddingModel,
     private val ragChunkRepository: RagChunkRepository,

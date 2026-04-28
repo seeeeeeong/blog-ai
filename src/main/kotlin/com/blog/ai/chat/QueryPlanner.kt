@@ -8,7 +8,7 @@ import org.springframework.ai.chat.messages.Message
 import org.springframework.ai.chat.messages.MessageType
 import org.springframework.stereotype.Component
 
-@Component
+@Component("chatQueryPlanner")
 class QueryPlanner(
     private val chatClientBuilder: ChatClient.Builder,
     private val chatMemory: ChatMemory,

@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component
 import java.time.Duration
 import java.util.UUID
 
-@Component
+@Component("chatRateLimiter")
 class RateLimiter(
     private val chatRateLimitRepository: ChatRateLimitRepository,
 ) {

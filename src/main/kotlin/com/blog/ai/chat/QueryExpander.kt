@@ -4,7 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.stereotype.Component
 
-@Component
+@Component("chatQueryExpander")
 class QueryExpander(
     private val chatClientBuilder: ChatClient.Builder,
 ) {
