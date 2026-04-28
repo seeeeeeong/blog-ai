@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:filename")
+
 package com.blog.ai.global.admin
 
 import com.blog.ai.article.ArticleAdminService

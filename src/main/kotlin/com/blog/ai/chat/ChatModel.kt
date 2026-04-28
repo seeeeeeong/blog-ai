@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:filename")
+
 package com.blog.ai.chat
 
 data class ChatMessage(
