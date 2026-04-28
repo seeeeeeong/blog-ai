@@ -97,7 +97,7 @@ com.blog.ai
 | `response/` | Response DTOs + `companion of()` factories (one type per file) |
 | `service/` | `@Service` use-case classes — **no** top-level `data class` / `enum class` |
 | `entity/` | `@Entity` JPA classes (one entity per file) |
-| `repository/` | Spring Data interfaces or `@Repository` JdbcTemplate classes |
+| `repository/` | Spring Data interfaces, `@Repository` JdbcTemplate classes, or `@Repository` jOOQ DSLContext classes (one class per file). See [Persistence](#persistence) for which to pick. |
 | `model/` | Domain models, command inputs, result/status types — one type per file |
 | `mapper/` | `Entity.toDomain()` extension functions |
 | `client/` | External HTTP/SDK clients |
@@ -312,11 +312,43 @@ fun BlogEntity.toBlog() =
 
 ---
 
+## Persistence
+
+Three persistence layers coexist. Pick by **data access shape**, not by team preference:
+
+| Pattern | Use for | Examples |
+|---|---|---|
+| `JpaRepository<Entity, Id>` interface | Entity-bound CRUD; entities have an `@Entity` mapping | `ArticleRepository`, `BlogRepository`, `PostRepository`, `ChatSessionRepository`, `ChatMessageRepository` |
+| Spring Data `@Query` (native) on the JPA repo | Bulk write / multi-table snapshot queries that still belong to an entity | `PostRepository.upsert`, `ArticleRepository.findUnembeddedSnapshots` |
+| jOOQ `DSLContext` + generated table references | Type-safe SELECT/DELETE/UPDATE on tables included in codegen | `RagChunkRepository.deleteSource`, `RagChunkRepository.findDocumentVector` (uses `RAG_CHUNKS.SOURCE_TYPE` etc.) |
+| jOOQ `DSL.sql(...)` / plain SQL templating | Queries using types jOOQ doesn't model (`pgvector <=>`, `tsvector`, `korean_bigram_tsquery`) | `RagChunkRepository.searchHybrid`, `RagChunkRepository` insert |
+
+`@Repository` classes that use `DSLContext` (jOOQ) or `JdbcTemplate` live in `{feature}/repository/`, same as Spring Data interfaces. One class per file.
+
+### jOOQ codegen workflow
+
+Codegen is scoped to specific tables. Currently included: `rag_chunks`.
+
+To add a table to codegen:
+
+1. Update `build.gradle.kts` → `jooq.configuration.generator.database.includes` to add the table name (regex).
+2. Set DB env vars: `DB_HOST`, `DB_USERNAME`, `DB_PASSWORD` (defaults `localhost`/`postgres`/`postgres`).
+3. Ensure local Postgres has the latest migrations applied.
+4. Run `./gradlew jooqCodegen`.
+5. Commit the new files under `src/generated/kotlin/`.
+
+When a Flyway migration changes a codegen target (column add/drop/rename, type change), regenerate and commit in the same PR as the migration.
+
+`src/generated/kotlin/` is included in the Kotlin `main` source set but excluded from ktlint and detekt — never edit it by hand.
+
+---
+
 ## Database Migration (Flyway)
 
 - Filename: `V{N}__{snake_case_description}.sql`
 - Use `IF EXISTS` / `IF NOT EXISTS` for idempotency
 - Use `CREATE EXTENSION IF NOT EXISTS` for pgVector
+- If the migration changes a jOOQ codegen target table (currently `rag_chunks`), run `./gradlew jooqCodegen` and commit `src/generated/kotlin/` updates in the same PR
 
 ---
 
