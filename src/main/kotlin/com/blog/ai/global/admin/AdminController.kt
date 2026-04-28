@@ -1,14 +1,14 @@
 package com.blog.ai.global.admin
 
-import com.blog.ai.article.ArticleAdminService
-import com.blog.ai.article.embedding.ArticleEmbeddingService
-import com.blog.ai.crawl.CrawlAsyncService
+import com.blog.ai.article.application.ArticleAdminService
+import com.blog.ai.article.application.embedding.ArticleEmbeddingService
+import com.blog.ai.crawl.application.CrawlAsyncService
 import com.blog.ai.global.error.AppException
 import com.blog.ai.global.error.ErrorCode
 import com.blog.ai.global.properties.AdminProperties
 import com.blog.ai.global.properties.InternalProperties
 import com.blog.ai.global.response.ApiResponse
-import com.blog.ai.post.embedding.PostEmbeddingService
+import com.blog.ai.post.application.embedding.PostEmbeddingService
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
