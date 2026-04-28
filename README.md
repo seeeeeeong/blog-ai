@@ -4,26 +4,26 @@ Spring Boot service for crawling, embedding, similarity search, and RAG chat wor
 
 ## Repository Structure
 
-Feature-first. **One type per file.** Each feature picks the shape that fits its domain — vertical slice (use-case sub-packages), functional cohesion (sub-packages by concern), or flat — instead of forcing a uniform layered template.
+Feature-first with **DDD-style layers** (`api / application / domain / infrastructure`) inside each feature. **One type per file.**
 
 ```text
 src/main/kotlin/com/blog/ai
 ├── BlogAiApplication.kt
-├── global/         # cross-cutting infra: admin, config, error, jdbc, jpa, properties, response, text
-├── article/        # ArticleEntity + Repository + AdminService at root, embedding/ sub-package
-├── blog/           # flat — Blog, BlogEntity, BlogRepository, BlogMapper, BlogCacheService
-├── chat/           # ChatController + DTOs + ChatService at root; session/ memory/ rag/ ratelimit/ sub-packages
-├── crawl/          # services + CrawlConstants at root; parser/ sub-package
-├── post/           # PostEntity + PostRepository at root; sync/ embedding/ similar/ sub-packages
-├── rag/            # services + repository + types at root; embedding/ sub-package
-└── scheduler/      # *Job.kt — thin @Scheduled orchestrators
+├── global/         # cross-cutting infra: admin, config, error, persistence, properties, response, text
+├── article/        # application/, domain/, infrastructure/  (no HTTP surface)
+├── blog/           # application/, domain/, infrastructure/
+├── chat/           # api/, application/{session,memory,ratelimit,retrieval}/, domain/, infrastructure/{session,memory,ratelimit,rerank}/
+├── crawl/          # application/, domain/, infrastructure/parser/
+├── post/           # api/{sync,similar}/, application/{sync,embedding,similar}/, domain/, infrastructure/
+├── rag/            # application/{embedding}/, domain/, infrastructure/  (RagChunkRepository internal)
+└── job/            # *Job.kt — thin @Scheduled orchestrators
 ```
 
-See [docs/conventions/clean-code.md](docs/conventions/clean-code.md) for the full convention and decision table for picking a feature shape.
+See [docs/conventions/clean-code.md](docs/conventions/clean-code.md) for the full convention.
 
 ## Quality Gates
 
+- `./gradlew check` (runs tests + ktlintCheck + detekt + ArchitectureBoundaryTest)
 - `./gradlew test`
 - `./gradlew ktlintCheck`
 - `./gradlew detekt`
-- `./gradlew check` (runs all plus `ArchitectureBoundaryTest`)
