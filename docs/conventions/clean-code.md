@@ -49,7 +49,8 @@ Top-level `core/` and `storage/` packages are forbidden — persistence belongs 
 - `XxxStore.kt` may co-locate multiple `@Entity` and `Repository` declarations belonging to the feature, plus persistence Commands and entity extensions.
 - `XxxApi.kt` may hold more than one `@RestController` if their routes belong to the same feature surface (e.g., `post/PostApi.kt` holds both `InternalPostController` and `SimilarPostController`).
 - Domain models (`Article`, `Blog`, `Post`) and cross-package contract types (`RagChunkHit`, `RagSourceType`) own their file.
-- If `XxxService.kt` grows past ~400 lines, split by **use case** (`XxxAdminService.kt`, `XxxSyncService.kt`), not by extracting a `Committer`/`Worker`.
+- If `XxxService.kt` grows past ~400 lines, split by **use case** (`XxxAdminService.kt`, `XxxSyncService.kt`), not by extracting a generic `Committer` / `Worker`.
+- `XxxCommitter.kt` is allowed only when a separate Spring bean is needed to preserve a transaction boundary *after* external work — the post-call counterpart of `XxxPreflight.kt`. Do not use `Committer` as a generic helper suffix.
 
 ## Design Rules
 

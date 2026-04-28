@@ -47,6 +47,7 @@ Each feature package owns 2–5 files using these suffixes:
 | `{Feature}Store.kt` | `@Entity` + `Repository` + persistence Commands + entity extension functions |
 | `{Feature}Client.kt` | external HTTP/SDK client + its response DTOs |
 | `{Feature}Preflight.kt` | DB read/write that must run *before* an external call (LLM/rerank/scrape) so the txn does not span the network round-trip |
+| `{Feature}Committer.kt` | DB write that must run *after* an external call, kept as a separate Spring bean so the caller's `@Transactional` does not span the round-trip. Use only for this boundary preservation — do not use `Committer` as a generic helper suffix. |
 
 `scheduler/{Feature}Job.kt` for `@Scheduled` orchestrators (one top-level package, separate from feature packages).
 
