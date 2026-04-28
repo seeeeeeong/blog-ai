@@ -1,5 +1,7 @@
 package com.blog.ai.post.model
 
+import com.blog.ai.rag.embedding.model.ChunkEmbedding
+
 data class PostEmbeddingResult(
     val postId: Long,
     val title: String,
@@ -7,5 +9,5 @@ data class PostEmbeddingResult(
     val content: String,
     val snapshotHash: String?,
     val docVector: String,
-    val chunks: List<PostChunkEmbedding>,
+    val chunks: List<ChunkEmbedding>,
 )

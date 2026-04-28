@@ -1,8 +1,12 @@
 package com.blog.ai.post.service
 
 import com.blog.ai.post.entity.PostEntity
+import com.blog.ai.post.model.PostEmbeddingResult
 import com.blog.ai.post.model.PostEmbeddingSnapshot
 import com.blog.ai.post.repository.PostRepository
+import com.blog.ai.rag.embedding.model.DocumentEmbedding
+import com.blog.ai.rag.embedding.model.EmbeddingDocument
+import com.blog.ai.rag.embedding.service.EmbeddingPipeline
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -10,7 +14,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class PostEmbeddingService(
     private val postRepository: PostRepository,
-    private val postEmbeddingWorker: PostEmbeddingWorker,
+    private val embeddingPipeline: EmbeddingPipeline,
+    private val postEmbeddingWriter: PostEmbeddingWriter,
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
@@ -24,10 +29,10 @@ class PostEmbeddingService(
 
         for (snapshot in snapshots) {
             try {
-                if (postEmbeddingWorker.embedOne(snapshot)) embedded++
+                if (embedOne(snapshot)) embedded++
             } catch (e: Exception) {
                 log.error(e) { "BlogPost embedding failed: id=${snapshot.postId}" }
-                postEmbeddingWorker.recordError(snapshot.postId, snapshot.contentHash, e.message ?: "unknown")
+                postEmbeddingWriter.recordError(snapshot.postId, snapshot.contentHash, e.message ?: "unknown")
             }
         }
 
@@ -41,6 +46,19 @@ class PostEmbeddingService(
     fun clearRetriableErrors(maxRetries: Int = MAX_EMBED_RETRIES): Int =
         postRepository.clearRetriableEmbedErrors(maxRetries)
 
+    private fun embedOne(snapshot: PostEmbeddingSnapshot): Boolean {
+        val embedding =
+            embeddingPipeline.embedOne(
+                document = snapshot.toDocument(),
+                enrichChunks = false,
+            )
+        val committed = postEmbeddingWriter.commit(snapshot.toResult(embedding))
+        if (committed) {
+            log.debug { "BlogPost embedding completed: id=${snapshot.postId}, externalId=${snapshot.externalId}" }
+        }
+        return committed
+    }
+
     private fun toSnapshot(entity: PostEntity): PostEmbeddingSnapshot =
         PostEmbeddingSnapshot(
             postId = requireNotNull(entity.id) { "PostEntity.id must not be null after load" },
@@ -49,5 +67,23 @@ class PostEmbeddingService(
             url = entity.url,
             content = entity.content,
             contentHash = entity.contentHash,
+        )
+
+    private fun PostEmbeddingSnapshot.toDocument(): EmbeddingDocument =
+        EmbeddingDocument(
+            id = postId,
+            title = title,
+            content = content ?: "",
+        )
+
+    private fun PostEmbeddingSnapshot.toResult(embedding: DocumentEmbedding): PostEmbeddingResult =
+        PostEmbeddingResult(
+            postId = postId,
+            title = title,
+            url = url,
+            content = content ?: "",
+            snapshotHash = contentHash,
+            docVector = embedding.docVector,
+            chunks = embedding.chunks,
         )
 }

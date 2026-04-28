@@ -1,6 +1,6 @@
-package com.blog.ai.article.model
+package com.blog.ai.rag.embedding.model
 
-data class ArticleChunkJob(
+data class ChunkEmbeddingJob(
     val rawChunk: String,
     val context: String?,
 ) {
