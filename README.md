@@ -4,32 +4,30 @@ Spring Boot service for crawling, embedding, similarity search, and RAG chat wor
 
 ## Repository Structure
 
-This repository follows the same skeleton as `blog-api`. The current code is mid-migration: PR0 (this commit) updates the convention docs only, PR1 performs the package move + rename, PR2 unifies the embedding pipelines.
-
-Target structure (post-PR1):
+Feature-first with layered sub-packages. Each feature owns its own `controller/` / `service/` / `entity/` / `repository/` / `model/` (and where applicable `mapper/`, `client/`, `parser/`, `support/`, `retriever/`, `memory/`, `request/`, `response/`). One type per file.
 
 ```text
 src/main/kotlin/com/blog/ai
 ├── BlogAiApplication.kt
 ├── global
-│   ├── config
-│   ├── error
-│   ├── response
-│   ├── properties
-│   ├── text
-│   └── jdbc
-├── article
-├── blog
-├── crawl
-├── chat
-├── post
-├── rag
-└── scheduler
+│   ├── admin       # operational REST endpoints
+│   ├── config      # @Configuration beans
+│   ├── error       # AppException, ErrorCode, ErrorMessage, ApiControllerAdvice
+│   ├── jdbc        # JdbcTimeMapper
+│   ├── jpa         # BaseTimeEntity (@MappedSuperclass)
+│   ├── properties  # @ConfigurationProperties holders
+│   ├── response    # ApiResponse, PageResponse, ResultStatus
+│   └── text        # TextSplitter, TokenTruncator, EmbeddingBatcher
+├── article         # service / entity / repository / model
+├── blog            # service / entity / repository / model / mapper
+├── chat            # controller / request / response / service / retriever / client / memory / entity / repository / model / mapper
+├── crawl           # service / parser / client / model / support
+├── post            # controller / request / response / service / entity / repository / model
+├── rag             # service / repository / model
+└── scheduler       # *Job.kt — thin @Scheduled orchestrators
 ```
 
-Each feature package owns its `XxxService.kt` / `XxxApi.kt` / `XxxStore.kt` / optional `XxxClient.kt` / `XxxPreflight.kt`. Schedulers live in `scheduler/XxxJob.kt`.
-
-Use [docs/conventions/clean-code.md](/Users/sinseonglee/Desktop/blog-ai/docs/conventions/clean-code.md) as the repository-wide refactoring baseline.
+Use [docs/conventions/clean-code.md](docs/conventions/clean-code.md) as the repository-wide refactoring baseline.
 
 ## Quality Gates
 
