@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
-class ChatRateLimitCleanupScheduler(
+class RateLimitCleanupJob(
     private val chatRateLimiter: RateLimiter,
 ) {
     companion object {

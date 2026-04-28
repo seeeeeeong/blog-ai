@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
-class BlogPostEmbeddingScheduler(
+class PostEmbeddingJob(
     private val postEmbeddingService: PostEmbeddingService,
 ) {
     companion object {
