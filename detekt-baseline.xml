@@ -3,13 +3,11 @@
   <ManuallySuppressedIssues/>
   <CurrentIssues>
     <ID>CyclomaticComplexMethod:TextSplitter.kt:TextSplitter$private fun doSplit: List&lt;String&gt;</ID>
-    <ID>EmptyFunctionBlock:BlogCache.kt:BlogCache${ }</ID>
+    <ID>EmptyFunctionBlock:BlogCacheService.kt:BlogCacheService${ }</ID>
     <ID>LongMethod:ArticleRetrieverIntegrationTest.kt:ArticleRetrieverIntegrationTest$private fun seedAuthorPostWithChunk</ID>
-    <ID>LongMethod:RagStore.kt:RagChunkRepository$fun searchHybrid: List&lt;RagChunkHit&gt;</ID>
+    <ID>LongMethod:RagChunkRepository.kt:RagChunkRepository$fun searchHybrid: List&lt;RagChunkHit&gt;</ID>
     <ID>LongMethod:SimilarPostServiceIntegrationTest.kt:SimilarPostServiceIntegrationTest$private fun seedArticle: Long</ID>
     <ID>LongMethod:SimilarPostServiceIntegrationTest.kt:SimilarPostServiceIntegrationTest$private fun seedBlogPost</ID>
-    <ID>MatchingDeclarationName:AdminApi.kt:AdminController</ID>
-    <ID>MatchingDeclarationName:ChatModel.kt:ChatMessage</ID>
     <ID>NestedBlockDepth:PostEmbeddingService.kt:PostEmbeddingService$fun embedPending: Int</ID>
   </CurrentIssues>
 </SmellBaseline>

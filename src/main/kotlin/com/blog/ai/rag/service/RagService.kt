@@ -2,10 +2,10 @@ package com.blog.ai.rag.service
 
 import com.blog.ai.article.model.ArticleChunkEmbedding
 import com.blog.ai.post.model.PostChunkEmbedding
-import com.blog.ai.rag.model.RagChunkWrite
 import com.blog.ai.rag.model.RagChunkGranularity
-import com.blog.ai.rag.repository.RagChunkRepository
+import com.blog.ai.rag.model.RagChunkWrite
 import com.blog.ai.rag.model.RagSourceType
+import com.blog.ai.rag.repository.RagChunkRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
