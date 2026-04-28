@@ -9,7 +9,6 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7"
     id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
     id("dev.detekt") version "2.0.0-alpha.3"
-    id("org.jooq.jooq-codegen-gradle") version "3.19.29"
 }
 
 group = "com.blog"
@@ -34,14 +33,6 @@ java {
     }
 }
 
-kotlin {
-    sourceSets {
-        main {
-            kotlin.srcDir("src/generated/kotlin")
-        }
-    }
-}
-
 allOpen {
     annotation("jakarta.persistence.Entity")
     annotation("jakarta.persistence.MappedSuperclass")
@@ -58,7 +49,6 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.springframework.boot:spring-boot-starter-jooq")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
 
@@ -76,7 +66,6 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql")
     implementation("org.flywaydb:flyway-core")
     runtimeOnly("org.flywaydb:flyway-database-postgresql")
-    jooqCodegen("org.postgresql:postgresql")
 
     // Cache
     implementation("com.github.ben-manes.caffeine:caffeine")
@@ -102,39 +91,7 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
-jooq {
-    configuration {
-        jdbc {
-            driver = "org.postgresql.Driver"
-            url = "jdbc:postgresql://${System.getenv("DB_HOST") ?: "localhost"}:5432/blog_ai"
-            user = System.getenv("DB_USERNAME") ?: "postgres"
-            password = System.getenv("DB_PASSWORD") ?: "postgres"
-        }
-        generator {
-            name = "org.jooq.codegen.KotlinGenerator"
-            database {
-                name = "org.jooq.meta.postgres.PostgresDatabase"
-                inputSchema = "public"
-                includes = "rag_chunks"
-            }
-            generate {
-                isDeprecated = false
-                isDeprecationOnUnknownTypes = false
-                isRecords = true
-                isPojos = false
-                isDaos = false
-                isFluentSetters = true
-            }
-            target {
-                packageName = "com.blog.ai.jooq"
-                directory = "$rootDir/src/generated/kotlin"
-            }
-        }
-    }
-}
-
 tasks.withType<KotlinCompile>().configureEach {
-    mustRunAfter("jooqCodegen")
     compilerOptions {
         freeCompilerArgs.addAll("-Xjsr305=strict")
     }
@@ -147,25 +104,12 @@ tasks.withType<Test>().configureEach {
 ktlint {
     version.set("1.8.0")
     ignoreFailures.set(false)
-    filter {
-        exclude { element -> element.file.path.contains("/src/generated/") }
-    }
-}
-
-tasks.withType<org.jlleitschuh.gradle.ktlint.tasks.BaseKtLintCheckTask>().configureEach {
-    mustRunAfter("jooqCodegen")
-    exclude { element -> element.file.path.contains("/src/generated/") }
 }
 
 detekt {
     config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
     baseline = file("$rootDir/detekt-baseline.xml")
     buildUponDefaultConfig = true
-}
-
-tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
-    mustRunAfter("jooqCodegen")
-    exclude { element -> element.file.path.contains("/src/generated/") }
 }
 
 tasks.named<BootJar>("bootJar") {
