@@ -1,13 +1,13 @@
-package com.blog.ai.post.embedding
+package com.blog.ai.article.embedding
 
 import com.blog.ai.rag.embedding.ChunkEmbedding
 
-data class PostEmbeddingResult(
-    val postId: Long,
+data class ArticleEmbeddingResult(
+    val articleId: Long,
     val title: String,
-    val url: String?,
+    val url: String,
+    val company: String,
     val content: String,
-    val snapshotHash: String?,
     val docVector: String,
     val chunks: List<ChunkEmbedding>,
 )

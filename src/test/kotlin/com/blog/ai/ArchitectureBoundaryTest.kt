@@ -30,16 +30,19 @@ class ArchitectureBoundaryTest {
     }
 
     @Test
-    fun `rag repository is only accessed inside rag module`() {
+    fun `RagChunkRepository is only accessed inside rag module`() {
         val violations =
             kotlinFiles()
                 .filterNot { it.relativeTo(sourceRoot).toString().startsWith("com/blog/ai/rag/") }
                 .filter { file ->
-                    file.readText().contains("import com.blog.ai.rag.repository.")
+                    file.readText().contains("RagChunkRepository")
                 }.map { it.relativeTo(sourceRoot).toString() }
                 .toList()
 
-        assertTrue(violations.isEmpty(), "Use rag.service APIs instead of rag.repository: $violations")
+        assertTrue(
+            violations.isEmpty(),
+            "Use RagSearchService / RagWriteService instead of RagChunkRepository: $violations",
+        )
     }
 
     private fun kotlinFiles() =

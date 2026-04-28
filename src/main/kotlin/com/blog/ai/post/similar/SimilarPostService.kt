@@ -3,10 +3,10 @@ package com.blog.ai.post.similar
 import com.blog.ai.post.PostRepository
 import com.blog.ai.post.similar.SimilarArticle
 import com.blog.ai.post.similar.SimilarResult
-import com.blog.ai.rag.model.RagChunkGranularity
-import com.blog.ai.rag.model.RagSearchQuery
-import com.blog.ai.rag.model.RagSourceType
-import com.blog.ai.rag.service.RagSearchService
+import com.blog.ai.rag.RagChunkGranularity
+import com.blog.ai.rag.RagSearchQuery
+import com.blog.ai.rag.RagSearchService
+import com.blog.ai.rag.RagSourceType
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

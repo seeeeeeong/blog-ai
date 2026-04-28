@@ -5,11 +5,11 @@ import com.blog.ai.chat.rag.QueryEmbedding
 import com.blog.ai.chat.rag.QueryExpander
 import com.blog.ai.chat.rag.RerankClient
 import com.blog.ai.chat.rag.RerankedExternalResult
-import com.blog.ai.rag.model.RagChunkGranularity
-import com.blog.ai.rag.model.RagChunkHit
-import com.blog.ai.rag.model.RagSearchQuery
-import com.blog.ai.rag.model.RagSourceType
-import com.blog.ai.rag.service.RagSearchService
+import com.blog.ai.rag.RagChunkGranularity
+import com.blog.ai.rag.RagChunkHit
+import com.blog.ai.rag.RagSearchQuery
+import com.blog.ai.rag.RagSearchService
+import com.blog.ai.rag.RagSourceType
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.document.Document
 import org.springframework.ai.embedding.EmbeddingModel

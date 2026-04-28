@@ -1,6 +1,6 @@
 package com.blog.ai.scheduler
 
-import com.blog.ai.article.service.ArticleEmbeddingService
+import com.blog.ai.article.embedding.ArticleEmbeddingService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.scheduling.annotation.Scheduled
