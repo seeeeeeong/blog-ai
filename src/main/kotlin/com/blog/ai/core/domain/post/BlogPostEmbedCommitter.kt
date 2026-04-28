@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class BlogPostEmbedCommitter(
     private val blogPostRepository: PostRepository,
-    private val ragChunkService: RagService,
+    private val ragService: RagService,
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
@@ -22,7 +22,7 @@ class BlogPostEmbedCommitter(
             log.info { "BlogPost embedding skipped (stale snapshot): id=${command.postId}" }
             return false
         }
-        ragChunkService.replaceAuthorPost(
+        ragService.replaceAuthorPost(
             postId = command.postId,
             title = command.title,
             url = command.url,

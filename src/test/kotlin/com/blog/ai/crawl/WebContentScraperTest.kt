@@ -1,4 +1,4 @@
-package com.blog.ai.core.domain.crawl
+package com.blog.ai.crawl
 
 import org.jsoup.Jsoup
 import org.junit.jupiter.api.Assertions.assertFalse

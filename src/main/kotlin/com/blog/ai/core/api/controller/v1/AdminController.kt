@@ -2,7 +2,7 @@ package com.blog.ai.core.api.controller.v1
 
 import com.blog.ai.article.ArticleAdminService
 import com.blog.ai.article.ArticleEmbeddingService
-import com.blog.ai.core.domain.crawl.CrawlAsyncService
+import com.blog.ai.crawl.CrawlAsyncService
 import com.blog.ai.core.domain.post.BlogPostEmbedService
 import com.blog.ai.global.error.AppException
 import com.blog.ai.global.error.ErrorCode

@@ -12,7 +12,7 @@ import java.time.OffsetDateTime
 @Transactional(readOnly = true)
 class BlogPostSyncService(
     private val blogPostRepository: PostRepository,
-    private val ragChunkService: RagService,
+    private val ragService: RagService,
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
@@ -58,7 +58,7 @@ class BlogPostSyncService(
             log.info { "Delete ignored (stale): externalId=$externalId" }
             SyncResult.STALE_IGNORED
         } else {
-            blogPostRepository.findByExternalId(externalId)?.id?.let(ragChunkService::deleteAuthorPost)
+            blogPostRepository.findByExternalId(externalId)?.id?.let(ragService::deleteAuthorPost)
             log.info { "Delete tombstoned: externalId=$externalId" }
             SyncResult.TOMBSTONED
         }

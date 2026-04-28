@@ -1,4 +1,4 @@
-package com.blog.ai.core.domain.crawl
+package com.blog.ai.crawl
 
 import com.blog.ai.blog.BlogCache
 import com.blog.ai.rag.RagService
@@ -9,12 +9,12 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 class CrawlService(
-    private val blogCacheService: BlogCache,
+    private val blogCache: BlogCache,
     private val rssFeedParser: RssFeedParser,
     private val articleSaveService: ArticleSaveService,
     private val articleRepository: ArticleRepository,
     private val webContentScraper: WebContentScraper,
-    private val ragChunkService: RagService,
+    private val ragService: RagService,
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
@@ -22,7 +22,7 @@ class CrawlService(
     }
 
     fun crawlAll(): Int {
-        val blogs = blogCacheService.getActiveBlogs()
+        val blogs = blogCache.getActiveBlogs()
         var totalSaved = 0
 
         for (blog in blogs) {
@@ -36,7 +36,7 @@ class CrawlService(
         }
 
         if (totalSaved > 0) {
-            blogCacheService.evictAll()
+            blogCache.evictAll()
         }
 
         log.info { "Crawl completed: $totalSaved articles saved" }
@@ -55,7 +55,7 @@ class CrawlService(
             if (newContent.length <= existingLength) continue
             articleRepository.updateContent(articleId, newContent)
             articleRepository.resetEmbeddingForArticle(articleId)
-            ragChunkService.deleteExternalArticle(articleId)
+            ragService.deleteExternalArticle(articleId)
             filled++
             log.debug { "Content backfilled: id=$articleId, title=${article.title}" }
         }
@@ -66,3 +66,5 @@ class CrawlService(
         return filled
     }
 }
+
+internal const val MIN_TRUSTED_CONTENT_LENGTH = 500

@@ -1,4 +1,4 @@
-package com.blog.ai.core.domain.crawl
+package com.blog.ai.crawl
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull

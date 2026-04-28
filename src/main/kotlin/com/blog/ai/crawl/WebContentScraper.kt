@@ -1,4 +1,4 @@
-package com.blog.ai.core.domain.crawl
+package com.blog.ai.crawl
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import net.dankito.readability4j.Readability4J

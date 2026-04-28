@@ -1,4 +1,4 @@
-package com.blog.ai.core.domain.crawl
+package com.blog.ai.crawl
 
 import com.blog.ai.global.error.AppException
 import com.blog.ai.global.error.ErrorCode

@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class ArticleEmbeddingCommitter(
     private val articleRepository: ArticleRepository,
-    private val ragChunkService: RagService,
+    private val ragService: RagService,
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
@@ -18,7 +18,7 @@ class ArticleEmbeddingCommitter(
     @Transactional
     fun commit(command: ArticleEmbedCommitCommand) {
         articleRepository.markEmbedded(command.articleId)
-        ragChunkService.replaceExternalArticle(
+        ragService.replaceExternalArticle(
             articleId = command.articleId,
             title = command.title,
             url = command.url,

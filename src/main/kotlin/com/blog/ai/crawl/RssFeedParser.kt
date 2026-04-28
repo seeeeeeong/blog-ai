@@ -1,4 +1,4 @@
-package com.blog.ai.core.domain.crawl
+package com.blog.ai.crawl
 
 import com.rometools.rome.io.SyndFeedInput
 import com.rometools.rome.io.XmlReader
@@ -8,6 +8,7 @@ import java.io.ByteArrayInputStream
 import java.io.StringReader
 import java.net.URI
 import java.security.MessageDigest
+import java.time.Instant
 
 @Component
 class RssFeedParser(
@@ -78,3 +79,11 @@ class RssFeedParser(
         return bytes.joinToString("") { "%02x".format(it) }
     }
 }
+
+data class ParsedArticle(
+    val title: String,
+    val url: String,
+    val urlHash: String,
+    val content: String?,
+    val publishedAt: Instant?,
+)
