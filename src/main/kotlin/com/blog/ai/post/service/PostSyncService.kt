@@ -1,5 +1,8 @@
-package com.blog.ai.post
+package com.blog.ai.post.service
 
+import com.blog.ai.post.model.SyncPost
+import com.blog.ai.post.model.SyncResult
+import com.blog.ai.post.repository.PostRepository
 import com.blog.ai.rag.service.RagService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
@@ -71,26 +74,4 @@ class PostSyncService(
         val bytes = MessageDigest.getInstance("SHA-256").digest(source.toByteArray())
         return bytes.joinToString("") { "%02x".format(it) }
     }
-}
-
-data class SyncPost(
-    val externalId: String,
-    val title: String,
-    val content: String?,
-    val url: String?,
-    val author: String?,
-    val publishedAt: OffsetDateTime?,
-    val sourceUpdatedAt: OffsetDateTime,
-    val eventId: String?,
-)
-
-enum class SyncResult {
-    APPLIED,
-    STALE_IGNORED,
-    TOMBSTONED,
-}
-
-enum class EventType {
-    UPSERT,
-    DELETE,
 }

@@ -1,6 +1,9 @@
-package com.blog.ai.post
+package com.blog.ai.post.service
 
 import com.blog.ai.global.text.EmbeddingBatcher
+import com.blog.ai.post.model.PostChunkEmbedding
+import com.blog.ai.post.model.PostEmbeddingResult
+import com.blog.ai.post.model.PostEmbeddingSnapshot
 import com.blog.ai.global.text.TextSplitter
 import com.blog.ai.global.text.TokenTruncator
 import io.github.oshai.kotlinlogging.KotlinLogging

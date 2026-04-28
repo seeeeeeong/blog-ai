@@ -1,6 +1,7 @@
-package com.blog.ai.post
+package com.blog.ai.post.service
 
-import com.blog.ai.post.PostRepository
+import com.blog.ai.post.model.PostEmbeddingResult
+import com.blog.ai.post.repository.PostRepository
 import com.blog.ai.rag.service.RagService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service

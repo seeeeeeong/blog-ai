@@ -8,7 +8,7 @@ import com.blog.ai.global.error.ErrorCode
 import com.blog.ai.global.properties.AdminProperties
 import com.blog.ai.global.properties.InternalProperties
 import com.blog.ai.global.response.ApiResponse
-import com.blog.ai.post.PostEmbeddingService
+import com.blog.ai.post.service.PostEmbeddingService
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping

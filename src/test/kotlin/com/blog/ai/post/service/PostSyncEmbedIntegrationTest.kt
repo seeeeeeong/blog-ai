@@ -1,6 +1,8 @@
-package com.blog.ai.post
+package com.blog.ai.post.service
 
-import com.blog.ai.post.PostRepository
+import com.blog.ai.post.model.SyncPost
+import com.blog.ai.post.model.SyncResult
+import com.blog.ai.post.repository.PostRepository
 import com.blog.ai.support.PostgresTestContainer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse

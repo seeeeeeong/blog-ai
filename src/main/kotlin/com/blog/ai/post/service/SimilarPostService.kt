@@ -1,10 +1,13 @@
-package com.blog.ai.post
+package com.blog.ai.post.service
 
+import com.blog.ai.post.model.SimilarArticle
+import com.blog.ai.post.model.SimilarResult
+import com.blog.ai.post.repository.PostRepository
 import com.blog.ai.rag.model.RagChunkGranularity
 import com.blog.ai.rag.model.RagChunkHit
-import com.blog.ai.rag.repository.RagChunkRepository
 import com.blog.ai.rag.model.RagSearchQuery
 import com.blog.ai.rag.model.RagSourceType
+import com.blog.ai.rag.repository.RagChunkRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -82,34 +85,4 @@ class SimilarPostService(
             company = hit.company.orEmpty(),
             score = hit.score,
         )
-}
-
-data class SimilarArticle(
-    val id: Long,
-    val title: String,
-    val url: String,
-    val company: String,
-    val score: Double,
-)
-
-data class SimilarResult(
-    val status: SimilarStatus,
-    val items: List<SimilarArticle>,
-) {
-    companion object {
-        fun ready(items: List<SimilarArticle>) = SimilarResult(SimilarStatus.READY, items)
-
-        fun pending() = SimilarResult(SimilarStatus.PENDING, emptyList())
-
-        fun notFound() = SimilarResult(SimilarStatus.NOT_FOUND, emptyList())
-
-        fun deleted() = SimilarResult(SimilarStatus.DELETED, emptyList())
-    }
-}
-
-enum class SimilarStatus {
-    READY,
-    PENDING,
-    NOT_FOUND,
-    DELETED,
 }

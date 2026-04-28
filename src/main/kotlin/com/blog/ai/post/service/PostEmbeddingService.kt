@@ -1,5 +1,8 @@
-package com.blog.ai.post
+package com.blog.ai.post.service
 
+import com.blog.ai.post.entity.PostEntity
+import com.blog.ai.post.model.PostEmbeddingSnapshot
+import com.blog.ai.post.repository.PostRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -48,29 +51,3 @@ class PostEmbeddingService(
             contentHash = entity.contentHash,
         )
 }
-
-data class PostEmbeddingSnapshot(
-    val postId: Long,
-    val externalId: String,
-    val title: String,
-    val url: String?,
-    val content: String?,
-    val contentHash: String?,
-)
-
-data class PostEmbeddingResult(
-    val postId: Long,
-    val title: String,
-    val url: String?,
-    val content: String,
-    val snapshotHash: String?,
-    val docVector: String,
-    val chunks: List<PostChunkEmbedding>,
-)
-
-data class PostChunkEmbedding(
-    val postId: Long,
-    val chunkIndex: Int,
-    val content: String,
-    val embedding: String,
-)

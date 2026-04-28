@@ -1,9 +1,10 @@
-package com.blog.ai.post
+package com.blog.ai.post.service
 
 import com.blog.ai.article.entity.ArticleEntity
 import com.blog.ai.article.repository.ArticleRepository
 import com.blog.ai.blog.entity.BlogEntity
 import com.blog.ai.blog.repository.BlogRepository
+import com.blog.ai.post.model.SimilarStatus
 import com.blog.ai.support.PostgresTestContainer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals

@@ -1,7 +1,7 @@
 package com.blog.ai.rag.service
 
 import com.blog.ai.article.model.ArticleChunkEmbedding
-import com.blog.ai.post.PostChunkEmbedding
+import com.blog.ai.post.model.PostChunkEmbedding
 import com.blog.ai.rag.model.RagChunkWrite
 import com.blog.ai.rag.model.RagChunkGranularity
 import com.blog.ai.rag.repository.RagChunkRepository
