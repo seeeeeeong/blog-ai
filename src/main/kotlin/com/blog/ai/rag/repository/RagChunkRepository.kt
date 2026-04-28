@@ -1,14 +1,13 @@
 package com.blog.ai.rag.repository
 
+import com.blog.ai.jooq.tables.references.RAG_CHUNKS
 import com.blog.ai.rag.model.RagChunkGranularity
 import com.blog.ai.rag.model.RagChunkHit
 import com.blog.ai.rag.model.RagChunkWrite
 import com.blog.ai.rag.model.RagSearchQuery
 import com.blog.ai.rag.model.RagSourceType
 import org.jooq.DSLContext
-import org.jooq.Field
 import org.jooq.Record
-import org.jooq.Table
 import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
 
@@ -31,13 +30,13 @@ class RagChunkRepository(
     ) {
         dsl
             .deleteFrom(RAG_CHUNKS)
-            .where(SOURCE_TYPE.eq(sourceType.name))
-            .and(SOURCE_ID.eq(sourceId))
+            .where(RAG_CHUNKS.SOURCE_TYPE.eq(sourceType.name))
+            .and(RAG_CHUNKS.SOURCE_ID.eq(sourceId))
             .execute()
     }
 
     fun deleteAllBySourceType(sourceType: RagSourceType) {
-        dsl.deleteFrom(RAG_CHUNKS).where(SOURCE_TYPE.eq(sourceType.name)).execute()
+        dsl.deleteFrom(RAG_CHUNKS).where(RAG_CHUNKS.SOURCE_TYPE.eq(sourceType.name)).execute()
     }
 
     private fun save(command: RagChunkWrite) {
@@ -140,9 +139,9 @@ class RagChunkRepository(
         dsl
             .select(DSL.field("embedding::text", String::class.java))
             .from(RAG_CHUNKS)
-            .where(SOURCE_TYPE.eq(sourceType.name))
-            .and(SOURCE_ID.eq(sourceId))
-            .and(GRANULARITY.eq(RagChunkGranularity.DOCUMENT.name))
+            .where(RAG_CHUNKS.SOURCE_TYPE.eq(sourceType.name))
+            .and(RAG_CHUNKS.SOURCE_ID.eq(sourceId))
+            .and(RAG_CHUNKS.GRANULARITY.eq(RagChunkGranularity.DOCUMENT.name))
             .limit(1)
             .fetchOne(0, String::class.java)
 
@@ -159,13 +158,4 @@ class RagChunkRepository(
             similarity = record.get("similarity", Double::class.java),
             score = record.get("score", Double::class.java),
         )
-
-    companion object {
-        private val RAG_CHUNKS: Table<*> = DSL.table(DSL.name("rag_chunks"))
-        private val SOURCE_TYPE = field<String>("source_type")
-        private val SOURCE_ID = field<Long>("source_id")
-        private val GRANULARITY = field<String>("granularity")
-
-        private inline fun <reified T> field(name: String): Field<T> = DSL.field(DSL.name(name), T::class.java)
-    }
 }
