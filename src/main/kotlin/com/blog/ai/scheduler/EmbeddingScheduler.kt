@@ -1,6 +1,6 @@
 package com.blog.ai.scheduler
 
-import com.blog.ai.core.domain.article.ArticleEmbedService
+import com.blog.ai.article.ArticleEmbeddingService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.scheduling.annotation.Scheduled
@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class EmbeddingScheduler(
-    private val articleEmbedService: ArticleEmbedService,
+    private val articleEmbeddingService: ArticleEmbeddingService,
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
@@ -18,12 +18,12 @@ class EmbeddingScheduler(
     @Scheduled(fixedDelay = INTERVAL_MS)
     @SchedulerLock(name = "articleEmbedding", lockAtMostFor = "PT25M", lockAtLeastFor = "PT30S")
     fun embed() {
-        val cleared = articleEmbedService.clearRetriableErrors()
+        val cleared = articleEmbeddingService.clearRetriableErrors()
         if (cleared > 0) {
             log.info { "Cleared $cleared retriable embed errors" }
         }
 
-        val embedded = articleEmbedService.embedPending()
+        val embedded = articleEmbeddingService.embedPending()
         if (embedded > 0) {
             log.info { "Embedding batch completed: $embedded articles" }
         }

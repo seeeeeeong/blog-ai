@@ -1,4 +1,4 @@
-package com.blog.ai.core.domain.article
+package com.blog.ai.article
 
 import com.blog.ai.article.ArticleRepository
 import com.blog.ai.rag.RagChunkRepository

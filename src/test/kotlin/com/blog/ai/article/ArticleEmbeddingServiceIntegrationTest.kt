@@ -1,4 +1,4 @@
-package com.blog.ai.core.domain.article
+package com.blog.ai.article
 
 import com.blog.ai.article.ArticleEntity
 import com.blog.ai.article.ArticleRepository
@@ -24,10 +24,10 @@ import java.time.ZoneOffset
 
 @SpringBootTest
 @Import(PostgresTestContainer::class)
-class ArticleEmbedServiceIntegrationTest
+class ArticleEmbeddingServiceIntegrationTest
     @Autowired
     constructor(
-        private val embedService: ArticleEmbedService,
+        private val embedService: ArticleEmbeddingService,
         private val articleRepository: ArticleRepository,
         private val blogRepository: BlogRepository,
         private val jdbcTemplate: JdbcTemplate,

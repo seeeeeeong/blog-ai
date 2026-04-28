@@ -1,21 +1,22 @@
-package com.blog.ai.core.domain.article
+package com.blog.ai.article
 
 import com.blog.ai.global.jdbc.JdbcTimeMapper
 import com.blog.ai.global.text.EmbeddingBatcher
 import com.blog.ai.global.text.TextSplitter
 import com.blog.ai.global.text.TokenTruncator
-import com.blog.ai.article.ArticleRepository
+import com.blog.ai.rag.ChunkEnricher
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.embedding.EmbeddingModel
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.OffsetDateTime
 
 @Service
-class ArticleEmbedService(
+class ArticleEmbeddingService(
     private val articleRepository: ArticleRepository,
     private val embeddingModel: EmbeddingModel,
-    private val articleEmbedCommitter: ArticleEmbedCommitter,
-    private val chunkContextEnricher: ChunkContextEnricher,
+    private val articleEmbeddingCommitter: ArticleEmbeddingCommitter,
+    private val chunkEnricher: ChunkEnricher,
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
@@ -58,7 +59,7 @@ class ArticleEmbedService(
         if (snapshot.content.isBlank()) return emptyList()
         val rawChunks = TextSplitter.split(snapshot.content)
         return rawChunks.map { rawChunk ->
-            val context = chunkContextEnricher.enrich(snapshot.title, snapshot.content, rawChunk)
+            val context = chunkEnricher.enrich(snapshot.title, snapshot.content, rawChunk)
             ChunkJob(rawChunk = rawChunk, context = context)
         }
     }
@@ -84,7 +85,7 @@ class ArticleEmbedService(
         chunks: List<SaveChunkCommand>,
     ): Boolean =
         try {
-            articleEmbedCommitter.commit(
+            articleEmbeddingCommitter.commit(
                 ArticleEmbedCommitCommand(
                     articleId = snapshot.articleId,
                     title = snapshot.title,
@@ -98,7 +99,7 @@ class ArticleEmbedService(
             true
         } catch (e: Exception) {
             log.error(e) { "Embedding commit failed: id=${snapshot.articleId}" }
-            articleEmbedCommitter.recordError(snapshot.articleId, e.message ?: "unknown")
+            articleEmbeddingCommitter.recordError(snapshot.articleId, e.message ?: "unknown")
             false
         }
 
@@ -126,7 +127,7 @@ class ArticleEmbedService(
             EmbeddingBatcher.embed(embeddingModel, texts)
         } catch (e: Exception) {
             log.error(e) { "Batch $kind embedding failed: size=${texts.size}" }
-            snapshots.forEach { articleEmbedCommitter.recordError(it.articleId, e.message ?: "unknown") }
+            snapshots.forEach { articleEmbeddingCommitter.recordError(it.articleId, e.message ?: "unknown") }
             null
         }
 
@@ -140,3 +141,45 @@ class ArticleEmbedService(
             company = row[5] as String,
         )
 }
+
+internal data class ArticleEmbedSnapshot(
+    val articleId: Long,
+    val title: String,
+    val content: String,
+    val url: String,
+    val publishedAt: OffsetDateTime?,
+    val company: String,
+)
+
+internal data class ArticleEmbedBatch(
+    val docVectors: List<FloatArray>,
+    val chunkJobs: List<List<ChunkJob>>,
+    val chunkVectors: List<FloatArray>,
+)
+
+internal data class ChunkJob(
+    val rawChunk: String,
+    val context: String?,
+) {
+    fun storedContent(): String = if (context != null) "$context\n\n$rawChunk" else rawChunk
+
+    fun embedText(title: String): String =
+        if (context != null) "$title\n\n$context\n\n$rawChunk" else "$title\n\n$rawChunk"
+}
+
+data class ArticleEmbedCommitCommand(
+    val articleId: Long,
+    val title: String,
+    val url: String,
+    val company: String,
+    val content: String,
+    val docVector: String,
+    val chunks: List<SaveChunkCommand>,
+)
+
+data class SaveChunkCommand(
+    val articleId: Long,
+    val chunkIndex: Int,
+    val content: String,
+    val embedding: String,
+)

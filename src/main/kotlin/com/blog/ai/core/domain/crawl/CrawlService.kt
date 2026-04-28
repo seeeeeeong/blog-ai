@@ -1,7 +1,7 @@
 package com.blog.ai.core.domain.crawl
 
-import com.blog.ai.core.domain.blog.BlogCacheService
-import com.blog.ai.core.domain.rag.RagChunkService
+import com.blog.ai.blog.BlogCache
+import com.blog.ai.rag.RagService
 import com.blog.ai.article.ArticleRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
@@ -9,12 +9,12 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 class CrawlService(
-    private val blogCacheService: BlogCacheService,
+    private val blogCacheService: BlogCache,
     private val rssFeedParser: RssFeedParser,
     private val articleSaveService: ArticleSaveService,
     private val articleRepository: ArticleRepository,
     private val webContentScraper: WebContentScraper,
-    private val ragChunkService: RagChunkService,
+    private val ragChunkService: RagService,
 ) {
     companion object {
         private val log = KotlinLogging.logger {}

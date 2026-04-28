@@ -1,7 +1,7 @@
 package com.blog.ai.core.api.controller.v1
 
-import com.blog.ai.core.domain.article.ArticleAdminService
-import com.blog.ai.core.domain.article.ArticleEmbedService
+import com.blog.ai.article.ArticleAdminService
+import com.blog.ai.article.ArticleEmbeddingService
 import com.blog.ai.core.domain.crawl.CrawlAsyncService
 import com.blog.ai.core.domain.post.BlogPostEmbedService
 import com.blog.ai.global.error.AppException
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController
 class AdminController(
     private val adminProperties: AdminProperties,
     private val crawlAsyncService: CrawlAsyncService,
-    private val articleEmbedService: ArticleEmbedService,
+    private val articleEmbeddingService: ArticleEmbeddingService,
     private val articleAdminService: ArticleAdminService,
     private val blogPostEmbedService: BlogPostEmbedService,
     private val internalProperties: InternalProperties,
@@ -38,7 +38,7 @@ class AdminController(
         @RequestHeader("X-Admin-Key") adminKey: String,
     ): ApiResponse<Int> {
         requireAdminKey(adminKey)
-        val count = articleEmbedService.embedPending()
+        val count = articleEmbeddingService.embedPending()
         return ApiResponse.success(count)
     }
 

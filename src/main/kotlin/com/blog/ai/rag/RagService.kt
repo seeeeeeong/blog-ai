@@ -1,6 +1,6 @@
-package com.blog.ai.core.domain.rag
+package com.blog.ai.rag
 
-import com.blog.ai.core.domain.article.SaveChunkCommand
+import com.blog.ai.article.SaveChunkCommand
 import com.blog.ai.core.domain.post.SaveBlogPostChunkCommand
 import com.blog.ai.rag.RagChunkCommand
 import com.blog.ai.rag.RagChunkGranularity
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-class RagChunkService(
+class RagService(
     private val ragChunkRepository: RagChunkRepository,
 ) {
     @Transactional

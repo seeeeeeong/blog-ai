@@ -1,4 +1,4 @@
-package com.blog.ai.core.domain.article
+package com.blog.ai.rag
 
 import com.blog.ai.global.properties.RagContextualProperties
 import com.blog.ai.global.text.TokenTruncator
@@ -7,7 +7,7 @@ import org.springframework.ai.chat.client.ChatClient
 import org.springframework.stereotype.Component
 
 @Component
-class ChunkContextEnricher(
+class ChunkEnricher(
     private val chatClientBuilder: ChatClient.Builder,
     private val ragContextualProperties: RagContextualProperties,
 ) {

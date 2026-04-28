@@ -1,6 +1,6 @@
 package com.blog.ai.blog
 
-import com.blog.ai.core.domain.blog.Blog
+import com.blog.ai.blog.Blog
 import com.blog.ai.global.jpa.BaseTimeEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

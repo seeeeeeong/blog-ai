@@ -1,4 +1,4 @@
-package com.blog.ai.core.domain.blog
+package com.blog.ai.blog
 
 import com.blog.ai.blog.BlogRepository
 import com.blog.ai.blog.toBlog
@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 @Transactional(readOnly = true)
-class BlogCacheService(
+class BlogCache(
     private val blogRepository: BlogRepository,
 ) {
     @Cacheable("blogs")
