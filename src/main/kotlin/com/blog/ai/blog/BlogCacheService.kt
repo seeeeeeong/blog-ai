@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 @Transactional(readOnly = true)
-class BlogCache(
+class BlogCacheService(
     private val blogRepository: BlogRepository,
 ) {
     @Cacheable("blogs")

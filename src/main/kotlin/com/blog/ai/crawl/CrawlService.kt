@@ -1,7 +1,7 @@
 package com.blog.ai.crawl
 
 import com.blog.ai.article.ArticleRepository
-import com.blog.ai.blog.BlogCache
+import com.blog.ai.blog.BlogCacheService
 import com.blog.ai.rag.RagService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 class CrawlService(
-    private val blogCache: BlogCache,
+    private val blogCacheService: BlogCacheService,
     private val rssFeedParser: RssFeedParser,
     private val articleSaveService: ArticleSaveService,
     private val articleRepository: ArticleRepository,
@@ -22,7 +22,7 @@ class CrawlService(
     }
 
     fun crawlAll(): Int {
-        val blogs = blogCache.getActiveBlogs()
+        val blogs = blogCacheService.getActiveBlogs()
         var totalSaved = 0
 
         for (blog in blogs) {
@@ -36,7 +36,7 @@ class CrawlService(
         }
 
         if (totalSaved > 0) {
-            blogCache.evictAll()
+            blogCacheService.evictAll()
         }
 
         log.info { "Crawl completed: $totalSaved articles saved" }

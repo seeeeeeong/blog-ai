@@ -22,7 +22,7 @@ class ApiControllerAdvice {
     }
 
     @ExceptionHandler(AppException::class)
-    fun handleCoreException(e: AppException): ResponseEntity<ApiResponse<Any>> {
+    fun handleAppException(e: AppException): ResponseEntity<ApiResponse<Any>> {
         when (e.errorType.logLevel) {
             LogLevel.ERROR -> log.error(e) { "AppException: ${e.message}" }
             LogLevel.WARN -> log.warn { "AppException: ${e.message}" }
