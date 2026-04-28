@@ -122,7 +122,7 @@ External-API + DB write boundaries are preserved as **separate Spring beans**, n
 **Never do:**
 - Reintroduce a top-level `core/` or `storage/` package
 - Put a top-level `data class` or `enum class` inside a `service/` file (move to `model/`)
-- Cross-feature imports of another feature's `entity/` or `repository/` (e.g., `chat` controllers may not import `post.entity.PostEntity`)
+- Cross-feature imports of another feature's `entity/` or `repository/`. Specifically: `com.blog.ai.rag.repository.*` is **rag-internal** — outside callers must go through `rag.service.RagSearchService` or `rag.service.RagWriteService`. This is enforced by `ArchitectureBoundaryTest` (see [Architecture guardrails](#architecture-guardrails)).
 - Access an entity/repository from a controller or scheduler — always go through a domain service
 - Cross-feature imports for anything except `global/*` and `rag/*` shared types
 - Expose JPA entities in controller responses or domain service parameters
@@ -401,9 +401,25 @@ After any code change:
 
 1. `./gradlew check` — tests + ktlintCheck + detekt pass
 2. New feature or bugfix → add tests
-3. Schema change → add Flyway migration
+3. Schema change → add Flyway migration (and regen jOOQ codegen if it touches `rag_chunks`)
 4. New error code → add to `ErrorCode` enum
 5. New admin endpoint → validate `X-Admin-Key` header
+6. New architectural rule → extend `ArchitectureBoundaryTest`, do not rely on convention docs alone
+
+---
+
+## Architecture guardrails
+
+`src/test/kotlin/com/blog/ai/ArchitectureBoundaryTest.kt` enforces two rules at test time. They run as part of `./gradlew check` and any violation fails the build:
+
+| Rule | Forbidden pattern | Reason |
+|---|---|---|
+| No legacy structure | `com.blog.ai.core`, `com.blog.ai.storage`, `Committer`, `CommitCommand` (anywhere in `src/main/`) | The old `core/api`/`storage/` shape and the `*Committer`/`*CommitCommand` vocabulary must stay retired |
+| `rag/repository` is rag-internal | `import com.blog.ai.rag.repository.*` from any file outside `com/blog/ai/rag/` | Cross-feature callers must use `RagSearchService` (read) or `RagWriteService` (write); the JdbcTemplate/jOOQ repository is a feature-internal detail |
+
+When introducing a new convention that can be expressed as a regex/import check, **extend this test instead of (or in addition to) writing a doc rule**. A test fails CI; a doc rule does not.
+
+The `rag.service` split (Search vs Write) is a CQRS-ish boundary for the one place where read and write paths have meaningfully different fan-in. Other features keep a single `*Service` until that pressure shows up — splitting prematurely is not the convention.
 
 ---
 
