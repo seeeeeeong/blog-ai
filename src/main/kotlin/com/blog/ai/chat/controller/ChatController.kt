@@ -5,6 +5,7 @@ import com.blog.ai.chat.request.ChatRequest
 import com.blog.ai.chat.response.ChatMessageResponse
 import com.blog.ai.chat.response.ChatSessionResponse
 import com.blog.ai.chat.service.ChatService
+import com.blog.ai.chat.service.ChatSessionService
 import com.blog.ai.global.response.ApiResponse
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
@@ -23,10 +24,11 @@ import java.util.UUID
 @RequestMapping("/api/v1/chat")
 class ChatController(
     private val chatService: ChatService,
+    private val chatSessionService: ChatSessionService,
 ) {
     @GetMapping("/session")
     fun createSession(): ApiResponse<ChatSessionResponse> {
-        val sessionId = chatService.createSession()
+        val sessionId = chatSessionService.createSession()
         return ApiResponse.success(ChatSessionResponse.of(sessionId))
     }
 
@@ -43,7 +45,7 @@ class ChatController(
     fun getMessages(
         @RequestParam sessionId: UUID,
     ): ApiResponse<List<ChatMessageResponse>> {
-        val messages = chatService.getMessages(sessionId).map(ChatMessageResponse::of)
+        val messages = chatSessionService.getMessages(sessionId).map(ChatMessageResponse::of)
         return ApiResponse.success(messages)
     }
 

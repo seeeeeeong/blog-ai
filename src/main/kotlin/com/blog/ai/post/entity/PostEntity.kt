@@ -1,6 +1,4 @@
 package com.blog.ai.post.entity
-
-import com.blog.ai.post.model.CreatePost
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
@@ -79,24 +77,4 @@ class PostEntity(
     @Column(name = "deleted_at")
     var deletedAt: OffsetDateTime? = deletedAt
         protected set
-
-    companion object {
-        fun create(command: CreatePost): PostEntity {
-            require(command.externalId.isNotBlank()) { "Post externalId must not be blank" }
-            require(command.title.isNotBlank()) { "Post title must not be blank" }
-            return PostEntity(
-                externalId = command.externalId,
-                title = command.title,
-                content = command.content,
-                url = command.url,
-                author = command.author,
-                publishedAt = command.publishedAt,
-                contentHash = command.contentHash,
-                sourceUpdatedAt = command.sourceUpdatedAt,
-                lastEventId = command.lastEventId,
-                isDeleted = command.isDeleted,
-                deletedAt = command.deletedAt,
-            )
-        }
-    }
 }

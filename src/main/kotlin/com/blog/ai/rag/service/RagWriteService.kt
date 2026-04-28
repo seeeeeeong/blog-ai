@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-class RagService(
+class RagWriteService(
     private val ragChunkRepository: RagChunkRepository,
 ) {
     @Transactional
@@ -111,6 +111,11 @@ class RagService(
     @Transactional
     fun deleteExternalArticle(articleId: Long) {
         ragChunkRepository.deleteSource(RagSourceType.EXTERNAL_ARTICLE, articleId)
+    }
+
+    @Transactional
+    fun deleteAllExternalArticles() {
+        ragChunkRepository.deleteAllBySourceType(RagSourceType.EXTERNAL_ARTICLE)
     }
 
     companion object {

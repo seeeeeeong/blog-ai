@@ -16,14 +16,14 @@ src/main/kotlin/com/blog/ai
 │   ├── jdbc        # JdbcTimeMapper
 │   ├── jpa         # BaseTimeEntity (@MappedSuperclass)
 │   ├── properties  # @ConfigurationProperties holders
-│   ├── response    # ApiResponse, PageResponse, ResultStatus
+│   ├── response    # ApiResponse, ResultStatus
 │   └── text        # TextSplitter, TokenTruncator, EmbeddingBatcher
 ├── article         # service / entity / repository / model
 ├── blog            # service / entity / repository / model / mapper
 ├── chat            # controller / request / response / service / retriever / client / memory / entity / repository / model / mapper
 ├── crawl           # service / parser / client / model / support
 ├── post            # controller / request / response / service / entity / repository / model
-├── rag             # service / repository / model
+├── rag             # service / embedding / repository / model
 └── scheduler       # *Job.kt — thin @Scheduled orchestrators
 ```
 

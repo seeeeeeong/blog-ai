@@ -31,13 +31,13 @@ class PostEmbeddingService(
             try {
                 if (embedOne(snapshot)) embedded++
             } catch (e: Exception) {
-                log.error(e) { "BlogPost embedding failed: id=${snapshot.postId}" }
+                log.error(e) { "Post embedding failed: id=${snapshot.postId}" }
                 postEmbeddingWriter.recordError(snapshot.postId, snapshot.contentHash, e.message ?: "unknown")
             }
         }
 
         if (embedded > 0) {
-            log.info { "BlogPost embedding processed: $embedded posts completed" }
+            log.info { "Post embedding processed: $embedded posts completed" }
         }
         return embedded
     }
@@ -48,13 +48,10 @@ class PostEmbeddingService(
 
     private fun embedOne(snapshot: PostEmbeddingSnapshot): Boolean {
         val embedding =
-            embeddingPipeline.embedOne(
-                document = snapshot.toDocument(),
-                enrichChunks = false,
-            )
+            embeddingPipeline.embedOne(snapshot.toDocument())
         val committed = postEmbeddingWriter.commit(snapshot.toResult(embedding))
         if (committed) {
-            log.debug { "BlogPost embedding completed: id=${snapshot.postId}, externalId=${snapshot.externalId}" }
+            log.debug { "Post embedding completed: id=${snapshot.postId}, externalId=${snapshot.externalId}" }
         }
         return committed
     }

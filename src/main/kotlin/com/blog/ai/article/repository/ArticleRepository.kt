@@ -9,12 +9,6 @@ interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
     fun existsByUrlHash(urlHash: String): Boolean
 
     @Query(
-        value = "SELECT * FROM articles WHERE embedded_at IS NULL AND embed_error IS NULL ORDER BY id LIMIT :limit",
-        nativeQuery = true,
-    )
-    fun findUnembedded(limit: Int): List<ArticleEntity>
-
-    @Query(
         value = """
             SELECT a.id, a.title, a.content, a.url, a.published_at, b.company
             FROM articles a
