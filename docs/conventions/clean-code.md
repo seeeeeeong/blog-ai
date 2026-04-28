@@ -32,7 +32,7 @@ src/main/kotlin/com/blog/{api|ai}
 │   ├── response         # Response DTOs (one type per file)
 │   ├── service          # @Service use-case classes (no top-level data classes)
 │   ├── entity           # @Entity JPA classes (one entity per file)
-│   ├── repository       # Spring Data interfaces or @Repository JdbcTemplate classes
+│   ├── repository       # Spring Data interfaces, @Repository JdbcTemplate, or @Repository jOOQ DSLContext classes
 │   ├── model            # Domain models, command inputs, results, statuses (one type per file)
 │   ├── mapper           # Entity.toDomain() extension functions
 │   ├── client           # External HTTP/SDK clients (optional)
@@ -55,7 +55,7 @@ Top-level `core/` and `storage/` packages are forbidden — persistence belongs 
 - **One type per file.** A `data class`, `enum class`, or `interface` always lives in its own file named after the type.
 - `service/` files contain **only** `@Service` (or `@Component`) classes. No top-level `data class` / `enum class` is permitted there — those belong in `model/`.
 - `entity/` files contain a single `@Entity` JPA class.
-- `repository/` files contain a single Spring Data interface or `@Repository` JdbcTemplate class.
+- `repository/` files contain a single Spring Data interface, `@Repository` JdbcTemplate class, or `@Repository` jOOQ-DSLContext class. Pick by data access shape — entity-bound CRUD → JpaRepository; type-safe queries on codegen-included tables → jOOQ DSLContext; queries using types jOOQ doesn't model (`pgvector <=>`, `tsvector`) → jOOQ plain-SQL templating or `JdbcTemplate`.
 - `controller/` files contain a single `@RestController`. Multiple controllers per feature → multiple files in `controller/`.
 - `request/` and `response/` hold one DTO per file. Validation annotations on request DTOs use `@field:` prefix.
 - `mapper/` files hold extension functions (typically `Entity.toDomain()`) for one entity. Multiple entities → multiple mapper files.
