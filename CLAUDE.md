@@ -14,13 +14,13 @@ Crawls Korean/international tech blogs, embeds content, and provides similarity 
 
 ## Package Structure (Non-Negotiable)
 
-Feature-first with layered sub-packages. **One type per file.**
+Feature-first. **One type per file.** Each feature picks the shape that fits its domain — vertical slice (use-case sub-packages), functional cohesion, or flat — instead of forcing every feature into the same layered template.
 
 ```
 com.blog.ai
 ├── BlogAiApplication.kt
 │
-├── global                          # cross-cutting infra
+├── global                          # cross-cutting infra (always sub-packaged by concern)
 │   ├── admin                       # operational REST endpoints (AdminController)
 │   ├── config                      # @Configuration beans
 │   ├── error                       # AppException, ErrorCode, ErrorMessage, ApiControllerAdvice
@@ -30,81 +30,58 @@ com.blog.ai
 │   ├── response                    # ApiResponse<T>, ResultStatus
 │   └── text                        # TextSplitter, TokenTruncator, EmbeddingBatcher
 │
-├── article
-│   ├── service                     # ArticleAdminService, ArticleEmbeddingService, ArticleEmbeddingWriter
-│   ├── entity                      # ArticleEntity (@Entity)
-│   ├── repository                  # ArticleRepository
-│   └── model                       # ArticleEmbeddingSnapshot, ArticleEmbeddingResult
+├── article                         # entity + admin at root, one use case sub-packaged
+│   ├── ArticleEntity, ArticleRepository, ArticleAdminService
+│   └── embedding                   # ArticleEmbeddingService, Writer, Snapshot, Result
 │
-├── blog
-│   ├── service                     # BlogCacheService
-│   ├── entity                      # BlogEntity
-│   ├── repository                  # BlogRepository
-│   ├── model                       # Blog (domain model)
-│   └── mapper                      # BlogEntity.toBlog()
+├── blog                            # flat — only 5 files, no sub-packages needed
+│   └── Blog, BlogEntity, BlogRepository, BlogMapper, BlogCacheService
 │
-├── crawl
-│   ├── service                     # ArticleSaveService, CrawlAsyncService, CrawlService
-│   ├── parser                      # RssFeedParser
-│   ├── client                      # WebContentScraper (HTTP scraper)
-│   ├── model                       # ParsedArticle
-│   └── support                     # ContentCleaner, CrawlConstants
+├── crawl                           # services at root, parsing pipeline grouped
+│   ├── CrawlService, CrawlAsyncService, ArticleSaveService, CrawlConstants
+│   └── parser                      # RssFeedParser, WebContentScraper, ContentCleaner, ParsedArticle
 │
-├── chat
-│   ├── controller                  # ChatController
-│   ├── request                     # ChatRequest
-│   ├── response                    # ChatMessageResponse, ChatSessionResponse
-│   ├── service                     # ChatService, ChatSessionService, ClarificationService,
-│   │                               #   ChatPreflight, QueryExpander, QueryPlanner, RateLimiter
-│   ├── retriever                   # ArticleRetriever (Spring AI DocumentRetriever)
-│   ├── client                      # RerankClient (Jina API)
-│   ├── memory                      # ChatMemoryStore
-│   ├── entity                      # ChatSessionEntity, ChatMessageEntity
-│   ├── repository                  # ChatSessionRepository, ChatMessageRepository, RateLimitStore
-│   ├── model                       # ChatMessage, ChatAdvisorParams, JinaRerankResponse,
-│   │                               #   QueryEmbedding, RerankedExternalResult,
-│   │                               #   RateLimitRequest, RateLimitOutcome
-│   └── mapper                      # ChatMessageEntity.toMessage()
+├── chat                            # main chat surface at root, functional cohesion sub-packages
+│   ├── ChatController, ChatRequest, ChatMessageResponse, ChatSessionResponse, ChatService
+│   ├── session                     # ChatSessionService + Entity + Repository
+│   ├── memory                      # ChatMemoryStore + ChatMessage + MessageEntity + Repository + Mapper
+│   ├── rag                         # ArticleRetriever + QueryPlanner + QueryExpander +
+│   │                               #   ClarificationService + RerankClient + chat-RAG models
+│   └── ratelimit                   # RateLimiter + ChatPreflight + RateLimitStore + Request + Outcome
 │
-├── post
-│   ├── controller                  # InternalPostController, SimilarPostController
-│   ├── request                     # SyncPostRequest
-│   ├── response                    # SyncPostResponse, SimilarResponse, SimilarItem
-│   ├── service                     # PostSyncService, PostEmbeddingService,
-│   │                               #   PostEmbeddingWriter, SimilarPostService
-│   ├── entity                      # PostEntity
-│   ├── repository                  # PostRepository
-│   └── model                       # SyncPost, SyncResult, EventType,
-│                                   #   PostEmbeddingSnapshot, PostEmbeddingResult,
-│                                   #   SimilarArticle, SimilarResult, SimilarStatus
+├── post                            # entity at root, vertical slice per use case
+│   ├── PostEntity, PostRepository
+│   ├── sync                        # InternalPostController + DTOs + PostSyncService + SyncPost + SyncResult + EventType
+│   ├── embedding                   # PostEmbeddingService + Writer + Snapshot + Result
+│   └── similar                     # SimilarPostController + DTOs + SimilarPostService + SimilarArticle + Result + Status
 │
-├── rag
-│   ├── service                     # ChunkEnricher, RagSearchService, RagWriteService
-│   ├── embedding                   # source-agnostic embedding pipeline
-│   ├── repository                  # RagChunkRepository (JdbcTemplate)
-│   └── model                       # RagSourceType, RagChunkGranularity, RagSearchQuery,
-│                                   #   RagChunkWrite, RagChunkHit
+├── rag                             # services + repository + types at root, embedding pipeline grouped
+│   ├── RagSearchService, RagWriteService, ChunkEnricher
+│   ├── RagChunkRepository (rag-internal — see Architecture guardrails)
+│   ├── RagSourceType, RagChunkGranularity, RagSearchQuery, RagChunkWrite, RagChunkHit
+│   └── embedding                   # EmbeddingPipeline + EmbeddingDocument + DocumentEmbedding + ChunkEmbedding + ChunkEmbeddingJob
 │
 └── scheduler                       # *Job.kt — thin @Scheduled orchestrators
 ```
 
-### Layer rules
+### Picking a feature shape
 
-| Layer | Holds |
-|---|---|
-| `controller/` | `@RestController` (one class per file) |
-| `request/` | Request DTOs (one type per file, `@field:` validation) |
-| `response/` | Response DTOs + `companion of()` factories (one type per file) |
-| `service/` | `@Service` use-case classes — **no** top-level `data class` / `enum class` |
-| `entity/` | `@Entity` JPA classes (one entity per file) |
-| `repository/` | Spring Data interfaces, `@Repository` JdbcTemplate classes, or `@Repository` jOOQ DSLContext classes (one class per file). See [Persistence](#persistence) for which to pick. |
-| `model/` | Domain models, command inputs, result/status types — one type per file |
-| `mapper/` | `Entity.toDomain()` extension functions |
-| `client/` | External HTTP/SDK clients |
-| `parser/` | Parsers (RSS, etc.) |
-| `support/` | Stateless helpers, constants |
-| `retriever/` | Spring AI `DocumentRetriever` |
-| `memory/` | Spring AI `ChatMemory` impls |
+The `controller/request/response/service/entity/repository/model/mapper` layered template **was retired** in PR22-24. It scattered each use case across 5+ packages and produced over-fragmented `model/` folders. Pick by domain shape instead:
+
+| Domain shape | Pattern | Used by |
+|---|---|---|
+| Multiple distinct use cases sharing one entity | **Vertical slice** — entity at root, one sub-package per use case | `post/` (sync, embedding, similar) |
+| One main flow with clearly distinct supporting concerns | **Functional cohesion** — main surface at root, sub-packages by concern | `chat/` (session, memory, rag, ratelimit) |
+| Single use case + entity | Entity + admin/related at root, single use-case sub-package | `article/` (embedding) |
+| Small / single concern | **Flat** — everything at feature root, no sub-packages | `blog/`, `rag/`, `crawl/` (mostly flat with `parser/` grouped) |
+
+**Choose the shape from the actual domain, not from a template.** Different features deliberately have different shapes.
+
+### File-level rules (still apply)
+
+- One type per file. `service` files contain only `@Service` (or `@Component`) classes — no top-level `data class` / `enum class`.
+- Domain models, command inputs, result/status types live next to their owning use case (in the relevant sub-package), not in a global `model/` folder.
+- `Entity.toDomain()` extension functions live next to the entity (or in the same sub-package), not in a separate `mapper/` folder.
 
 ### Service decomposition
 
@@ -121,8 +98,9 @@ External-API + DB write boundaries are preserved as **separate Spring beans**, n
 
 **Never do:**
 - Reintroduce a top-level `core/` or `storage/` package
-- Put a top-level `data class` or `enum class` inside a `service/` file (move to `model/`)
-- Cross-feature imports of another feature's `entity/` or `repository/`. Specifically: `com.blog.ai.rag.repository.*` is **rag-internal** — outside callers must go through `rag.service.RagSearchService` or `rag.service.RagWriteService`. This is enforced by `ArchitectureBoundaryTest` (see [Architecture guardrails](#architecture-guardrails)).
+- Reintroduce the layered `controller/request/response/service/entity/repository/model/mapper` sub-packages template (retired in PR22-24)
+- Put a top-level `data class` or `enum class` inside a service file (move to the relevant model location)
+- Cross-feature imports of another feature's entity or repository. Specifically: `RagChunkRepository` is **rag-internal** — outside callers must go through `RagSearchService` (read) or `RagWriteService` (write). This is enforced by `ArchitectureBoundaryTest` (see [Architecture guardrails](#architecture-guardrails)).
 - Access an entity/repository from a controller or scheduler — always go through a domain service
 - Cross-feature imports for anything except `global/*` and `rag/*` shared types
 - Expose JPA entities in controller responses or domain service parameters
@@ -268,7 +246,7 @@ data class SimilarResponse(
 
 ## Entity & Storage Rules
 
-### Entity (`{feature}/entity/{Name}Entity.kt`)
+### Entity (lives at feature root or in the relevant sub-package, not under a `entity/` folder)
 
 ```kotlin
 @Entity
@@ -297,17 +275,20 @@ class ArticleEntity(
 - `id: Long? = null` for auto-generated IDs
 - Audit columns via `BaseTimeEntity` from `global/jpa/`
 
-### Mapper (`{feature}/mapper/{Feature}Mapper.kt`)
+### Mapper
 
-Entity → Domain conversion lives in `{feature}/mapper/`:
+Entity → Domain conversion lives in the same package as the entity (typically `{feature}/{Feature}Mapper.kt` or under the relevant sub-package):
 
 ```kotlin
-// blog/mapper/BlogMapper.kt
+// blog/BlogMapper.kt — entity and mapper share blog/ since blog/ is flat
 fun BlogEntity.toBlog() =
     Blog(
         id = requireNotNull(id) { "BlogEntity.id must not be null after persistence" },
         ...
     )
+
+// chat/memory/ChatMessageMapper.kt — entity, repository, mapper all in chat/memory/
+fun ChatMessageEntity.toMessage(): ChatMessage = ...
 ```
 
 ---
@@ -323,7 +304,7 @@ Three persistence layers coexist. Pick by **data access shape**, not by team pre
 | jOOQ `DSLContext` + generated table references | Type-safe SELECT/DELETE/UPDATE on tables included in codegen | `RagChunkRepository.deleteSource`, `RagChunkRepository.findDocumentVector` (uses `RAG_CHUNKS.SOURCE_TYPE` etc.) |
 | jOOQ `DSL.sql(...)` / plain SQL templating | Queries using types jOOQ doesn't model (`pgvector <=>`, `tsvector`, `korean_bigram_tsquery`) | `RagChunkRepository.searchHybrid`, `RagChunkRepository` insert |
 
-`@Repository` classes that use `DSLContext` (jOOQ) or `JdbcTemplate` live in `{feature}/repository/`, same as Spring Data interfaces. One class per file.
+`@Repository` classes that use `DSLContext` (jOOQ) or `JdbcTemplate` live alongside the entity / Spring Data interface — at feature root or in the relevant sub-package. One class per file.
 
 ### jOOQ codegen workflow
 
@@ -415,19 +396,20 @@ After any code change:
 | Rule | Forbidden pattern | Reason |
 |---|---|---|
 | No legacy structure | `com.blog.ai.core`, `com.blog.ai.storage`, `Committer`, `CommitCommand` (anywhere in `src/main/`) | The old `core/api`/`storage/` shape and the `*Committer`/`*CommitCommand` vocabulary must stay retired |
-| `rag/repository` is rag-internal | `import com.blog.ai.rag.repository.*` from any file outside `com/blog/ai/rag/` | Cross-feature callers must use `RagSearchService` (read) or `RagWriteService` (write); the JdbcTemplate/jOOQ repository is a feature-internal detail |
+| `RagChunkRepository` is rag-internal | `RagChunkRepository` referenced from any file outside `com/blog/ai/rag/` | Cross-feature callers must use `RagSearchService` (read) or `RagWriteService` (write); the JdbcTemplate/jOOQ repository is a feature-internal detail |
 
 When introducing a new convention that can be expressed as a regex/import check, **extend this test instead of (or in addition to) writing a doc rule**. A test fails CI; a doc rule does not.
 
-The `rag.service` split (Search vs Write) is a CQRS-ish boundary for the one place where read and write paths have meaningfully different fan-in. Other features keep a single `*Service` until that pressure shows up — splitting prematurely is not the convention.
+The `RagSearchService` / `RagWriteService` split is a CQRS-ish boundary for the one place where read and write paths have meaningfully different fan-in. Other features keep a single `*Service` until that pressure shows up — splitting prematurely is not the convention.
 
 ---
 
 ## What NOT To Do
 
 - Reintroduce a top-level `core/` or `storage/` package
-- Place a top-level `data class` or `enum class` inside a `service/` file
-- Access another feature's `entity/` or `repository/` from outside that feature
+- Reintroduce the layered `controller/request/response/service/entity/repository/model/mapper` template (retired in PR22-24)
+- Place a top-level `data class` or `enum class` inside a service file (move to the relevant model location)
+- Access another feature's entity or repository directly — go through that feature's domain service
 - Return entities directly as responses
 - Call repositories from controllers or schedulers
 - Pass Entity objects as domain service parameters
