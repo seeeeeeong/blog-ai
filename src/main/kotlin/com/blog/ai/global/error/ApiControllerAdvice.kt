@@ -1,4 +1,4 @@
-package com.blog.ai.core.api.controller
+package com.blog.ai.global.error
 
 import com.blog.ai.global.error.AppException
 import com.blog.ai.global.error.ErrorCode
