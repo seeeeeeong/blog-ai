@@ -1,7 +1,7 @@
-package com.blog.ai.chat
+package com.blog.ai.chat.client
 
+import com.blog.ai.chat.model.JinaRerankResponse
 import com.blog.ai.global.properties.JinaProperties
-import com.fasterxml.jackson.annotation.JsonProperty
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.document.Document
 import org.springframework.http.HttpHeaders
@@ -74,12 +74,3 @@ class RerankClient(
         }
     }
 }
-
-data class JinaRerankResponse(
-    val results: List<JinaRerankResult> = emptyList(),
-)
-
-data class JinaRerankResult(
-    val index: Int,
-    @JsonProperty("relevance_score") val relevanceScore: Double,
-)

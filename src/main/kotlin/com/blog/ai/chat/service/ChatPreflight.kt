@@ -1,6 +1,6 @@
-package com.blog.ai.chat
+package com.blog.ai.chat.service
 
-import com.blog.ai.chat.ChatSessionRepository
+import com.blog.ai.chat.repository.ChatSessionRepository
 import com.blog.ai.global.error.AppException
 import com.blog.ai.global.error.ErrorCode
 import org.springframework.stereotype.Component

@@ -1,4 +1,4 @@
-package com.blog.ai.chat
+package com.blog.ai.chat.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging

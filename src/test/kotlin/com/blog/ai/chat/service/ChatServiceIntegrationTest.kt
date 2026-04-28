@@ -1,6 +1,6 @@
-package com.blog.ai.chat
+package com.blog.ai.chat.service
 
-import com.blog.ai.chat.RateLimitStore
+import com.blog.ai.chat.repository.RateLimitStore
 import com.blog.ai.support.PostgresTestContainer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach

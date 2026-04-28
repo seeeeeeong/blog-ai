@@ -1,6 +1,6 @@
 package com.blog.ai.scheduler
 
-import com.blog.ai.chat.RateLimiter
+import com.blog.ai.chat.service.RateLimiter
 import io.github.oshai.kotlinlogging.KotlinLogging
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.scheduling.annotation.Scheduled

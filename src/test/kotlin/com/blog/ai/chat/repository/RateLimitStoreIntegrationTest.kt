@@ -1,5 +1,7 @@
-package com.blog.ai.chat
+package com.blog.ai.chat.repository
 
+import com.blog.ai.chat.model.RateLimitOutcome
+import com.blog.ai.chat.model.RateLimitRequest
 import com.blog.ai.support.PostgresTestContainer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -12,7 +14,7 @@ import java.time.Duration
 
 @SpringBootTest
 @Import(PostgresTestContainer::class)
-class ChatRateLimitRepositoryIntegrationTest
+class RateLimitStoreIntegrationTest
     @Autowired
     constructor(
         private val repository: RateLimitStore,

@@ -1,4 +1,4 @@
-package com.blog.ai.chat
+package com.blog.ai.chat.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.chat.client.ChatClient
@@ -66,8 +66,3 @@ class QueryExpander(
         }
     }
 }
-
-internal data class QueryEmbedding(
-    val text: String,
-    val vector: String,
-)

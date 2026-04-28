@@ -1,93 +1,11 @@
-package com.blog.ai.chat
+package com.blog.ai.chat.repository
 
-import com.blog.ai.chat.ChatMessage
-import jakarta.persistence.Column
-import jakarta.persistence.Entity
-import jakarta.persistence.GeneratedValue
-import jakarta.persistence.GenerationType
-import jakarta.persistence.Id
-import jakarta.persistence.Table
-import org.springframework.data.jpa.repository.JpaRepository
-import org.springframework.data.jpa.repository.Modifying
-import org.springframework.data.jpa.repository.Query
+import com.blog.ai.chat.model.RateLimitOutcome
+import com.blog.ai.chat.model.RateLimitRequest
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Repository
 import org.springframework.transaction.annotation.Transactional
 import java.time.Duration
-import java.time.OffsetDateTime
-import java.util.UUID
-
-@Entity
-@Table(name = "chat_sessions")
-class ChatSessionEntity(
-    @Id
-    val id: UUID = UUID.randomUUID(),
-    @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: OffsetDateTime = OffsetDateTime.now(),
-) {
-    companion object {
-        fun create(): ChatSessionEntity = ChatSessionEntity()
-    }
-}
-
-interface ChatSessionRepository : JpaRepository<ChatSessionEntity, UUID>
-
-@Entity
-@Table(name = "chat_messages")
-class ChatMessageEntity(
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long? = null,
-    @Column(name = "session_id", nullable = false)
-    val sessionId: UUID,
-    @Column(nullable = false, length = 16)
-    val role: String,
-    @Column(nullable = false, columnDefinition = "TEXT")
-    val content: String,
-    @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: OffsetDateTime = OffsetDateTime.now(),
-) {
-    companion object {
-        fun create(
-            sessionId: UUID,
-            role: String,
-            content: String,
-        ): ChatMessageEntity {
-            require(role.isNotBlank()) { "role must not be blank" }
-            require(content.isNotBlank()) { "content must not be blank" }
-            return ChatMessageEntity(
-                sessionId = sessionId,
-                role = role,
-                content = content,
-            )
-        }
-    }
-}
-
-fun ChatMessageEntity.toMessage() = ChatMessage(role = role, content = content)
-
-interface ChatMessageRepository : JpaRepository<ChatMessageEntity, Long> {
-    @Query(
-        value = """
-            SELECT * FROM (
-                SELECT * FROM chat_messages
-                WHERE session_id = :sessionId
-                ORDER BY id DESC
-                LIMIT :limit
-            ) recent
-            ORDER BY id ASC
-        """,
-        nativeQuery = true,
-    )
-    fun findRecentBySessionId(
-        sessionId: UUID,
-        limit: Int,
-    ): List<ChatMessageEntity>
-
-    @Modifying
-    @Query("DELETE FROM ChatMessageEntity m WHERE m.sessionId = :sessionId")
-    fun deleteBySessionId(sessionId: UUID)
-}
 
 @Repository
 class RateLimitStore(
@@ -182,19 +100,4 @@ class RateLimitStore(
             key,
         )
     }
-}
-
-data class RateLimitRequest(
-    val sessionKey: String,
-    val ipKey: String,
-    val sessionMax: Int,
-    val ipMax: Int,
-    val sessionTtl: Duration,
-    val ipTtl: Duration,
-)
-
-enum class RateLimitOutcome {
-    OK,
-    SESSION_LIMITED,
-    IP_LIMITED,
 }

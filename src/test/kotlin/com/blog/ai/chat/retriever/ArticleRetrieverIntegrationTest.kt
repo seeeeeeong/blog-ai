@@ -1,9 +1,12 @@
-package com.blog.ai.chat
+package com.blog.ai.chat.retriever
 
 import com.blog.ai.article.entity.ArticleEntity
 import com.blog.ai.article.repository.ArticleRepository
 import com.blog.ai.blog.entity.BlogEntity
 import com.blog.ai.blog.repository.BlogRepository
+import com.blog.ai.chat.client.RerankClient
+import com.blog.ai.chat.service.ChatService
+import com.blog.ai.chat.service.QueryExpander
 import com.blog.ai.support.PostgresTestContainer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull

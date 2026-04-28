@@ -1,10 +1,14 @@
-package com.blog.ai.chat
+package com.blog.ai.chat.retriever
 
+import com.blog.ai.chat.client.RerankClient
+import com.blog.ai.chat.model.QueryEmbedding
+import com.blog.ai.chat.service.ChatService
+import com.blog.ai.chat.service.QueryExpander
 import com.blog.ai.rag.model.RagChunkGranularity
 import com.blog.ai.rag.model.RagChunkHit
-import com.blog.ai.rag.repository.RagChunkRepository
 import com.blog.ai.rag.model.RagSearchQuery
 import com.blog.ai.rag.model.RagSourceType
+import com.blog.ai.rag.repository.RagChunkRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.document.Document
 import org.springframework.ai.embedding.EmbeddingModel

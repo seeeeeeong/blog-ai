@@ -1,10 +1,13 @@
-package com.blog.ai.chat
+package com.blog.ai.chat.controller
 
+import com.blog.ai.chat.model.ChatMessage
+import com.blog.ai.chat.request.ChatRequest
+import com.blog.ai.chat.response.ChatMessageResponse
+import com.blog.ai.chat.response.ChatSessionResponse
+import com.blog.ai.chat.service.ChatService
 import com.blog.ai.global.response.ApiResponse
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
-import jakarta.validation.constraints.NotBlank
-import jakarta.validation.constraints.Size
 import org.springframework.http.MediaType
 import org.springframework.http.codec.ServerSentEvent
 import org.springframework.web.bind.annotation.GetMapping
@@ -57,33 +60,5 @@ class ChatController(
         val firstIp = forwarded.split(",").first().trim()
         if (firstIp.isNotBlank()) return firstIp
         return request.remoteAddr
-    }
-}
-
-data class ChatRequest(
-    val sessionId: UUID,
-    @field:NotBlank
-    @field:Size(max = 500)
-    val question: String,
-)
-
-data class ChatMessageResponse(
-    val role: String,
-    val content: String,
-) {
-    companion object {
-        fun of(message: ChatMessage) =
-            ChatMessageResponse(
-                role = message.role,
-                content = message.content,
-            )
-    }
-}
-
-data class ChatSessionResponse(
-    val sessionId: UUID,
-) {
-    companion object {
-        fun of(sessionId: UUID) = ChatSessionResponse(sessionId = sessionId)
     }
 }

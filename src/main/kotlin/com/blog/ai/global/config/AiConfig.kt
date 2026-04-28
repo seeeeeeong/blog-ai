@@ -1,6 +1,6 @@
 package com.blog.ai.global.config
 
-import com.blog.ai.chat.ArticleRetriever
+import com.blog.ai.chat.retriever.ArticleRetriever
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor
 import org.springframework.ai.chat.memory.ChatMemory

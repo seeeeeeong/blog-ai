@@ -1,6 +1,4 @@
-@file:Suppress("ktlint:standard:filename")
-
-package com.blog.ai.chat
+package com.blog.ai.chat.model
 
 data class ChatMessage(
     val role: String,
