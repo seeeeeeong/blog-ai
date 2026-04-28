@@ -1,8 +1,8 @@
 package com.blog.ai.core.api.controller.v1.response
 
-import com.blog.ai.core.domain.post.SimilarArticle
-import com.blog.ai.core.domain.post.SimilarResult
-import com.blog.ai.core.domain.post.SimilarStatus
+import com.blog.ai.post.SimilarArticle
+import com.blog.ai.post.SimilarResult
+import com.blog.ai.post.SimilarStatus
 
 data class SimilarResponse(
     val status: SimilarStatus,

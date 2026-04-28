@@ -1,7 +1,6 @@
-package com.blog.ai.core.domain.post
+package com.blog.ai.post
 
 import com.blog.ai.rag.RagService
-import com.blog.ai.post.PostRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -10,8 +9,8 @@ import java.time.OffsetDateTime
 
 @Service
 @Transactional(readOnly = true)
-class BlogPostSyncService(
-    private val blogPostRepository: PostRepository,
+class PostSyncService(
+    private val postRepository: PostRepository,
     private val ragService: RagService,
 ) {
     companion object {
@@ -19,10 +18,10 @@ class BlogPostSyncService(
     }
 
     @Transactional
-    fun upsert(command: SyncBlogPostCommand): SyncResult {
+    fun upsert(command: SyncPostCommand): SyncResult {
         val contentHash = hashContent(command.title, command.content)
         val affected =
-            blogPostRepository.upsert(
+            postRepository.upsert(
                 externalId = command.externalId,
                 title = command.title,
                 content = command.content,
@@ -49,7 +48,7 @@ class BlogPostSyncService(
         eventId: String?,
     ): SyncResult {
         val affected =
-            blogPostRepository.softDelete(
+            postRepository.softDelete(
                 externalId = externalId,
                 sourceUpdatedAt = sourceUpdatedAt,
                 eventId = eventId,
@@ -58,7 +57,7 @@ class BlogPostSyncService(
             log.info { "Delete ignored (stale): externalId=$externalId" }
             SyncResult.STALE_IGNORED
         } else {
-            blogPostRepository.findByExternalId(externalId)?.id?.let(ragService::deleteAuthorPost)
+            postRepository.findByExternalId(externalId)?.id?.let(ragService::deleteAuthorPost)
             log.info { "Delete tombstoned: externalId=$externalId" }
             SyncResult.TOMBSTONED
         }
@@ -72,4 +71,26 @@ class BlogPostSyncService(
         val bytes = MessageDigest.getInstance("SHA-256").digest(source.toByteArray())
         return bytes.joinToString("") { "%02x".format(it) }
     }
+}
+
+data class SyncPostCommand(
+    val externalId: String,
+    val title: String,
+    val content: String?,
+    val url: String?,
+    val author: String?,
+    val publishedAt: OffsetDateTime?,
+    val sourceUpdatedAt: OffsetDateTime,
+    val eventId: String?,
+)
+
+enum class SyncResult {
+    APPLIED,
+    STALE_IGNORED,
+    TOMBSTONED,
+}
+
+enum class EventType {
+    UPSERT,
+    DELETE,
 }

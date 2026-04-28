@@ -1,4 +1,4 @@
-package com.blog.ai.core.domain.post
+package com.blog.ai.post
 
 import com.blog.ai.post.PostRepository
 import com.blog.ai.support.PostgresTestContainer
@@ -24,11 +24,11 @@ import java.time.ZoneOffset
 
 @SpringBootTest
 @Import(PostgresTestContainer::class)
-class BlogPostSyncEmbedIntegrationTest
+class PostSyncEmbedIntegrationTest
     @Autowired
     constructor(
-        private val syncService: BlogPostSyncService,
-        private val embedService: BlogPostEmbedService,
+        private val syncService: PostSyncService,
+        private val embedService: PostEmbeddingService,
         private val repository: PostRepository,
         private val jdbcTemplate: JdbcTemplate,
         private val transactionTemplate: TransactionTemplate,
@@ -147,7 +147,7 @@ class BlogPostSyncEmbedIntegrationTest
             content: String?,
             sourceUpdatedAt: OffsetDateTime,
             eventId: String?,
-        ) = SyncBlogPostCommand(
+        ) = SyncPostCommand(
             externalId = externalId,
             title = title,
             content = content,

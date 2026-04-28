@@ -1,7 +1,7 @@
 package com.blog.ai.core.api.controller.v1.request
 
-import com.blog.ai.core.domain.post.EventType
-import com.blog.ai.core.domain.post.SyncBlogPostCommand
+import com.blog.ai.post.EventType
+import com.blog.ai.post.SyncPostCommand
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
@@ -24,8 +24,8 @@ data class SyncBlogPostRequest(
     val author: String? = null,
     val publishedAt: OffsetDateTime? = null,
 ) {
-    fun toCommand(title: String): SyncBlogPostCommand =
-        SyncBlogPostCommand(
+    fun toCommand(title: String): SyncPostCommand =
+        SyncPostCommand(
             externalId = externalId,
             title = title,
             content = content,

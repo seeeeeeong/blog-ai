@@ -1,4 +1,4 @@
-package com.blog.ai.core.domain.post
+package com.blog.ai.post
 
 import com.blog.ai.article.ArticleEntity
 import com.blog.ai.article.ArticleRepository
@@ -19,10 +19,10 @@ import java.time.ZoneOffset
 
 @SpringBootTest
 @Import(PostgresTestContainer::class)
-class BlogPostSimilarServiceIntegrationTest
+class SimilarPostServiceIntegrationTest
     @Autowired
     constructor(
-        private val similarService: BlogPostSimilarService,
+        private val similarService: SimilarPostService,
         private val articleRepository: ArticleRepository,
         private val blogRepository: BlogRepository,
         private val jdbcTemplate: JdbcTemplate,

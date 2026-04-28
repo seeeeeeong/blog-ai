@@ -1,7 +1,7 @@
 package com.blog.ai.rag
 
 import com.blog.ai.article.SaveChunkCommand
-import com.blog.ai.core.domain.post.SaveBlogPostChunkCommand
+import com.blog.ai.post.SavePostChunkCommand
 import com.blog.ai.rag.RagChunkCommand
 import com.blog.ai.rag.RagChunkGranularity
 import com.blog.ai.rag.RagChunkRepository
@@ -20,7 +20,7 @@ class RagService(
         url: String?,
         content: String,
         docVector: String,
-        chunks: List<SaveBlogPostChunkCommand>,
+        chunks: List<SavePostChunkCommand>,
     ) {
         val commands =
             buildList {

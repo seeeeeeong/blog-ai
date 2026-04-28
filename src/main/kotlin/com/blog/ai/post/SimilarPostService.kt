@@ -1,6 +1,5 @@
-package com.blog.ai.core.domain.post
+package com.blog.ai.post
 
-import com.blog.ai.post.PostRepository
 import com.blog.ai.rag.RagChunkGranularity
 import com.blog.ai.rag.RagChunkHit
 import com.blog.ai.rag.RagChunkRepository
@@ -12,8 +11,8 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 @Transactional(readOnly = true)
-class BlogPostSimilarService(
-    private val blogPostRepository: PostRepository,
+class SimilarPostService(
+    private val postRepository: PostRepository,
     private val ragChunkRepository: RagChunkRepository,
 ) {
     companion object {
@@ -43,7 +42,7 @@ class BlogPostSimilarService(
         externalId: String,
         limit: Int,
     ): SimilarResult {
-        val post = blogPostRepository.findByExternalId(externalId) ?: return SimilarResult.notFound()
+        val post = postRepository.findByExternalId(externalId) ?: return SimilarResult.notFound()
         if (post.isDeleted) return SimilarResult.deleted()
 
         val postId = post.id ?: return SimilarResult.pending()
@@ -83,4 +82,34 @@ class BlogPostSimilarService(
             company = hit.company.orEmpty(),
             score = hit.score,
         )
+}
+
+data class SimilarArticle(
+    val id: Long,
+    val title: String,
+    val url: String,
+    val company: String,
+    val score: Double,
+)
+
+data class SimilarResult(
+    val status: SimilarStatus,
+    val items: List<SimilarArticle>,
+) {
+    companion object {
+        fun ready(items: List<SimilarArticle>) = SimilarResult(SimilarStatus.READY, items)
+
+        fun pending() = SimilarResult(SimilarStatus.PENDING, emptyList())
+
+        fun notFound() = SimilarResult(SimilarStatus.NOT_FOUND, emptyList())
+
+        fun deleted() = SimilarResult(SimilarStatus.DELETED, emptyList())
+    }
+}
+
+enum class SimilarStatus {
+    READY,
+    PENDING,
+    NOT_FOUND,
+    DELETED,
 }

@@ -2,9 +2,9 @@ package com.blog.ai.core.api.controller.v1
 
 import com.blog.ai.core.api.controller.v1.request.SyncBlogPostRequest
 import com.blog.ai.core.api.controller.v1.response.SyncBlogPostResponse
-import com.blog.ai.core.domain.post.BlogPostSyncService
-import com.blog.ai.core.domain.post.EventType
-import com.blog.ai.core.domain.post.SyncResult
+import com.blog.ai.post.PostSyncService
+import com.blog.ai.post.EventType
+import com.blog.ai.post.SyncResult
 import com.blog.ai.global.error.AppException
 import com.blog.ai.global.error.ErrorCode
 import com.blog.ai.global.properties.InternalProperties
@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/internal/blog-posts")
 class InternalBlogPostController(
     private val internalProperties: InternalProperties,
-    private val blogPostSyncService: BlogPostSyncService,
+    private val postSyncService: PostSyncService,
 ) {
     @PostMapping("/sync")
     fun sync(
@@ -36,11 +36,11 @@ class InternalBlogPostController(
         when (request.eventType) {
             EventType.UPSERT -> {
                 val title = requireUpsertTitle(request)
-                blogPostSyncService.upsert(request.toCommand(title))
+                postSyncService.upsert(request.toCommand(title))
             }
 
             EventType.DELETE -> {
-                blogPostSyncService.softDelete(
+                postSyncService.softDelete(
                     externalId = request.externalId,
                     sourceUpdatedAt = request.sourceUpdatedAt,
                     eventId = request.eventId,

@@ -1,4 +1,4 @@
-package com.blog.ai.core.domain.post
+package com.blog.ai.post
 
 import com.blog.ai.global.text.EmbeddingBatcher
 import com.blog.ai.global.text.TextSplitter
@@ -8,16 +8,16 @@ import org.springframework.ai.embedding.EmbeddingModel
 import org.springframework.stereotype.Service
 
 @Service
-class BlogPostEmbedWorker(
+class PostEmbeddingWorker(
     private val embeddingModel: EmbeddingModel,
-    private val blogPostEmbedCommitter: BlogPostEmbedCommitter,
+    private val postEmbeddingCommitter: PostEmbeddingCommitter,
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
         private const val MAX_EMBED_TOKENS = 7500
     }
 
-    fun embedOne(snapshot: BlogPostEmbedSnapshot): Boolean {
+    fun embedOne(snapshot: PostEmbedSnapshot): Boolean {
         val title = snapshot.title
         val content = snapshot.content ?: ""
 
@@ -29,7 +29,7 @@ class BlogPostEmbedWorker(
         val docVector = EmbeddingBatcher.toVectorLiteral(vectors[0])
         val chunkCommands =
             chunks.mapIndexed { index, chunk ->
-                SaveBlogPostChunkCommand(
+                SavePostChunkCommand(
                     postId = snapshot.postId,
                     chunkIndex = index,
                     content = chunk,
@@ -38,7 +38,7 @@ class BlogPostEmbedWorker(
             }
 
         val command =
-            BlogPostEmbedCommitCommand(
+            PostEmbedCommitCommand(
                 postId = snapshot.postId,
                 title = title,
                 url = snapshot.url,
@@ -47,7 +47,7 @@ class BlogPostEmbedWorker(
                 docVector = docVector,
                 chunks = chunkCommands,
             )
-        val committed = blogPostEmbedCommitter.commit(command)
+        val committed = postEmbeddingCommitter.commit(command)
         if (committed) {
             log.debug { "BlogPost embedding completed: id=${snapshot.postId}, externalId=${snapshot.externalId}" }
         }
@@ -59,6 +59,6 @@ class BlogPostEmbedWorker(
         snapshotHash: String?,
         message: String,
     ) {
-        blogPostEmbedCommitter.recordError(postId, snapshotHash, message)
+        postEmbeddingCommitter.recordError(postId, snapshotHash, message)
     }
 }

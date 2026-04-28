@@ -1,4 +1,4 @@
-package com.blog.ai.core.domain.post
+package com.blog.ai.post
 
 import com.blog.ai.rag.RagService
 import com.blog.ai.post.PostRepository
@@ -7,8 +7,8 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-class BlogPostEmbedCommitter(
-    private val blogPostRepository: PostRepository,
+class PostEmbeddingCommitter(
+    private val postRepository: PostRepository,
     private val ragService: RagService,
 ) {
     companion object {
@@ -16,8 +16,8 @@ class BlogPostEmbedCommitter(
     }
 
     @Transactional
-    fun commit(command: BlogPostEmbedCommitCommand): Boolean {
-        val updated = blogPostRepository.markEmbedded(command.postId, command.snapshotHash)
+    fun commit(command: PostEmbedCommitCommand): Boolean {
+        val updated = postRepository.markEmbedded(command.postId, command.snapshotHash)
         if (updated == 0) {
             log.info { "BlogPost embedding skipped (stale snapshot): id=${command.postId}" }
             return false
@@ -39,6 +39,6 @@ class BlogPostEmbedCommitter(
         snapshotHash: String?,
         message: String,
     ) {
-        blogPostRepository.updateEmbedError(postId, message, snapshotHash)
+        postRepository.updateEmbedError(postId, message, snapshotHash)
     }
 }
