@@ -1,8 +1,8 @@
-package com.blog.ai.post.service
+package com.blog.ai.post.similar
 
-import com.blog.ai.post.model.SimilarArticle
-import com.blog.ai.post.model.SimilarResult
-import com.blog.ai.post.repository.PostRepository
+import com.blog.ai.post.PostRepository
+import com.blog.ai.post.similar.SimilarArticle
+import com.blog.ai.post.similar.SimilarResult
 import com.blog.ai.rag.model.RagChunkGranularity
 import com.blog.ai.rag.model.RagSearchQuery
 import com.blog.ai.rag.model.RagSourceType

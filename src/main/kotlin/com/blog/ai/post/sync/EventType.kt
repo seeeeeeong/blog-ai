@@ -1,4 +1,4 @@
-package com.blog.ai.post.model
+package com.blog.ai.post.sync
 
 enum class EventType {
     UPSERT,

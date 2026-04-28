@@ -1,7 +1,7 @@
-package com.blog.ai.post.response
+package com.blog.ai.post.similar
 
-import com.blog.ai.post.model.SimilarResult
-import com.blog.ai.post.model.SimilarStatus
+import com.blog.ai.post.similar.SimilarResult
+import com.blog.ai.post.similar.SimilarStatus
 
 data class SimilarResponse(
     val status: SimilarStatus,

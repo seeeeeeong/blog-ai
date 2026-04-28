@@ -1,14 +1,14 @@
-package com.blog.ai.post.controller
+package com.blog.ai.post.sync
 
 import com.blog.ai.global.error.AppException
 import com.blog.ai.global.error.ErrorCode
 import com.blog.ai.global.properties.InternalProperties
 import com.blog.ai.global.response.ApiResponse
-import com.blog.ai.post.model.EventType
-import com.blog.ai.post.model.SyncResult
-import com.blog.ai.post.request.SyncPostRequest
-import com.blog.ai.post.response.SyncPostResponse
-import com.blog.ai.post.service.PostSyncService
+import com.blog.ai.post.sync.EventType
+import com.blog.ai.post.sync.PostSyncService
+import com.blog.ai.post.sync.SyncPostRequest
+import com.blog.ai.post.sync.SyncPostResponse
+import com.blog.ai.post.sync.SyncResult
 import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody

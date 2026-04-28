@@ -1,6 +1,6 @@
-package com.blog.ai.post.repository
+package com.blog.ai.post
 
-import com.blog.ai.post.entity.PostEntity
+import com.blog.ai.post.PostEntity
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
