@@ -4,9 +4,9 @@ import com.blog.ai.post.PostEntity
 import com.blog.ai.post.PostRepository
 import com.blog.ai.post.embedding.PostEmbeddingResult
 import com.blog.ai.post.embedding.PostEmbeddingSnapshot
-import com.blog.ai.rag.embedding.model.DocumentEmbedding
-import com.blog.ai.rag.embedding.model.EmbeddingDocument
-import com.blog.ai.rag.embedding.service.EmbeddingPipeline
+import com.blog.ai.rag.embedding.DocumentEmbedding
+import com.blog.ai.rag.embedding.EmbeddingDocument
+import com.blog.ai.rag.embedding.EmbeddingPipeline
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

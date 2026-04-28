@@ -1,9 +1,9 @@
 package com.blog.ai.chat.rag
 
-import com.blog.ai.article.entity.ArticleEntity
-import com.blog.ai.article.repository.ArticleRepository
-import com.blog.ai.blog.entity.BlogEntity
-import com.blog.ai.blog.repository.BlogRepository
+import com.blog.ai.article.ArticleEntity
+import com.blog.ai.article.ArticleRepository
+import com.blog.ai.blog.BlogEntity
+import com.blog.ai.blog.BlogRepository
 import com.blog.ai.chat.rag.ChatAdvisorParams
 import com.blog.ai.chat.rag.QueryExpander
 import com.blog.ai.chat.rag.RerankClient

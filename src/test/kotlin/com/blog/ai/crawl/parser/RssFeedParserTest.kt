@@ -1,8 +1,8 @@
 package com.blog.ai.crawl.parser
 
-import com.blog.ai.crawl.client.WebContentScraper
-import com.blog.ai.crawl.model.ParsedArticle
-import com.blog.ai.crawl.support.ContentCleaner
+import com.blog.ai.crawl.parser.ContentCleaner
+import com.blog.ai.crawl.parser.ParsedArticle
+import com.blog.ai.crawl.parser.WebContentScraper
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test

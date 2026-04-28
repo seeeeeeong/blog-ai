@@ -1,6 +1,6 @@
 package com.blog.ai.post.similar
 
-import com.blog.ai.rag.model.RagChunkHit
+import com.blog.ai.rag.RagChunkHit
 
 data class SimilarArticle(
     val id: Long,
