@@ -1,4 +1,4 @@
-package com.blog.ai.post.model
+package com.blog.ai.post.embedding
 
 import com.blog.ai.rag.embedding.model.ChunkEmbedding
 

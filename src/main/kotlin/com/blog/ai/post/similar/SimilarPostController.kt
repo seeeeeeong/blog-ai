@@ -1,8 +1,8 @@
-package com.blog.ai.post.controller
+package com.blog.ai.post.similar
 
 import com.blog.ai.global.response.ApiResponse
-import com.blog.ai.post.response.SimilarResponse
-import com.blog.ai.post.service.SimilarPostService
+import com.blog.ai.post.similar.SimilarPostService
+import com.blog.ai.post.similar.SimilarResponse
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam

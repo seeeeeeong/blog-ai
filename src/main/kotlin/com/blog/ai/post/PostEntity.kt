@@ -1,4 +1,4 @@
-package com.blog.ai.post.entity
+package com.blog.ai.post
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue

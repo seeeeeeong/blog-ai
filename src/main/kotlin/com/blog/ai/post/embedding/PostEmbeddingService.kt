@@ -1,9 +1,9 @@
-package com.blog.ai.post.service
+package com.blog.ai.post.embedding
 
-import com.blog.ai.post.entity.PostEntity
-import com.blog.ai.post.model.PostEmbeddingResult
-import com.blog.ai.post.model.PostEmbeddingSnapshot
-import com.blog.ai.post.repository.PostRepository
+import com.blog.ai.post.PostEntity
+import com.blog.ai.post.PostRepository
+import com.blog.ai.post.embedding.PostEmbeddingResult
+import com.blog.ai.post.embedding.PostEmbeddingSnapshot
 import com.blog.ai.rag.embedding.model.DocumentEmbedding
 import com.blog.ai.rag.embedding.model.EmbeddingDocument
 import com.blog.ai.rag.embedding.service.EmbeddingPipeline

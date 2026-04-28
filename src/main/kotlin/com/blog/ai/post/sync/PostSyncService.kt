@@ -1,8 +1,8 @@
-package com.blog.ai.post.service
+package com.blog.ai.post.sync
 
-import com.blog.ai.post.model.SyncPost
-import com.blog.ai.post.model.SyncResult
-import com.blog.ai.post.repository.PostRepository
+import com.blog.ai.post.PostRepository
+import com.blog.ai.post.sync.SyncPost
+import com.blog.ai.post.sync.SyncResult
 import com.blog.ai.rag.service.RagWriteService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service

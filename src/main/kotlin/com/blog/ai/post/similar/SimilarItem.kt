@@ -1,6 +1,6 @@
-package com.blog.ai.post.response
+package com.blog.ai.post.similar
 
-import com.blog.ai.post.model.SimilarArticle
+import com.blog.ai.post.similar.SimilarArticle
 
 data class SimilarItem(
     val id: Long,

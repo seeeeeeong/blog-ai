@@ -1,6 +1,6 @@
-package com.blog.ai.post.response
+package com.blog.ai.post.sync
 
-import com.blog.ai.post.model.SyncResult
+import com.blog.ai.post.sync.SyncResult
 
 data class SyncPostResponse(
     val status: SyncResult,

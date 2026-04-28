@@ -1,7 +1,7 @@
-package com.blog.ai.post.request
+package com.blog.ai.post.sync
 
-import com.blog.ai.post.model.EventType
-import com.blog.ai.post.model.SyncPost
+import com.blog.ai.post.sync.EventType
+import com.blog.ai.post.sync.SyncPost
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
