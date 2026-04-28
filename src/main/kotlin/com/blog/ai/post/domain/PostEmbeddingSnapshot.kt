@@ -1,0 +1,10 @@
+package com.blog.ai.post.domain
+
+data class PostEmbeddingSnapshot(
+    val postId: Long,
+    val externalId: String,
+    val title: String,
+    val url: String?,
+    val content: String?,
+    val contentHash: String?,
+)
