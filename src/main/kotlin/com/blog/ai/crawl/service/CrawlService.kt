@@ -1,7 +1,10 @@
-package com.blog.ai.crawl
+package com.blog.ai.crawl.service
 
 import com.blog.ai.article.repository.ArticleRepository
 import com.blog.ai.blog.service.BlogCacheService
+import com.blog.ai.crawl.client.WebContentScraper
+import com.blog.ai.crawl.parser.RssFeedParser
+import com.blog.ai.crawl.support.MIN_TRUSTED_CONTENT_LENGTH
 import com.blog.ai.rag.service.RagService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
@@ -66,5 +69,3 @@ class CrawlService(
         return filled
     }
 }
-
-internal const val MIN_TRUSTED_CONTENT_LENGTH = 500

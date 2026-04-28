@@ -1,4 +1,4 @@
-package com.blog.ai.crawl
+package com.blog.ai.crawl.service
 
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service

@@ -1,5 +1,6 @@
-package com.blog.ai.crawl
+package com.blog.ai.crawl.client
 
+import com.blog.ai.crawl.support.ContentCleaner
 import io.github.oshai.kotlinlogging.KotlinLogging
 import net.dankito.readability4j.Readability4J
 import org.jsoup.Jsoup

@@ -1,8 +1,9 @@
-package com.blog.ai.crawl
+package com.blog.ai.crawl.service
 
 import com.blog.ai.article.entity.ArticleEntity
 import com.blog.ai.article.repository.ArticleRepository
 import com.blog.ai.blog.repository.BlogRepository
+import com.blog.ai.crawl.model.ParsedArticle
 import com.blog.ai.global.error.AppException
 import com.blog.ai.global.error.ErrorCode
 import io.github.oshai.kotlinlogging.KotlinLogging

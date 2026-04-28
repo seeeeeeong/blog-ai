@@ -1,4 +1,4 @@
-package com.blog.ai.crawl
+package com.blog.ai.crawl.support
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jsoup.Jsoup

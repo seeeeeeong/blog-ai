@@ -1,5 +1,9 @@
-package com.blog.ai.crawl
+package com.blog.ai.crawl.parser
 
+import com.blog.ai.crawl.client.WebContentScraper
+import com.blog.ai.crawl.model.ParsedArticle
+import com.blog.ai.crawl.support.ContentCleaner
+import com.blog.ai.crawl.support.MIN_TRUSTED_CONTENT_LENGTH
 import com.rometools.rome.io.SyndFeedInput
 import com.rometools.rome.io.XmlReader
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -79,11 +83,3 @@ class RssFeedParser(
         return bytes.joinToString("") { "%02x".format(it) }
     }
 }
-
-data class ParsedArticle(
-    val title: String,
-    val url: String,
-    val urlHash: String,
-    val content: String?,
-    val publishedAt: Instant?,
-)
