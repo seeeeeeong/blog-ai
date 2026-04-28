@@ -1,7 +1,6 @@
 package com.blog.ai.rag.service
 
-import com.blog.ai.article.model.ArticleChunkEmbedding
-import com.blog.ai.post.model.PostChunkEmbedding
+import com.blog.ai.rag.embedding.model.ChunkEmbedding
 import com.blog.ai.rag.model.RagChunkGranularity
 import com.blog.ai.rag.model.RagChunkWrite
 import com.blog.ai.rag.model.RagSourceType
@@ -20,7 +19,7 @@ class RagService(
         url: String?,
         content: String,
         docVector: String,
-        chunks: List<PostChunkEmbedding>,
+        chunks: List<ChunkEmbedding>,
     ) {
         val commands =
             buildList {
@@ -66,7 +65,7 @@ class RagService(
         company: String,
         content: String,
         docVector: String,
-        chunks: List<ArticleChunkEmbedding>,
+        chunks: List<ChunkEmbedding>,
     ) {
         val commands =
             buildList {
