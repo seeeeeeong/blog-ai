@@ -130,8 +130,8 @@ These are strong review rules, not absolute dogma:
 - Stringly typed status, role, or event identifiers
 - Repeated mapping code with no single owner
 - Top-level packages outside `global/`, the per-feature packages, or `scheduler/`
-- Top-level `data class` / `enum class` inside a `service/` file
-- Cross-feature imports of another feature's `entity/` or `repository/` — when blog-ai introduces a hard rule (e.g., `rag.repository` is rag-internal), enforce it in `ArchitectureBoundaryTest`, not just in this doc
+- Top-level `data class` / `enum class` inside a service file
+- Cross-feature imports of another feature's entity or repository — hard rules (e.g., `RagChunkRepository` is rag-internal) belong in `ArchitectureBoundaryTest`, not just in this doc
 - Mixing structure moves with behavior changes in one PR
 
 When breaking one of these rules improves clarity, document the reason in the PR or commit message.

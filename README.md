@@ -4,33 +4,26 @@ Spring Boot service for crawling, embedding, similarity search, and RAG chat wor
 
 ## Repository Structure
 
-Feature-first with layered sub-packages. Each feature owns its own `controller/` / `service/` / `entity/` / `repository/` / `model/` (and where applicable `mapper/`, `client/`, `parser/`, `support/`, `retriever/`, `memory/`, `request/`, `response/`). One type per file.
+Feature-first. **One type per file.** Each feature picks the shape that fits its domain — vertical slice (use-case sub-packages), functional cohesion (sub-packages by concern), or flat — instead of forcing a uniform layered template.
 
 ```text
 src/main/kotlin/com/blog/ai
 ├── BlogAiApplication.kt
-├── global
-│   ├── admin       # operational REST endpoints
-│   ├── config      # @Configuration beans
-│   ├── error       # AppException, ErrorCode, ErrorMessage, ApiControllerAdvice
-│   ├── jdbc        # JdbcTimeMapper
-│   ├── jpa         # BaseTimeEntity (@MappedSuperclass)
-│   ├── properties  # @ConfigurationProperties holders
-│   ├── response    # ApiResponse, ResultStatus
-│   └── text        # TextSplitter, TokenTruncator, EmbeddingBatcher
-├── article         # service / entity / repository / model
-├── blog            # service / entity / repository / model / mapper
-├── chat            # controller / request / response / service / retriever / client / memory / entity / repository / model / mapper
-├── crawl           # service / parser / client / model / support
-├── post            # controller / request / response / service / entity / repository / model
-├── rag             # service / embedding / repository / model
-└── scheduler       # *Job.kt — thin @Scheduled orchestrators
+├── global/         # cross-cutting infra: admin, config, error, jdbc, jpa, properties, response, text
+├── article/        # ArticleEntity + Repository + AdminService at root, embedding/ sub-package
+├── blog/           # flat — Blog, BlogEntity, BlogRepository, BlogMapper, BlogCacheService
+├── chat/           # ChatController + DTOs + ChatService at root; session/ memory/ rag/ ratelimit/ sub-packages
+├── crawl/          # services + CrawlConstants at root; parser/ sub-package
+├── post/           # PostEntity + PostRepository at root; sync/ embedding/ similar/ sub-packages
+├── rag/            # services + repository + types at root; embedding/ sub-package
+└── scheduler/      # *Job.kt — thin @Scheduled orchestrators
 ```
 
-Use [docs/conventions/clean-code.md](docs/conventions/clean-code.md) as the repository-wide refactoring baseline.
+See [docs/conventions/clean-code.md](docs/conventions/clean-code.md) for the full convention and decision table for picking a feature shape.
 
 ## Quality Gates
 
 - `./gradlew test`
 - `./gradlew ktlintCheck`
 - `./gradlew detekt`
+- `./gradlew check` (runs all plus `ArchitectureBoundaryTest`)
