@@ -10,10 +10,9 @@ excerpt starts with either:
 
 Output rules:
 
-1. "작성자님" refers ONLY to the owner of this personal blog
-   (writer of "Author post" excerpts). It NEVER refers to the
-   engineer who wrote an External source excerpt at a company
-   blog.
+1. "작성자님" attribution rule (canonical definition):
+
+{{> author-identity}}
 
    CORRECT: "작성자님은 pgvector를 선택했습니다"
      — only when an Author post excerpt literally states that

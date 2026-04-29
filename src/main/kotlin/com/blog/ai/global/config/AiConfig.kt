@@ -1,6 +1,7 @@
 package com.blog.ai.global.config
 
 import com.blog.ai.chat.application.retrieval.ArticleRetriever
+import com.blog.ai.global.text.PromptLoader
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor
 import org.springframework.ai.chat.memory.ChatMemory
@@ -20,12 +21,16 @@ class AiConfig {
         retriever: ArticleRetriever,
         chatMemory: ChatMemory,
         @Value("classpath:prompts/chat/system.st")
-        systemPrompt: Resource,
+        systemPromptResource: Resource,
         @Value("classpath:prompts/chat/rag-context.st")
-        ragContextPrompt: Resource,
+        ragContextPromptResource: Resource,
         @Value("classpath:prompts/chat/empty-context.st")
-        emptyContextPrompt: Resource,
+        emptyContextPromptResource: Resource,
     ): ChatClient {
+        val systemPrompt = PromptLoader.load(systemPromptResource)
+        val ragContextPrompt = PromptLoader.load(ragContextPromptResource)
+        val emptyContextPrompt = PromptLoader.load(emptyContextPromptResource)
+
         val ragAdvisor =
             RetrievalAugmentationAdvisor
                 .builder()
