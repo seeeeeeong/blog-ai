@@ -25,8 +25,8 @@ src/main/kotlin/com/blog/{api|ai}
 │   ├── domain/                  # domain models, command inputs, results, statuses
 │   └── infrastructure/          # @Entity + Repository + mappers + external clients (HTTP/SDK)
 │       └── {sub-concern}/       # split infrastructure/ further when needed (e.g., parser/, rerank/)
-└── job/
-    └── {Feature}Job.kt          # @Scheduled orchestrators (thin)
+└── scheduler/
+    └── {Feature}Scheduler.kt    # @Scheduled orchestrators (thin)
 
 src/test/kotlin/com/blog/{api|ai}    # mirrors main package paths
 config/detekt/detekt.yml
@@ -69,7 +69,7 @@ If a service grows past ~400 lines, split by **use case** (`XxxAdminService.kt`,
 
 ### Forbidden
 
-- Top-level `core/`, `storage/`, or `scheduler/` packages
+- Top-level `core/` or `storage/` packages
 - Per-feature `controller/request/response/service/entity/repository/model/mapper` flat-template sub-packages (retired)
 - Top-level `data class` / `enum class` declared inside an `application/` file
 - Cross-feature imports of another feature's `infrastructure/` — hard rules (e.g., `RagChunkRepository` is rag-internal) belong in `ArchitectureBoundaryTest`, not just in this doc
@@ -129,7 +129,7 @@ These are strong review rules, not absolute dogma:
 - Request/response DTOs leaking into application services
 - Stringly typed status, role, or event identifiers
 - Repeated mapping code with no single owner
-- Top-level packages outside `global/`, the per-feature packages, or `job/`
+- Top-level packages outside `global/`, the per-feature packages, or `scheduler/`
 - Top-level `data class` / `enum class` inside an `application/` file
 - Cross-feature imports of another feature's `infrastructure/`
 - Mixing structure moves with behavior changes in one PR

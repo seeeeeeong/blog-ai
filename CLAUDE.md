@@ -88,7 +88,7 @@ com.blog.ai
 │   │                                   #   ChunkEmbeddingJob, DocumentEmbedding, EmbeddingDocument
 │   └── infrastructure                  # RagChunkRepository (JdbcTemplate, rag-internal)
 │
-└── job                                 # *Job.kt — thin @Scheduled orchestrators
+└── scheduler                           # *Scheduler.kt — thin @Scheduled orchestrators
 ```
 
 ### Layer rules
@@ -113,14 +113,14 @@ External-API + DB write boundaries are preserved as **separate Spring beans**, n
 | `{Feature}Writer` | post-external-call DB write — own `@Transactional`, txn does not span the round-trip | `application/` |
 | `{Feature}Preflight` | pre-external-call DB read/write — same boundary intent | `application/` |
 
-`job/{Feature}Job.kt` for `@Scheduled` orchestrators (one job per file).
+`scheduler/{Feature}Scheduler.kt` for `@Scheduled` orchestrators (one scheduler per file).
 
 **Never do:**
-- Reintroduce a top-level `core/`, `storage/`, or `scheduler/` package
+- Reintroduce a top-level `core/` or `storage/` package
 - Reintroduce per-feature `controller/request/response/service/entity/repository/model/mapper` flat-template sub-packages (retired)
 - Put a top-level `data class` or `enum class` inside an `application/` file (move to `domain/`)
 - Cross-feature imports of another feature's `infrastructure/` (entities, repositories, external clients). Specifically: `RagChunkRepository` is **rag-internal** — outside callers must go through `RagSearchService` (read) or `RagWriteService` (write). Enforced by `ArchitectureBoundaryTest`.
-- Access an entity/repository from a controller or job — always go through an application service
+- Access an entity/repository from a controller or scheduler — always go through an application service
 - Cross-feature imports for anything except `global/*` and `rag/domain/*` shared types
 - Expose JPA entities in controller responses or service parameters
 - Pass Entity objects between application services (use domain models or IDs)
@@ -143,7 +143,7 @@ External-API + DB write boundaries are preserved as **separate Spring beans**, n
 | Service input/output model | `{Concept}` (no `Command` suffix) | `SyncPost`, `ArticleEmbeddingResult`, `DocumentEmbedding` |
 | Post-call DB writer | `{Feature}Writer` | `ArticleEmbeddingWriter`, `PostEmbeddingWriter` |
 | Pre-call DB preflight | `{Feature}Preflight` | `ChatPreflight` |
-| Scheduler | `{Feature}Job` | `CrawlJob`, `ArticleEmbeddingJob` |
+| Scheduler | `{Feature}Scheduler` | `CrawlScheduler`, `ArticleEmbeddingScheduler` |
 
 ### Style Rules
 
@@ -350,16 +350,16 @@ throw AppException(ErrorCode.ARTICLE_NOT_FOUND)
 
 ---
 
-## Job (Scheduler) Rules
+## Scheduler Rules
 
-Jobs are thin orchestrators. They:
+Schedulers are thin orchestrators. They:
 - Call application services to perform work
 - Catch and log exceptions
 - Never access repositories directly
 
 ```kotlin
 @Component
-class CrawlJob(
+class CrawlScheduler(
     private val crawlService: CrawlService,
 ) {
     @Scheduled(cron = "0 0 */6 * * *")
@@ -405,12 +405,12 @@ The `RagSearchService` / `RagWriteService` split is a CQRS-ish boundary for the 
 
 ## What NOT To Do
 
-- Reintroduce a top-level `core/`, `storage/`, or `scheduler/` package
+- Reintroduce a top-level `core/` or `storage/` package
 - Reintroduce per-feature `controller/request/response/service/entity/repository/model/mapper` flat-template sub-packages (retired)
 - Place a top-level `data class` or `enum class` inside an `application/` file (move to `domain/`)
 - Access another feature's `infrastructure/` from outside that feature
 - Return entities directly as responses
-- Call repositories from controllers or jobs
+- Call repositories from controllers or schedulers
 - Pass Entity objects as application service parameters
 - Write operations without `@Transactional`
 - Log API keys, tokens, or secrets

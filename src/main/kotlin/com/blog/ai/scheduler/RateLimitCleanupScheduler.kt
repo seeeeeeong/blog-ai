@@ -1,4 +1,4 @@
-package com.blog.ai.job
+package com.blog.ai.scheduler
 
 import com.blog.ai.chat.application.ratelimit.RateLimiter
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
-class RateLimitCleanupJob(
+class RateLimitCleanupScheduler(
     private val chatRateLimiter: RateLimiter,
 ) {
     companion object {

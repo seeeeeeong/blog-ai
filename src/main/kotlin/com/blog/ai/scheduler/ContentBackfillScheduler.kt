@@ -1,4 +1,4 @@
-package com.blog.ai.job
+package com.blog.ai.scheduler
 
 import com.blog.ai.crawl.application.CrawlService
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
-class ContentBackfillJob(
+class ContentBackfillScheduler(
     private val crawlService: CrawlService,
 ) {
     companion object {
