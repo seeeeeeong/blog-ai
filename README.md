@@ -16,7 +16,7 @@ src/main/kotlin/com/blog/ai
 ├── crawl/          # application/, domain/, infrastructure/parser/
 ├── post/           # api/{sync,similar}/, application/{sync,embedding,similar}/, domain/, infrastructure/
 ├── rag/            # application/{embedding}/, domain/, infrastructure/  (RagChunkRepository internal)
-└── job/            # *Job.kt — thin @Scheduled orchestrators
+└── scheduler/      # *Scheduler.kt — thin @Scheduled orchestrators
 ```
 
 See [docs/conventions/clean-code.md](docs/conventions/clean-code.md) for the full convention.
