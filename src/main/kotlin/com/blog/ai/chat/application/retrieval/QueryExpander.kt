@@ -2,35 +2,24 @@ package com.blog.ai.chat.application.retrieval
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.chat.client.ChatClient
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.core.io.Resource
 import org.springframework.stereotype.Component
+import java.nio.charset.StandardCharsets
 
 @Component("chatQueryExpander")
 class QueryExpander(
     private val chatClientBuilder: ChatClient.Builder,
+    @Value("classpath:prompts/retrieval/query-expander.st")
+    expandPromptResource: Resource,
 ) {
+    private val expandPrompt: String = expandPromptResource.getContentAsString(StandardCharsets.UTF_8)
+
     companion object {
         private val log = KotlinLogging.logger {}
         private const val MAX_VARIANTS = 2
         private const val NONE_SIGNAL = "NONE"
         private const val MAX_VARIANT_LENGTH = 100
-
-        private val EXPAND_PROMPT =
-            """
-            You generate alternative phrasings of a search query to broaden recall
-            against a Korean/English tech blog corpus.
-
-            Rules:
-            1. Output up to 2 alternative phrasings, one per line.
-            2. Each variant must cover different word choices: swap Korean
-               domain terms with their English equivalents (or vice versa),
-               or use a closely related synonym commonly used in tech blogs.
-            3. No numbering, no quotes, no commentary. Just one phrasing per line.
-            4. Each variant must stay under 100 characters and remain a search
-               query (not a sentence answer).
-            5. Do not repeat the original query.
-            6. If the query is already specific enough that variants would only
-               add noise, output the single line: NONE
-            """.trimIndent()
     }
 
     fun expand(query: String): List<String> {
@@ -40,7 +29,7 @@ class QueryExpander(
                 chatClientBuilder
                     .build()
                     .prompt()
-                    .system(EXPAND_PROMPT)
+                    .system(expandPrompt)
                     .user(query)
                     .call()
                     .content()

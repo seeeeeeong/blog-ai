@@ -5,12 +5,14 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.ai.chat.memory.ChatMemory
+import org.springframework.core.io.ByteArrayResource
 
 class QueryPlannerTest {
     private val planner =
         QueryPlanner(
             chatClientBuilder = Mockito.mock(ChatClient.Builder::class.java),
             chatMemory = Mockito.mock(ChatMemory::class.java),
+            plannerPromptResource = ByteArrayResource(ByteArray(0)),
         )
 
     private val fallback = "fallback question"
