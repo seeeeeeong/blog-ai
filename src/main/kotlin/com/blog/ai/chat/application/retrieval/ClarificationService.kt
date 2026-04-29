@@ -7,37 +7,26 @@ import org.springframework.ai.chat.messages.AssistantMessage
 import org.springframework.ai.chat.messages.Message
 import org.springframework.ai.chat.messages.MessageType
 import org.springframework.ai.chat.messages.UserMessage
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.core.io.Resource
 import org.springframework.stereotype.Service
+import java.nio.charset.StandardCharsets
 
 @Service
 class ClarificationService(
     private val chatClientBuilder: ChatClient.Builder,
     private val chatMemory: ChatMemory,
+    @Value("classpath:prompts/retrieval/clarification.st")
+    systemPromptResource: Resource,
 ) {
+    private val systemPrompt: String = systemPromptResource.getContentAsString(StandardCharsets.UTF_8)
+
     companion object {
         private val log = KotlinLogging.logger {}
         private const val HISTORY_LIMIT = 6
         private const val HISTORY_SNIPPET = 200
         private const val MAX_CLARIFY_LENGTH = 200
         private const val EMERGENCY_FALLBACK = "어떤 부분을 더 자세히 알고 싶으신가요?"
-
-        private val SYSTEM_PROMPT =
-            """
-            You are a Korean tech-blog chatbot. The user's latest message is
-            ambiguous between two intents and the system needs to disambiguate
-            before searching:
-
-              (a) designing a "related post recommendation / 관련 게시글 추천"
-                  feature.
-              (b) asking the chatbot to surface posts similar to a specific
-                  article.
-
-            Write ONE short Korean clarifying question (single sentence, under
-            ~120 chars). Reference the user's actual phrasing so it feels
-            natural — do NOT use a generic template. Do NOT answer the question
-            itself, do NOT search anything, do NOT add commentary. Output the
-            question only.
-            """.trimIndent()
     }
 
     fun clarify(
@@ -64,7 +53,7 @@ class ClarificationService(
                 chatClientBuilder
                     .build()
                     .prompt()
-                    .system(SYSTEM_PROMPT)
+                    .system(systemPrompt)
                     .user(buildUserPrompt(historyText, question, plannerHint))
                     .call()
                     .content()
