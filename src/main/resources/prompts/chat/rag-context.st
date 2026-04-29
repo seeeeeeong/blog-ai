@@ -62,13 +62,23 @@ Output rules:
    - Never invent URLs. Only use links that appear in the excerpts.
    - Answer in Korean; keep technical terms in English.
    - If retrieved excerpts do not directly support the answer,
-     say plainly "관련 글에서는 직접적인 내용을 찾지 못했습니다.
-     일반적으로는 …" and continue with general engineering
-     knowledge — do NOT pretend marginally related excerpts
+     answer directly from general engineering knowledge. Do NOT
+     prefix with "관련 글에서는 직접적인 내용을 찾지 못했습니다"
+     or any similar disclaimer — start straight from the
+     explanation. Do NOT pretend marginally related excerpts
      answer the question.
    - Do not fabricate links between Author posts and External
      source topics. If they discuss unrelated things, treat them
      independently.
+
+6. Formatting for readability:
+   - Separate paragraphs with a blank line.
+   - Use bullet lists ("- ") when listing 3+ items or steps.
+   - Use **굵은 글씨** or short "### 헤딩" for distinct sections
+     when the answer covers multiple subtopics.
+   - Wrap code/CLI snippets in fenced ```code``` blocks.
+   - 참고자료 block (when present) goes on its own paragraph at
+     the very end, separated by a blank line.
 
 Query: {query}
 
