@@ -1,6 +1,5 @@
 package com.blog.ai.chat.application.retrieval
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
@@ -12,66 +11,89 @@ class QueryPlannerTest {
         QueryPlanner(
             chatClientBuilder = Mockito.mock(ChatClient.Builder::class.java),
             chatMemory = Mockito.mock(ChatMemory::class.java),
-            objectMapper = ObjectMapper(),
         )
 
     private val fallback = "fallback question"
 
     @Test
-    fun `parses DESIGN intent with rewritten canonical query`() {
-        val raw = """{"intent":"DESIGN","rewrittenQuery":"RAG 기반 관련 게시글 추천 시스템 설계"}"""
+    fun `maps DESIGN intent with rewritten canonical query`() {
+        val output =
+            QueryPlanner.PlannerOutput(
+                intent = "DESIGN",
+                rewrittenQuery = "RAG 기반 관련 게시글 추천 시스템 설계",
+            )
 
-        val plan = planner.parsePlan(raw, fallback)
+        val plan = planner.toPlan(output, fallback)
 
         assertEquals(QueryPlanner.Intent.DESIGN, plan.intent)
         assertEquals("RAG 기반 관련 게시글 추천 시스템 설계", plan.rewrittenQuery)
     }
 
     @Test
-    fun `parses CLARIFY intent with verbatim echo`() {
-        val raw = """{"intent":"CLARIFY","rewrittenQuery":"비슷한 글 추천해줘"}"""
+    fun `maps CLARIFY intent with verbatim echo`() {
+        val output =
+            QueryPlanner.PlannerOutput(
+                intent = "CLARIFY",
+                rewrittenQuery = "비슷한 글 추천해줘",
+            )
 
-        val plan = planner.parsePlan(raw, fallback)
+        val plan = planner.toPlan(output, fallback)
 
         assertEquals(QueryPlanner.Intent.CLARIFY, plan.intent)
         assertEquals("비슷한 글 추천해줘", plan.rewrittenQuery)
     }
 
     @Test
-    fun `parses GENERAL intent with resolved pronoun query`() {
-        val raw = """{"intent":"GENERAL","rewrittenQuery":"pgvector HNSW latency"}"""
+    fun `maps GENERAL intent with resolved pronoun query`() {
+        val output =
+            QueryPlanner.PlannerOutput(
+                intent = "GENERAL",
+                rewrittenQuery = "pgvector HNSW latency",
+            )
 
-        val plan = planner.parsePlan(raw, fallback)
+        val plan = planner.toPlan(output, fallback)
 
         assertEquals(QueryPlanner.Intent.GENERAL, plan.intent)
         assertEquals("pgvector HNSW latency", plan.rewrittenQuery)
     }
 
     @Test
-    fun `strips markdown fence around JSON before parsing`() {
-        val raw = "```json\n{\"intent\":\"DESIGN\",\"rewrittenQuery\":\"X\"}\n```"
+    fun `maps intent after trimming surrounding whitespace`() {
+        val output =
+            QueryPlanner.PlannerOutput(
+                intent = " DESIGN ",
+                rewrittenQuery = "RAG 기반 관련 게시글 추천 시스템 설계",
+            )
 
-        val plan = planner.parsePlan(raw, fallback)
+        val plan = planner.toPlan(output, fallback)
 
         assertEquals(QueryPlanner.Intent.DESIGN, plan.intent)
-        assertEquals("X", plan.rewrittenQuery)
+        assertEquals("RAG 기반 관련 게시글 추천 시스템 설계", plan.rewrittenQuery)
     }
 
     @Test
     fun `falls back to GENERAL with original question when intent is unknown`() {
-        val raw = """{"intent":"UNKNOWN","rewrittenQuery":"X"}"""
+        val output =
+            QueryPlanner.PlannerOutput(
+                intent = "UNKNOWN",
+                rewrittenQuery = "X",
+            )
 
-        val plan = planner.parsePlan(raw, fallback)
+        val plan = planner.toPlan(output, fallback)
 
         assertEquals(QueryPlanner.Intent.GENERAL, plan.intent)
         assertEquals(fallback, plan.rewrittenQuery)
     }
 
     @Test
-    fun `falls back to original question when rewrittenQuery is missing or blank`() {
-        val raw = """{"intent":"DESIGN","rewrittenQuery":""}"""
+    fun `falls back to original question when rewrittenQuery is blank`() {
+        val output =
+            QueryPlanner.PlannerOutput(
+                intent = "DESIGN",
+                rewrittenQuery = "",
+            )
 
-        val plan = planner.parsePlan(raw, fallback)
+        val plan = planner.toPlan(output, fallback)
 
         assertEquals(QueryPlanner.Intent.DESIGN, plan.intent)
         assertEquals(fallback, plan.rewrittenQuery)
@@ -79,24 +101,36 @@ class QueryPlannerTest {
 
     @Test
     fun `parses clarificationQuestion when CLARIFY`() {
-        val raw =
-            "{\"intent\":\"CLARIFY\"," +
-                "\"rewrittenQuery\":\"비슷한 글 추천해줘\"," +
-                "\"clarificationQuestion\":\"특정 글 기준인가요, 기능 설계인가요?\"}"
+        val output =
+            QueryPlanner.PlannerOutput(
+                intent = "CLARIFY",
+                rewrittenQuery = "비슷한 글 추천해줘",
+                clarificationQuestion = "특정 글 기준인가요, 기능 설계인가요?",
+            )
 
-        val plan = planner.parsePlan(raw, fallback)
+        val plan = planner.toPlan(output, fallback)
 
         assertEquals(QueryPlanner.Intent.CLARIFY, plan.intent)
         assertEquals("특정 글 기준인가요, 기능 설계인가요?", plan.clarificationQuestion)
     }
 
     @Test
-    fun `clarificationQuestion is null when omitted or null`() {
-        val rawNullField = "{\"intent\":\"GENERAL\",\"rewrittenQuery\":\"X\",\"clarificationQuestion\":null}"
-        val rawOmitted = "{\"intent\":\"GENERAL\",\"rewrittenQuery\":\"X\"}"
+    fun `clarificationQuestion is null when omitted, blank, or null`() {
+        val nullField =
+            QueryPlanner.PlannerOutput(
+                intent = "GENERAL",
+                rewrittenQuery = "X",
+                clarificationQuestion = null,
+            )
+        val blankField =
+            QueryPlanner.PlannerOutput(
+                intent = "GENERAL",
+                rewrittenQuery = "X",
+                clarificationQuestion = "   ",
+            )
 
-        assertEquals(null, planner.parsePlan(rawNullField, fallback).clarificationQuestion)
-        assertEquals(null, planner.parsePlan(rawOmitted, fallback).clarificationQuestion)
+        assertEquals(null, planner.toPlan(nullField, fallback).clarificationQuestion)
+        assertEquals(null, planner.toPlan(blankField, fallback).clarificationQuestion)
     }
 
     @Test

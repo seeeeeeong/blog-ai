@@ -1,6 +1,5 @@
 package com.blog.ai.chat.application.retrieval
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.ai.chat.memory.ChatMemory
@@ -12,7 +11,6 @@ import org.springframework.stereotype.Component
 class QueryPlanner(
     private val chatClientBuilder: ChatClient.Builder,
     private val chatMemory: ChatMemory,
-    private val objectMapper: ObjectMapper,
 ) {
     enum class Intent {
         DESIGN,
@@ -23,6 +21,12 @@ class QueryPlanner(
     data class Plan(
         val intent: Intent,
         val rewrittenQuery: String,
+        val clarificationQuestion: String? = null,
+    )
+
+    data class PlannerOutput(
+        val intent: String = "",
+        val rewrittenQuery: String = "",
         val clarificationQuestion: String? = null,
     )
 
@@ -49,15 +53,6 @@ class QueryPlanner(
             (1) general RAG over crawled tech-blog articles (default).
             (2) a separate "find similar posts" feature that REQUIRES a specific
                 author-post id and is NOT triggered from chat alone.
-
-            Given conversation history and the latest user message, output a single
-            JSON object on one line:
-
-              {
-                "intent":"DESIGN"|"CLARIFY"|"GENERAL",
-                "rewrittenQuery":"...",
-                "clarificationQuestion":null|"short Korean clarification question"
-              }
 
             CLASSIFICATION PRIORITY:
 
@@ -105,26 +100,28 @@ class QueryPlanner(
                         search query, with pronouns and correction signals
                         resolved against history.
 
-            Examples:
+            Examples (showing intent + rewrittenQuery + optional clarificationQuestion):
 
               History: (empty)
               Latest:  "비슷한 글 추천해줘"
-              → {"intent":"CLARIFY","rewrittenQuery":"비슷한 글 추천해줘","clarificationQuestion":"특정 글을 기준으로 비슷한 글을 추천받고 싶으신가요, 아니면 관련 게시글 추천 기능을 설계하려는 건가요?"}
+              → intent=CLARIFY, rewrittenQuery="비슷한 글 추천해줘",
+                clarificationQuestion="특정 글을 기준으로 비슷한 글을 추천받고 싶으신가요, 아니면 관련 게시글 추천 기능을 설계하려는 건가요?"
 
               History: user: RAG 기반 추천시스템 설계 어떻게해?
               Latest:  "아니 관련 게시글 추천 이런거"
-              → {"intent":"DESIGN","rewrittenQuery":"RAG 기반 관련 게시글 추천 시스템 설계","clarificationQuestion":null}
+              → intent=DESIGN, rewrittenQuery="RAG 기반 관련 게시글 추천 시스템 설계",
+                clarificationQuestion=null
 
               History: user: 챗봇 시스템 어떻게 구현해?
                        assistant: Vercel and Dev.to sources...
               Latest:  "저 두 기술 블로그 말고 다른 기술블로그는 없어? 챗봇 관련?"
-              → {"intent":"GENERAL","rewrittenQuery":"챗봇 시스템 구현 기술 블로그 사례 Vercel Dev.to 제외","clarificationQuestion":null}
+              → intent=GENERAL, rewrittenQuery="챗봇 시스템 구현 기술 블로그 사례 Vercel Dev.to 제외",
+                clarificationQuestion=null
 
               History: user: pgvector HNSW 옵션은? assistant: m=16, ef=64...
               Latest:  "그거 latency는?"
-              → {"intent":"GENERAL","rewrittenQuery":"pgvector HNSW latency","clarificationQuestion":null}
-
-            Output ONLY the JSON object — no markdown fence, no commentary.
+              → intent=GENERAL, rewrittenQuery="pgvector HNSW latency",
+                clarificationQuestion=null
             """.trimIndent()
     }
 
@@ -150,17 +147,16 @@ class QueryPlanner(
             }
 
         return try {
-            val raw =
+            val output =
                 chatClientBuilder
                     .build()
                     .prompt()
                     .system(PLANNER_PROMPT)
                     .user(buildUserPrompt(recentHistory, question))
                     .call()
-                    .content()
-                    ?.trim()
+                    .entity(PlannerOutput::class.java)
                     ?: return fallback(question)
-            parsePlan(raw, question)
+            toPlan(output, question)
         } catch (e: Exception) {
             log.warn(e) { "Query planning failed, falling back to GENERAL" }
             fallback(question)
@@ -194,31 +190,20 @@ class QueryPlanner(
             "Conversation history:\n$history\n\nLatest message: $question"
         }
 
-    internal fun parsePlan(
-        raw: String,
+    internal fun toPlan(
+        output: PlannerOutput,
         fallbackQuery: String,
     ): Plan {
-        val cleaned =
-            raw
-                .removePrefix("```json")
-                .removePrefix("```")
-                .removeSuffix("```")
-                .trim()
-        val node = objectMapper.readTree(cleaned)
-        val intentStr = node.get("intent")?.asText()?.uppercase() ?: return fallback(fallbackQuery)
-        val intent = Intent.entries.firstOrNull { it.name == intentStr } ?: return fallback(fallbackQuery)
+        val intent =
+            Intent.entries.firstOrNull { it.name == output.intent.trim().uppercase() }
+                ?: return fallback(fallbackQuery)
         val rewritten =
-            node
-                .get("rewrittenQuery")
-                ?.asText()
-                ?.trim()
-                ?.takeIf { it.isNotBlank() }
+            output.rewrittenQuery
+                .trim()
+                .takeIf { it.isNotBlank() }
                 ?: fallbackQuery
         val clarificationQuestion =
-            node
-                .get("clarificationQuestion")
-                ?.takeUnless { it.isNull }
-                ?.asText()
+            output.clarificationQuestion
                 ?.trim()
                 ?.takeIf { it.isNotBlank() }
         log.debug { "Plan: intent=$intent, rewrittenQuery='$rewritten'" }
