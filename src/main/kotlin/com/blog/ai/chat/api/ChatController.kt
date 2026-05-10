@@ -7,6 +7,7 @@ import com.blog.ai.chat.application.ChatService
 import com.blog.ai.chat.application.session.ChatSessionService
 import com.blog.ai.chat.domain.ChatMessage
 import com.blog.ai.chat.domain.ChatMode
+import com.blog.ai.global.properties.AdminProperties
 import com.blog.ai.global.response.ApiResponse
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
@@ -15,6 +16,7 @@ import org.springframework.http.codec.ServerSentEvent
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -26,6 +28,7 @@ import java.util.UUID
 class ChatController(
     private val chatService: ChatService,
     private val chatSessionService: ChatSessionService,
+    private val adminProperties: AdminProperties,
 ) {
     @GetMapping("/session")
     fun createSession(
@@ -39,7 +42,11 @@ class ChatController(
     fun chat(
         @Valid @RequestBody request: ChatRequest,
         httpRequest: HttpServletRequest,
+        @RequestHeader(value = "X-Admin-Key", required = false) adminKey: String?,
     ): Flux<ServerSentEvent<String>> {
+        if (adminKey == adminProperties.apiKey) {
+            return chatService.chatAsAdmin(request.sessionId, request.question)
+        }
         val clientIp = resolveClientIp(httpRequest)
         return chatService.chat(request.sessionId, request.question, clientIp)
     }

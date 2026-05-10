@@ -143,7 +143,7 @@ class ChatServiceIntegrationTest
                 1,
                 rateLimitStore.getActiveCount(RateLimitStore.SCOPE_SESSION, sessionId.toString()),
             )
-            assertEquals(1, rateLimitStore.getActiveCount(RateLimitStore.SCOPE_IP_HOUR, "127.0.0.1"))
+            assertEquals(1, rateLimitStore.getActiveCount(RateLimitStore.SCOPE_IP_DAY, "127.0.0.1"))
         }
 
         private fun stubPlannerWithIntent(intent: QueryPlanner.Intent) {

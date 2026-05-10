@@ -35,6 +35,23 @@ class ChatService(
         clientIp: String,
     ): Flux<ServerSentEvent<String>> {
         chatPreflight.consumeOrThrow(sessionId, clientIp)
+        return chatInternal(sessionId, question)
+    }
+
+    fun chatAsAdmin(
+        sessionId: UUID,
+        question: String,
+    ): Flux<ServerSentEvent<String>> {
+        chatPreflight.requireSession(sessionId)
+        return chatInternal(sessionId, question)
+    }
+
+    fun remainingMessages(sessionId: UUID): Int = chatRateLimiter.remainingMessages(sessionId)
+
+    private fun chatInternal(
+        sessionId: UUID,
+        question: String,
+    ): Flux<ServerSentEvent<String>> {
         val mode = chatSessionService.getMode(sessionId)
         val rawPlan = chatQueryPlanner.plan(sessionId.toString(), question)
         val plan = applyClarificationGuard(sessionId, question, rawPlan)
@@ -44,8 +61,6 @@ class ChatService(
         }
         return streamChat(sessionId, question, plan.rewrittenQuery, plan.intent, mode)
     }
-
-    fun remainingMessages(sessionId: UUID): Int = chatRateLimiter.remainingMessages(sessionId)
 
     private fun applyClarificationGuard(
         sessionId: UUID,

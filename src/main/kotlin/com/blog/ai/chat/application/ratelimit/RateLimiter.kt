@@ -14,10 +14,10 @@ class RateLimiter(
     private val rateLimitStore: RateLimitStore,
 ) {
     companion object {
-        private const val MAX_MESSAGES_PER_SESSION = 30
-        private const val MAX_MESSAGES_PER_IP_PER_HOUR = 60
+        private const val MAX_MESSAGES_PER_SESSION = 10
+        private const val MAX_MESSAGES_PER_IP_PER_DAY = 10
         private val SESSION_TTL: Duration = Duration.ofHours(24)
-        private val IP_TTL: Duration = Duration.ofHours(1)
+        private val IP_TTL: Duration = Duration.ofHours(24)
     }
 
     fun checkAndIncrement(
@@ -30,7 +30,7 @@ class RateLimiter(
                     sessionKey = sessionId.toString(),
                     ipKey = clientIp,
                     sessionMax = MAX_MESSAGES_PER_SESSION,
-                    ipMax = MAX_MESSAGES_PER_IP_PER_HOUR,
+                    ipMax = MAX_MESSAGES_PER_IP_PER_DAY,
                     sessionTtl = SESSION_TTL,
                     ipTtl = IP_TTL,
                 ),

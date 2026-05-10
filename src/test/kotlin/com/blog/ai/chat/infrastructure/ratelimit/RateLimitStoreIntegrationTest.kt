@@ -31,7 +31,7 @@ class RateLimitStoreIntegrationTest
 
             assertEquals(RateLimitOutcome.OK, outcome)
             assertEquals(1, repository.getActiveCount(RateLimitStore.SCOPE_SESSION, "s1"))
-            assertEquals(1, repository.getActiveCount(RateLimitStore.SCOPE_IP_HOUR, "ip1"))
+            assertEquals(1, repository.getActiveCount(RateLimitStore.SCOPE_IP_DAY, "ip1"))
         }
 
         @Test
@@ -42,7 +42,7 @@ class RateLimitStoreIntegrationTest
 
             assertEquals(RateLimitOutcome.SESSION_LIMITED, outcome)
             assertEquals(3, repository.getActiveCount(RateLimitStore.SCOPE_SESSION, "s1"))
-            assertEquals(3, repository.getActiveCount(RateLimitStore.SCOPE_IP_HOUR, "ip1"))
+            assertEquals(3, repository.getActiveCount(RateLimitStore.SCOPE_IP_DAY, "ip1"))
         }
 
         @Test
@@ -53,7 +53,7 @@ class RateLimitStoreIntegrationTest
 
             assertEquals(RateLimitOutcome.IP_LIMITED, outcome)
             assertEquals(0, repository.getActiveCount(RateLimitStore.SCOPE_SESSION, "sB"))
-            assertEquals(3, repository.getActiveCount(RateLimitStore.SCOPE_IP_HOUR, "ip1"))
+            assertEquals(3, repository.getActiveCount(RateLimitStore.SCOPE_IP_DAY, "ip1"))
         }
 
         @Test

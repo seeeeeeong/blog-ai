@@ -13,22 +13,22 @@ class RateLimitStore(
 ) {
     companion object {
         const val SCOPE_SESSION = "session"
-        const val SCOPE_IP_HOUR = "ip_hour"
+        const val SCOPE_IP_DAY = "ip_day"
     }
 
     @Transactional
     fun tryConsume(request: RateLimitRequest): RateLimitOutcome {
         ensureRow(request.sessionKey, SCOPE_SESSION)
-        ensureRow(request.ipKey, SCOPE_IP_HOUR)
+        ensureRow(request.ipKey, SCOPE_IP_DAY)
 
         val sessionCount = lockedActiveCount(SCOPE_SESSION, request.sessionKey)
         if (sessionCount >= request.sessionMax) return RateLimitOutcome.SESSION_LIMITED
 
-        val ipCount = lockedActiveCount(SCOPE_IP_HOUR, request.ipKey)
+        val ipCount = lockedActiveCount(SCOPE_IP_DAY, request.ipKey)
         if (ipCount >= request.ipMax) return RateLimitOutcome.IP_LIMITED
 
         bump(SCOPE_SESSION, request.sessionKey, request.sessionTtl)
-        bump(SCOPE_IP_HOUR, request.ipKey, request.ipTtl)
+        bump(SCOPE_IP_DAY, request.ipKey, request.ipTtl)
         return RateLimitOutcome.OK
     }
 

@@ -17,11 +17,12 @@ class ChatPreflight(
         sessionId: UUID,
         clientIp: String,
     ) {
-        val sessionExists = chatSessionRepository.existsById(sessionId)
-        if (sessionExists) {
-            chatRateLimiter.checkAndIncrement(sessionId, clientIp)
-            return
-        }
+        requireSession(sessionId)
+        chatRateLimiter.checkAndIncrement(sessionId, clientIp)
+    }
+
+    fun requireSession(sessionId: UUID) {
+        if (chatSessionRepository.existsById(sessionId)) return
         throw AppException(ErrorCode.SESSION_NOT_FOUND)
     }
 }
