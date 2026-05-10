@@ -80,7 +80,7 @@ class ChatServiceIntegrationTest
 
         @Test
         fun `guard forces GENERAL when planner returns CLARIFY two turns in a row`() {
-            val sessionId = chatSessionService.createSession()
+            val sessionId = chatSessionService.createSession().id
             stubPlannerWithIntent(QueryPlanner.Intent.CLARIFY)
 
             val firstTurn = chatService.chat(sessionId, AMBIGUOUS_QUESTION, "127.0.0.1").collectList().block()
@@ -101,7 +101,7 @@ class ChatServiceIntegrationTest
 
         @Test
         fun `guard does not leak across an intervening non-CLARIFY turn`() {
-            val sessionId = chatSessionService.createSession()
+            val sessionId = chatSessionService.createSession().id
             val intentByCallIndex =
                 mutableListOf(
                     QueryPlanner.Intent.CLARIFY,
@@ -134,7 +134,7 @@ class ChatServiceIntegrationTest
 
         @Test
         fun `chat consumes rate limit in writable transaction`() {
-            val sessionId = chatSessionService.createSession()
+            val sessionId = chatSessionService.createSession().id
 
             val events = chatService.chat(sessionId, "안녕", "127.0.0.1").collectList().block()
 

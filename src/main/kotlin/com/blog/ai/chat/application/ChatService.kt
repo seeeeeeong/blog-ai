@@ -6,7 +6,9 @@ import com.blog.ai.chat.application.retrieval.ArticleRetriever
 import com.blog.ai.chat.application.retrieval.ClarificationGuard
 import com.blog.ai.chat.application.retrieval.ClarificationService
 import com.blog.ai.chat.application.retrieval.QueryPlanner
+import com.blog.ai.chat.application.session.ChatSessionService
 import com.blog.ai.chat.domain.ChatAdvisorParams
+import com.blog.ai.chat.domain.ChatMode
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.ai.chat.memory.ChatMemory
@@ -21,6 +23,7 @@ class ChatService(
     private val chatClient: ChatClient,
     private val chatRateLimiter: RateLimiter,
     private val chatPreflight: ChatPreflight,
+    private val chatSessionService: ChatSessionService,
     private val chatQueryPlanner: QueryPlanner,
     private val clarificationService: ClarificationService,
     private val clarificationGuard: ClarificationGuard,
@@ -32,13 +35,14 @@ class ChatService(
         clientIp: String,
     ): Flux<ServerSentEvent<String>> {
         chatPreflight.consumeOrThrow(sessionId, clientIp)
+        val mode = chatSessionService.getMode(sessionId)
         val rawPlan = chatQueryPlanner.plan(sessionId.toString(), question)
         val plan = applyClarificationGuard(sessionId, question, rawPlan)
         if (plan.intent == QueryPlanner.Intent.CLARIFY) {
             clarificationGuard.mark(sessionId)
             return clarifyResponse(sessionId, question, plan.clarificationQuestion)
         }
-        return streamChat(sessionId, question, plan.rewrittenQuery, plan.intent)
+        return streamChat(sessionId, question, plan.rewrittenQuery, plan.intent, mode)
     }
 
     fun remainingMessages(sessionId: UUID): Int = chatRateLimiter.remainingMessages(sessionId)
@@ -90,6 +94,7 @@ class ChatService(
         question: String,
         rewrittenQuery: String,
         intent: QueryPlanner.Intent,
+        mode: ChatMode,
     ): Flux<ServerSentEvent<String>> =
         chatClient
             .prompt()
@@ -98,6 +103,7 @@ class ChatService(
                 advisor.param("chat_memory_conversation_id", sessionId.toString())
                 advisor.param(ChatAdvisorParams.REWRITTEN_QUERY, rewrittenQuery)
                 advisor.param(ArticleRetriever.INTENT_PARAM, intent.name)
+                advisor.param(ChatAdvisorParams.MODE, mode.name)
             }.stream()
             .content()
             .map { content -> ServerSentEvent.builder(content).build() }

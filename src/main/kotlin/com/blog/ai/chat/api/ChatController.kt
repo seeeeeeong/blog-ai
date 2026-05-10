@@ -6,6 +6,7 @@ import com.blog.ai.chat.api.ChatSessionResponse
 import com.blog.ai.chat.application.ChatService
 import com.blog.ai.chat.application.session.ChatSessionService
 import com.blog.ai.chat.domain.ChatMessage
+import com.blog.ai.chat.domain.ChatMode
 import com.blog.ai.global.response.ApiResponse
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
@@ -27,9 +28,11 @@ class ChatController(
     private val chatSessionService: ChatSessionService,
 ) {
     @GetMapping("/session")
-    fun createSession(): ApiResponse<ChatSessionResponse> {
-        val sessionId = chatSessionService.createSession()
-        return ApiResponse.success(ChatSessionResponse.of(sessionId))
+    fun createSession(
+        @RequestParam(required = false) mode: ChatMode?,
+    ): ApiResponse<ChatSessionResponse> {
+        val session = chatSessionService.createSession(mode ?: ChatMode.DEFAULT)
+        return ApiResponse.success(ChatSessionResponse.of(session))
     }
 
     @PostMapping("/stream", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])

@@ -1,12 +1,14 @@
 package com.blog.ai.chat.application.session
 
 import com.blog.ai.chat.domain.ChatMessage
+import com.blog.ai.chat.domain.ChatMode
 import com.blog.ai.chat.infrastructure.memory.ChatMessageRepository
 import com.blog.ai.chat.infrastructure.memory.toMessage
 import com.blog.ai.chat.infrastructure.session.ChatSessionEntity
 import com.blog.ai.chat.infrastructure.session.ChatSessionRepository
 import com.blog.ai.global.error.AppException
 import com.blog.ai.global.error.ErrorCode
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -21,9 +23,15 @@ class ChatSessionService(
     }
 
     @Transactional
-    fun createSession(): UUID {
-        val session = chatSessionRepository.save(ChatSessionEntity.create())
-        return session.id
+    fun createSession(mode: ChatMode = ChatMode.DEFAULT): ChatSessionEntity =
+        chatSessionRepository.save(ChatSessionEntity.create(mode))
+
+    @Transactional(readOnly = true)
+    fun getMode(sessionId: UUID): ChatMode {
+        val session =
+            chatSessionRepository.findByIdOrNull(sessionId)
+                ?: throw AppException(ErrorCode.SESSION_NOT_FOUND)
+        return session.mode
     }
 
     @Transactional(readOnly = true)

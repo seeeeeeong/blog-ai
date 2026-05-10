@@ -6,6 +6,7 @@ import com.blog.ai.blog.infrastructure.BlogEntity
 import com.blog.ai.blog.infrastructure.BlogRepository
 import com.blog.ai.chat.application.retrieval.QueryExpander
 import com.blog.ai.chat.domain.ChatAdvisorParams
+import com.blog.ai.chat.domain.ChatMode
 import com.blog.ai.chat.infrastructure.rerank.RerankClient
 import com.blog.ai.support.PostgresTestContainer
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -72,7 +73,7 @@ class ArticleRetrieverIntegrationTest
         }
 
         @Test
-        fun `routes to author posts when author chunks match above threshold`() {
+        fun `AUTHOR_POST mode returns only author docs`() {
             seedAuthorPostWithChunk(
                 externalId = "author-1",
                 title = "My Kotlin journey",
@@ -80,17 +81,29 @@ class ArticleRetrieverIntegrationTest
                 chunkContent = "Kotlin coroutines are great",
                 chunkVector = vector(0.1f),
             )
-            val docs = retriever.retrieve(Query.builder().text("Kotlin coroutines").build())
+            val blog = seedBlog()
+            seedArticleWithChunk(
+                blog = blog,
+                title = "Industry Kotlin patterns",
+                content = "patterns",
+                chunkContent = "patterns",
+                chunkVector = vector(0.1f),
+            )
+
+            val docs = retriever.retrieve(authorQuery("Kotlin coroutines"))
 
             assertTrue(docs.isNotEmpty(), "expected at least one author doc")
-            val author = docs.firstOrNull { it.metadata["sourceType"] == "author" }
-            assertNotNull(author, "author doc should be present")
-            assertEquals("My Kotlin journey", author!!.metadata["title"])
+            assertTrue(
+                docs.all { it.metadata["sourceType"] == "author" },
+                "AUTHOR_POST mode must not surface external supplementary docs",
+            )
+            val author = docs.first()
+            assertEquals("My Kotlin journey", author.metadata["title"])
             assertEquals("https://author.example/k", author.metadata["url"])
         }
 
         @Test
-        fun `falls back to external chunks when no author posts match`() {
+        fun `AUTHOR_POST mode returns empty when only external articles are seeded`() {
             val blog = seedBlog()
             seedArticleWithChunk(
                 blog = blog,
@@ -100,10 +113,36 @@ class ArticleRetrieverIntegrationTest
                 chunkVector = vector(0.1f),
             )
 
-            val docs = retriever.retrieve(Query.builder().text("pgvector").build())
+            val docs = retriever.retrieve(authorQuery("pgvector"))
+
+            assertTrue(docs.isEmpty(), "AUTHOR_POST mode must not fall back to external articles")
+        }
+
+        @Test
+        fun `EXTERNAL_ARTICLE mode returns only external docs`() {
+            val blog = seedBlog()
+            seedArticleWithChunk(
+                blog = blog,
+                title = "Postgres deep dive",
+                content = "vector search with pgvector",
+                chunkContent = "pgvector HNSW indexing",
+                chunkVector = vector(0.1f),
+            )
+            seedAuthorPostWithChunk(
+                externalId = "author-mixed",
+                title = "How I built RAG",
+                url = "https://author.example/rag",
+                chunkContent = "I built a RAG pipeline using pgvector",
+                chunkVector = vector(0.1f),
+            )
+
+            val docs = retriever.retrieve(externalQuery("pgvector"))
 
             assertTrue(docs.isNotEmpty(), "expected at least one external doc")
-            assertTrue(docs.all { it.metadata["sourceType"] == "external" })
+            assertTrue(
+                docs.all { it.metadata["sourceType"] == "external" },
+                "EXTERNAL_ARTICLE mode must not surface author posts",
+            )
             assertTrue(
                 docs.all { it.text.orEmpty().startsWith("External source (NOT Author post):") },
                 "external docs must be explicitly marked as not author posts",
@@ -111,9 +150,41 @@ class ArticleRetrieverIntegrationTest
         }
 
         @Test
+        fun `EXTERNAL_ARTICLE mode returns empty when only author posts are seeded`() {
+            seedAuthorPostWithChunk(
+                externalId = "author-1",
+                title = "My RAG journey",
+                url = "https://author.example/r",
+                chunkContent = "I built a RAG pipeline",
+                chunkVector = vector(0.1f),
+            )
+
+            val docs = retriever.retrieve(externalQuery("RAG"))
+
+            assertTrue(docs.isEmpty(), "EXTERNAL_ARTICLE mode must not fall back to author posts")
+        }
+
+        @Test
         fun `returns empty list when no articles or author posts seeded`() {
-            val docs = retriever.retrieve(Query.builder().text("anything").build())
+            val docs = retriever.retrieve(externalQuery("anything"))
             assertTrue(docs.isEmpty())
+        }
+
+        @Test
+        fun `default mode (no advisor param) is EXTERNAL_ARTICLE`() {
+            val blog = seedBlog()
+            seedArticleWithChunk(
+                blog = blog,
+                title = "External post",
+                content = "external",
+                chunkContent = "external",
+                chunkVector = vector(0.1f),
+            )
+
+            val docs = retriever.retrieve(Query.builder().text("external").build())
+
+            assertTrue(docs.isNotEmpty(), "missing MODE param should default to EXTERNAL_ARTICLE retrieval")
+            assertTrue(docs.all { it.metadata["sourceType"] == "external" })
         }
 
         @Test
@@ -129,8 +200,12 @@ class ArticleRetrieverIntegrationTest
                 Query
                     .builder()
                     .text("아니 관련 게시글 추천 이런거")
-                    .context(mapOf(ChatAdvisorParams.REWRITTEN_QUERY to "RAG 기반 관련 게시글 추천 시스템 설계"))
-                    .build(),
+                    .context(
+                        mapOf(
+                            ChatAdvisorParams.REWRITTEN_QUERY to "RAG 기반 관련 게시글 추천 시스템 설계",
+                            ChatAdvisorParams.MODE to ChatMode.EXTERNAL_ARTICLE.name,
+                        ),
+                    ).build(),
             )
 
             assertEquals(listOf("RAG 기반 관련 게시글 추천 시스템 설계"), capturedExpansionInputs)
@@ -153,7 +228,7 @@ class ArticleRetrieverIntegrationTest
                 docs.take(topN)
             }
 
-            val docs = retriever.retrieve(Query.builder().text("anything").build())
+            val docs = retriever.retrieve(externalQuery("anything"))
 
             assertTrue(docs.isEmpty(), "rerank without scores must trigger fail-closed abstain, not fall through")
         }
@@ -172,7 +247,7 @@ class ArticleRetrieverIntegrationTest
                 .`when`(chatRerankClient.rerank(anyString(), anyList(), anyInt()))
                 .thenReturn(emptyList())
 
-            val docs = retriever.retrieve(Query.builder().text("anything").build())
+            val docs = retriever.retrieve(externalQuery("anything"))
 
             assertTrue(docs.isEmpty(), "rerank returning empty list must also be treated as unavailable")
         }
@@ -200,7 +275,7 @@ class ArticleRetrieverIntegrationTest
                 }
             }
 
-            val docs = retriever.retrieve(Query.builder().text("RAG recommendation").build())
+            val docs = retriever.retrieve(externalQuery("RAG recommendation"))
 
             assertTrue(docs.isEmpty(), "top score 0.45 sits above eligibility 0.4 but below abstain 0.5")
         }
@@ -228,7 +303,7 @@ class ArticleRetrieverIntegrationTest
                 }
             }
 
-            val docs = retriever.retrieve(Query.builder().text("RAG recommendation").build())
+            val docs = retriever.retrieve(externalQuery("RAG recommendation"))
 
             assertTrue(docs.isEmpty(), "all candidates below floor should yield empty result")
         }
@@ -247,37 +322,25 @@ class ArticleRetrieverIntegrationTest
                 .`when`(chatQueryExpander.expand(anyString()))
                 .thenReturn(listOf("RAG 추천 시스템", "retrieval augmented recommendation"))
 
-            val docs = retriever.retrieve(Query.builder().text("RAG 추천 시스템").build())
+            val docs = retriever.retrieve(externalQuery("RAG 추천 시스템"))
 
             assertEquals(1, docs.size, "duplicate hits across variants must be merged into one document")
             assertEquals("DoorDash retrieval", docs.first().metadata["title"])
         }
 
-        @Test
-        fun `golden — author posts retrieved alongside reranked supplementary externals`() {
-            seedAuthorPostWithChunk(
-                externalId = "author-mixed",
-                title = "How I built RAG",
-                url = "https://author.example/rag",
-                chunkContent = "I built a RAG pipeline",
-                chunkVector = vector(0.1f),
-            )
-            val blog = seedBlog()
-            seedArticleWithChunk(
-                blog = blog,
-                title = "Industry RAG patterns",
-                content = "patterns for production RAG",
-                chunkContent = "patterns for production RAG",
-                chunkVector = vector(0.1f),
-            )
+        private fun authorQuery(text: String): Query =
+            Query
+                .builder()
+                .text(text)
+                .context(mapOf(ChatAdvisorParams.MODE to ChatMode.AUTHOR_POST.name))
+                .build()
 
-            val docs = retriever.retrieve(Query.builder().text("RAG").build())
-
-            val author = docs.firstOrNull { it.metadata["sourceType"] == "author" }
-            val external = docs.firstOrNull { it.metadata["sourceType"] == "external" }
-            assertNotNull(author, "author doc should be present when author chunks match")
-            assertNotNull(external, "external supplementary doc should be present")
-        }
+        private fun externalQuery(text: String): Query =
+            Query
+                .builder()
+                .text(text)
+                .context(mapOf(ChatAdvisorParams.MODE to ChatMode.EXTERNAL_ARTICLE.name))
+                .build()
 
         private fun seedBlog(): BlogEntity =
             blogRepository.save(

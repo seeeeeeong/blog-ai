@@ -4,6 +4,7 @@ import com.blog.ai.chat.application.retrieval.QueryEmbedding
 import com.blog.ai.chat.application.retrieval.QueryExpander
 import com.blog.ai.chat.application.retrieval.RerankedExternalResult
 import com.blog.ai.chat.domain.ChatAdvisorParams
+import com.blog.ai.chat.domain.ChatMode
 import com.blog.ai.chat.infrastructure.rerank.RerankClient
 import com.blog.ai.rag.application.RagSearchService
 import com.blog.ai.rag.domain.RagChunkGranularity
@@ -34,12 +35,12 @@ class ArticleRetriever(
         private const val EXTERNAL_CANDIDATE_POOL = 50
         private const val EXTERNAL_RERANK_INPUT = 30
         private const val EXTERNAL_FINAL_TOP_N = 5
-        private const val SUPPLEMENTARY_FINAL_TOP_N = 3
         private const val CONTENT_SNIPPET_LENGTH = 1500
         private const val EXTERNAL_CANDIDATE_SIMILARITY = 0.3
         private const val EXTERNAL_RERANK_ELIGIBILITY = 0.4
         private const val EXTERNAL_RERANK_TOP_ABSTAIN = 0.5
         const val INTENT_PARAM = ChatAdvisorParams.INTENT
+        const val MODE_PARAM = ChatAdvisorParams.MODE
     }
 
     override fun retrieve(query: Query): List<Document> {
@@ -52,22 +53,34 @@ class ArticleRetriever(
                 ?.takeIf { it.isNotBlank() }
                 ?: originalText
         val intent = (query.context()[INTENT_PARAM] as? String) ?: "UNKNOWN"
+        val mode = resolveMode(query)
 
         val variants = chatQueryExpander.expand(rewritten)
         val embeddings = variants.map { v -> QueryEmbedding(v, embed(v)) }
 
-        val authorDocs = retrieveAuthorPosts(embeddings)
-        if (authorDocs.isNotEmpty()) {
-            val supplementary = retrieveExternalReranked(embeddings, rewritten, SUPPLEMENTARY_FINAL_TOP_N)
-            val combined = authorDocs + supplementary.docs
-            logRetrieval("author+supplementary", intent, rewritten, supplementary, authorDocs.size, combined)
-            return combined
-        }
+        return when (mode) {
+            ChatMode.AUTHOR_POST -> {
+                val docs = retrieveAuthorPosts(embeddings)
+                logRetrieval("author-only", mode, intent, rewritten, null, docs.size, docs)
+                docs
+            }
 
-        val external = retrieveExternalReranked(embeddings, rewritten, EXTERNAL_FINAL_TOP_N)
-        val mode = if (external.docs.isEmpty()) "external-empty" else "external-only"
-        logRetrieval(mode, intent, rewritten, external, 0, external.docs)
-        return external.docs
+            ChatMode.EXTERNAL_ARTICLE -> {
+                val external = retrieveExternalReranked(embeddings, rewritten, EXTERNAL_FINAL_TOP_N)
+                val label = if (external.docs.isEmpty()) "external-empty" else "external-only"
+                logRetrieval(label, mode, intent, rewritten, external, 0, external.docs)
+                external.docs
+            }
+        }
+    }
+
+    private fun resolveMode(query: Query): ChatMode {
+        val raw =
+            (query.context()[MODE_PARAM] as? String)
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+                ?: return ChatMode.DEFAULT
+        return ChatMode.entries.firstOrNull { it.name == raw } ?: ChatMode.DEFAULT
     }
 
     private fun embed(text: String): String = embeddingModel.embed(text).joinToString(",", "[", "]")
@@ -177,30 +190,34 @@ class ArticleRetriever(
 
     private fun logRetrieval(
         mode: String,
+        chatMode: ChatMode,
         intent: String,
         query: String,
-        external: RerankedExternalResult,
+        external: RerankedExternalResult?,
         authorEligibleCount: Int,
         documents: List<Document>,
     ) {
-        val labels =
-            documents.joinToString(" | ") { d ->
-                val type = d.metadata["sourceType"] as? String ?: "?"
-                val t = d.metadata["title"] as? String ?: "?"
-                val c = d.metadata["company"] as? String ?: "me"
-                val rerank = d.metadata["rerankScore"] as? Double
-                val sim = d.metadata["similarity"] as? Double
-                val score = d.metadata["score"] as? Double
-                val s = rerank ?: sim ?: score
-                val tag = if (rerank != null) "r" else ""
-                if (s != null) "$type:$c/$t($tag${"%.3f".format(s)})" else "$type:$c/$t"
-            }
-        val topScoreStr = external.topScore?.let { "%.3f".format(it) } ?: "n/a"
+        val labels = documents.joinToString(" | ") { docLabel(it) }
+        val topScoreStr = external?.topScore?.let { "%.3f".format(it) } ?: "n/a"
+        val eligibleCount = external?.docs?.size ?: documents.size
+        val abstained = external?.abstained ?: false
+        val rerankUnavailable = external?.rerankUnavailable ?: false
         log.info {
-            "Chat retrieval mode=$mode intent=$intent query='${query.take(80)}' " +
-                "topScore=$topScoreStr eligibleCount=${external.docs.size} " +
-                "authorEligibleCount=$authorEligibleCount abstained=${external.abstained} " +
-                "rerankUnavailable=${external.rerankUnavailable} [$labels]"
+            "Chat retrieval mode=$mode chatMode=$chatMode intent=$intent query='${query.take(80)}' " +
+                "topScore=$topScoreStr eligibleCount=$eligibleCount " +
+                "authorEligibleCount=$authorEligibleCount abstained=$abstained " +
+                "rerankUnavailable=$rerankUnavailable [$labels]"
         }
+    }
+
+    private fun docLabel(doc: Document): String {
+        val type = doc.metadata["sourceType"] as? String ?: "?"
+        val title = doc.metadata["title"] as? String ?: "?"
+        val company = doc.metadata["company"] as? String ?: "me"
+        val rerank = doc.metadata["rerankScore"] as? Double
+        val score = rerank ?: doc.metadata["similarity"] as? Double ?: doc.metadata["score"] as? Double
+        val tag = if (rerank == null) "" else "r"
+        if (score == null) return "$type:$company/$title"
+        return "$type:$company/$title($tag${"%.3f".format(score)})"
     }
 }

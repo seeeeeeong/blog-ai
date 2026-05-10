@@ -3,4 +3,5 @@ package com.blog.ai.chat.domain
 object ChatAdvisorParams {
     const val REWRITTEN_QUERY = "rewritten_query"
     const val INTENT = "chat_intent"
+    const val MODE = "chat_mode"
 }
